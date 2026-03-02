@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { formatErrorMessage, readApiErrorMessage, requestJson } from "@/lib/client/api";
 import { pushGraphActivityEventToStorage } from "@/lib/client/graph-activity";
@@ -921,20 +921,7 @@ export function WorkspaceDemo() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [querySessionId]);
 
-  function stepGraphFocusQueue(offset: number) {
-    if (graphFocusQueue.length < 2) {
-      return;
-    }
-    const baseIndex = activeGraphFocusQueueIndex >= 0 ? activeGraphFocusQueueIndex : 0;
-    const nextIndex = (baseIndex + offset + graphFocusQueue.length) % graphFocusQueue.length;
-    const next = graphFocusQueue[nextIndex];
-    if (!next) {
-      return;
-    }
-    switchGraphFocusFromQueue(next, nextIndex);
-  }
-
-  function switchGraphFocusFromQueue(target: PathFocusPayload, index: number) {
+  const switchGraphFocusFromQueue = useCallback((target: PathFocusPayload, index: number) => {
     setGraphFocus(target);
     setActiveGraphFocusQueueKey(buildFocusQueueKey(target));
     if (autoApplyGraphFocusPrompt) {
@@ -951,7 +938,49 @@ export function WorkspaceDemo() {
         target.nodeLabel
       }，可手动点击应用提示词。`
     );
-  }
+  }, [autoApplyGraphFocusPrompt, graphFocusQueue.length]);
+
+  const stepGraphFocusQueue = useCallback((offset: number) => {
+    if (graphFocusQueue.length < 2) {
+      return;
+    }
+    const baseIndex = activeGraphFocusQueueIndex >= 0 ? activeGraphFocusQueueIndex : 0;
+    const nextIndex = (baseIndex + offset + graphFocusQueue.length) % graphFocusQueue.length;
+    const next = graphFocusQueue[nextIndex];
+    if (!next) {
+      return;
+    }
+    switchGraphFocusFromQueue(next, nextIndex);
+  }, [activeGraphFocusQueueIndex, graphFocusQueue, switchGraphFocusFromQueue]);
+
+  useEffect(() => {
+    if (graphFocusQueue.length < 2) {
+      return;
+    }
+    const handleQueueShortcut = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName?.toLowerCase();
+      if (
+        target?.isContentEditable ||
+        tagName === "input" ||
+        tagName === "textarea" ||
+        tagName === "select"
+      ) {
+        return;
+      }
+      if (event.key === "[" || (event.altKey && event.key === "ArrowUp")) {
+        event.preventDefault();
+        stepGraphFocusQueue(-1);
+      } else if (event.key === "]" || (event.altKey && event.key === "ArrowDown")) {
+        event.preventDefault();
+        stepGraphFocusQueue(1);
+      }
+    };
+    window.addEventListener("keydown", handleQueueShortcut);
+    return () => {
+      window.removeEventListener("keydown", handleQueueShortcut);
+    };
+  }, [graphFocusQueue.length, stepGraphFocusQueue]);
 
   async function createSession() {
     setLoading(true);
@@ -1853,6 +1882,9 @@ export function WorkspaceDemo() {
                     </button>
                   </div>
                 </div>
+                <small className="workspace-focus-queue-tip">
+                  快捷键：`[` / `]`，或 Alt + 上/下方向键
+                </small>
                 <label className="workspace-focus-auto-apply">
                   <input
                     type="checkbox"

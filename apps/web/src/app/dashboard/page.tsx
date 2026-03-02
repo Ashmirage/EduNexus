@@ -601,6 +601,7 @@ export default function DashboardPage() {
   const [bridgeRelationMode, setBridgeRelationMode] =
     useState<BridgeRelationMode>("all");
   const [selectedBridgeIds, setSelectedBridgeIds] = useState<string[]>([]);
+  const [selectedBridgeOrderIds, setSelectedBridgeOrderIds] = useState<string[]>([]);
   const [bridgeBatchHint, setBridgeBatchHint] = useState("");
   const [isBridgeBatchPreviewOpen, setIsBridgeBatchPreviewOpen] = useState(false);
 
@@ -918,13 +919,31 @@ export default function DashboardPage() {
     return sortBridgeRiskRows(filtered, bridgeSortMode, bridgeRelationMode);
   }, [bridgeDomainFilter, bridgeRelationMode, bridgeSortMode, graphBridgeRiskRows]);
 
+  const selectedBridgeRowMap = useMemo(
+    () => new Map(filteredBridgeRiskRows.map((row) => [row.id, row])),
+    [filteredBridgeRiskRows]
+  );
   const selectedBridgeRows = useMemo(() => {
     if (selectedBridgeIds.length === 0) {
       return [];
     }
     const selectedSet = new Set(selectedBridgeIds);
-    return filteredBridgeRiskRows.filter((row) => selectedSet.has(row.id));
-  }, [filteredBridgeRiskRows, selectedBridgeIds]);
+    const orderedIds =
+      selectedBridgeOrderIds.length > 0
+        ? selectedBridgeOrderIds
+        : filteredBridgeRiskRows.map((row) => row.id);
+    const rows: DashboardBridgeRiskRow[] = [];
+    for (const rowId of orderedIds) {
+      if (!selectedSet.has(rowId)) {
+        continue;
+      }
+      const row = selectedBridgeRowMap.get(rowId);
+      if (row) {
+        rows.push(row);
+      }
+    }
+    return rows;
+  }, [filteredBridgeRiskRows, selectedBridgeIds, selectedBridgeOrderIds, selectedBridgeRowMap]);
   const selectedBridgeFocusBatch = useMemo(
     () => buildBridgeFocusBatchFromRows(selectedBridgeRows),
     [selectedBridgeRows]
@@ -972,6 +991,26 @@ export default function DashboardPage() {
     const validIds = new Set(filteredBridgeRiskRows.map((row) => row.id));
     setSelectedBridgeIds((prev) => prev.filter((id) => validIds.has(id)));
   }, [filteredBridgeRiskRows, selectedBridgeIds.length]);
+
+  useEffect(() => {
+    if (selectedBridgeIds.length === 0) {
+      setSelectedBridgeOrderIds((prev) => (prev.length > 0 ? [] : prev));
+      return;
+    }
+    const selectedSet = new Set(selectedBridgeIds);
+    const visibleSelectedIds = filteredBridgeRiskRows
+      .map((row) => row.id)
+      .filter((id) => selectedSet.has(id));
+    setSelectedBridgeOrderIds((prev) => {
+      const kept = prev.filter((id) => visibleSelectedIds.includes(id));
+      const missing = visibleSelectedIds.filter((id) => !kept.includes(id));
+      const next = [...kept, ...missing];
+      if (next.length === prev.length && next.every((id, index) => id === prev[index])) {
+        return prev;
+      }
+      return next;
+    });
+  }, [filteredBridgeRiskRows, selectedBridgeIds]);
 
   useEffect(() => {
     if (selectedBridgeRows.length === 0 && isBridgeBatchPreviewOpen) {
@@ -1070,20 +1109,52 @@ export default function DashboardPage() {
   }
 
   function toggleBridgeSelection(rowId: string) {
-    setSelectedBridgeIds((prev) =>
-      prev.includes(rowId) ? prev.filter((item) => item !== rowId) : [...prev, rowId]
-    );
+    setSelectedBridgeIds((prev) => {
+      if (prev.includes(rowId)) {
+        return prev.filter((item) => item !== rowId);
+      }
+      return [...prev, rowId];
+    });
   }
 
   function selectAllVisibleBridges() {
-    setSelectedBridgeIds(filteredBridgeRiskRows.map((row) => row.id));
+    const ids = filteredBridgeRiskRows.map((row) => row.id);
+    setSelectedBridgeIds(ids);
+    setSelectedBridgeOrderIds(ids);
     setBridgeBatchHint(`已选择当前筛选下 ${filteredBridgeRiskRows.length} 条关系链。`);
   }
 
   function clearBridgeSelection() {
     setSelectedBridgeIds([]);
+    setSelectedBridgeOrderIds([]);
     setIsBridgeBatchPreviewOpen(false);
     setBridgeBatchHint("已清空关系链批量选择。");
+  }
+
+  function moveSelectedBridgeOrder(rowId: string, direction: "up" | "down") {
+    setSelectedBridgeOrderIds((prev) => {
+      const index = prev.indexOf(rowId);
+      if (index < 0) {
+        return prev;
+      }
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= prev.length) {
+        return prev;
+      }
+      const next = [...prev];
+      const temp = next[index]!;
+      next[index] = next[targetIndex]!;
+      next[targetIndex] = temp;
+      return next;
+    });
+  }
+
+  function resetSelectedBridgeOrder() {
+    const ids = filteredBridgeRiskRows
+      .map((row) => row.id)
+      .filter((id) => selectedBridgeIds.includes(id));
+    setSelectedBridgeOrderIds(ids);
+    setBridgeBatchHint("已恢复当前筛选顺序作为批量推送顺序。");
   }
 
   function openBridgeBatchPreview() {
@@ -2135,9 +2206,14 @@ export default function DashboardPage() {
                 >
                   <header>
                     <strong>批量推送预览（{selectedBridgeFocusBatch.length} 条）</strong>
-                    <button type="button" onClick={closeBridgeBatchPreview}>
-                      关闭
-                    </button>
+                    <div className="dashboard-bridge-preview-head-actions">
+                      <button type="button" onClick={resetSelectedBridgeOrder}>
+                        恢复筛选顺序
+                      </button>
+                      <button type="button" onClick={closeBridgeBatchPreview}>
+                        关闭
+                      </button>
+                    </div>
                   </header>
                   {firstSelectedBridgeFocus ? (
                     <div className="dashboard-bridge-preview-first">
@@ -2164,9 +2240,11 @@ export default function DashboardPage() {
                     </div>
                   ) : null}
                   <div className="dashboard-bridge-preview-list">
-                    {selectedBridgeFocusBatch.map((item, index) => (
+                    {selectedBridgeRows.map((row, index) => {
+                      const item = buildBridgeFocusFromRow(row).focusPayload;
+                      return (
                       <div
-                        key={`dashboard_preview_${item.nodeId}_${item.bridgePartnerLabel ?? "none"}_${index}`}
+                        key={`dashboard_preview_${row.id}_${index}`}
                         className="dashboard-bridge-preview-item"
                       >
                         <span>{index + 1}</span>
@@ -2175,8 +2253,25 @@ export default function DashboardPage() {
                           {item.bridgePartnerLabel ? ` ↔ ${item.bridgePartnerLabel}` : ""}
                         </strong>
                         <em>风险 {Math.round(item.risk * 100)}%</em>
+                        <div className="dashboard-bridge-preview-item-tools">
+                          <button
+                            type="button"
+                            onClick={() => moveSelectedBridgeOrder(row.id, "up")}
+                            disabled={index === 0}
+                          >
+                            上移
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveSelectedBridgeOrder(row.id, "down")}
+                            disabled={index === selectedBridgeRows.length - 1}
+                          >
+                            下移
+                          </button>
+                        </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   <div className="dashboard-bridge-preview-actions">
                     <button type="button" onClick={() => pushBridgeRowsToPath(selectedBridgeRows)}>

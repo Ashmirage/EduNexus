@@ -216,6 +216,7 @@ export function GraphDemo() {
   const [riskThresholdPercent, setRiskThresholdPercent] = useState(0);
   const [enableEdgeHeatmap, setEnableEdgeHeatmap] = useState(true);
   const [graphLensMode, setGraphLensMode] = useState<GraphLensMode>("full");
+  const [bridgeLensCrossDomainOnly, setBridgeLensCrossDomainOnly] = useState(false);
   const [pathPushHint, setPathPushHint] = useState("");
 
   const loadGraph = useCallback(async () => {
@@ -705,12 +706,19 @@ export function GraphDemo() {
     () => new Map(riskBridgeSuggestions.map((item) => [item.id, item])),
     [riskBridgeSuggestions]
   );
+  const bridgeLensSuggestionPool = useMemo(
+    () =>
+      bridgeLensCrossDomainOnly
+        ? riskBridgeSuggestions.filter((item) => item.source.domain !== item.target.domain)
+        : riskBridgeSuggestions,
+    [bridgeLensCrossDomainOnly, riskBridgeSuggestions]
+  );
   const selectedBridgeSuggestion = useMemo(() => {
     if (selectedBridgeId) {
-      return riskBridgeSuggestions.find((item) => item.id === selectedBridgeId) ?? null;
+      return bridgeLensSuggestionPool.find((item) => item.id === selectedBridgeId) ?? null;
     }
-    return riskBridgeSuggestions[0] ?? null;
-  }, [riskBridgeSuggestions, selectedBridgeId]);
+    return bridgeLensSuggestionPool[0] ?? null;
+  }, [bridgeLensSuggestionPool, selectedBridgeId]);
 
   const bridgeLensNodeIds = useMemo(() => {
     if (graphLensMode !== "bridge_focus" || !selectedBridgeSuggestion) {
@@ -888,6 +896,17 @@ export function GraphDemo() {
       setActiveNodeId(selectedBridgeSuggestion.primary.id);
     }
   }, [activeNodeId, bridgeLensNodeIds, graphLensMode, selectedBridgeSuggestion]);
+
+  useEffect(() => {
+    if (graphLensMode !== "bridge_focus") {
+      return;
+    }
+    if (bridgeLensSuggestionPool.length > 0) {
+      return;
+    }
+    setGraphLensMode("full");
+    setPathPushHint("当前没有满足镜头条件的关系链，已回退到全局图。");
+  }, [bridgeLensSuggestionPool.length, graphLensMode]);
 
   const handlePushActiveNodeToPath = useCallback(() => {
     if (!activeNode) {
@@ -1093,6 +1112,14 @@ export function GraphDemo() {
             />
             关系热力图层
           </label>
+          <label className="graph-control-toggle">
+            <input
+              type="checkbox"
+              checked={bridgeLensCrossDomainOnly}
+              onChange={(event) => setBridgeLensCrossDomainOnly(event.target.checked)}
+            />
+            聚焦镜头仅跨域关系链
+          </label>
           <label className="graph-control-slider">
             风险阈值 {riskThresholdPercent}%
             <input
@@ -1116,9 +1143,9 @@ export function GraphDemo() {
               type="button"
               className={graphLensMode === "bridge_focus" ? "active" : ""}
               onClick={() => setGraphLensMode("bridge_focus")}
-              disabled={!selectedBridgeSuggestion}
+              disabled={bridgeLensSuggestionPool.length === 0}
             >
-              关系链聚焦
+              关系链聚焦 ({bridgeLensSuggestionPool.length})
             </button>
           </div>
           <button
@@ -1131,6 +1158,7 @@ export function GraphDemo() {
               setDomainFilter("all");
               setSelectedBridgeId("");
               setGraphLensMode("full");
+              setBridgeLensCrossDomainOnly(false);
             }}
           >
             重置图谱筛选
@@ -1254,7 +1282,9 @@ export function GraphDemo() {
                     孤立节点 {canvasIsolatedCount} / {canvasPlacements.length}
                   </span>
                   {graphLensMode === "bridge_focus" ? (
-                    <span className="graph-legend-item neutral">关系链聚焦镜头</span>
+                    <span className="graph-legend-item neutral">
+                      关系链聚焦镜头{bridgeLensCrossDomainOnly ? " · 跨域优先" : ""}
+                    </span>
                   ) : null}
                 </div>
               </>

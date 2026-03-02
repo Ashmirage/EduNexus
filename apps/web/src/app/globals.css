@@ -687,6 +687,12 @@ html[data-theme="aurora"] .dashboard-bridge-preview-actions button {
   color: #4f719f;
 }
 
+html[data-theme="aurora"] .dashboard-bridge-preview-item-tools button {
+  border-color: rgba(118, 154, 216, 0.46);
+  background: rgba(255, 255, 255, 0.9);
+  color: #4f719f;
+}
+
 html[data-theme="aurora"] .dashboard-bridge-preview-first {
   border-color: rgba(118, 154, 216, 0.36);
   background: rgba(255, 255, 255, 0.88);
@@ -981,6 +987,12 @@ html[data-theme="aurora"] .headline-badge {
   color: #d9efff;
 }
 
+.dashboard-bridge-preview-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .dashboard-bridge-preview-modal header button {
   border: 1px solid rgba(97, 132, 178, 0.42);
   border-radius: 8px;
@@ -1065,6 +1077,28 @@ html[data-theme="aurora"] .headline-badge {
   font-style: normal;
   font-size: 11px;
   color: #9fc7ee;
+}
+
+.dashboard-bridge-preview-item-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dashboard-bridge-preview-item-tools button {
+  border: 1px solid rgba(97, 132, 178, 0.4);
+  border-radius: 7px;
+  background: rgba(10, 16, 27, 0.58);
+  color: #d8efff;
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 7px;
+  cursor: pointer;
+}
+
+.dashboard-bridge-preview-item-tools button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .dashboard-bridge-preview-actions {
@@ -6105,6 +6139,12 @@ html[data-theme="aurora"] .config-diff-values em {
   text-align: center;
 }
 
+.workspace-focus-queue-tip {
+  margin: 0;
+  font-size: 11px;
+  color: #8fb6de;
+}
+
 .workspace-focus-auto-apply {
   display: inline-flex;
   align-items: center;
@@ -6671,6 +6711,10 @@ html[data-theme="aurora"] .workspace-focus-queue-nav button {
 }
 
 html[data-theme="aurora"] .workspace-focus-queue-nav span {
+  color: #5c7fad;
+}
+
+html[data-theme="aurora"] .workspace-focus-queue-tip {
   color: #5c7fad;
 }
 
