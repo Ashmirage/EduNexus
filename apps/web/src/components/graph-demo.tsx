@@ -102,6 +102,8 @@ type BridgeReplayNodeStat = {
   trendDelta: number;
 };
 
+type GraphLensMode = "full" | "bridge_focus";
+
 function resolveRiskTone(risk: number) {
   if (risk >= 0.65) {
     return "high";
@@ -213,6 +215,7 @@ export function GraphDemo() {
   const [bridgeReplayNodeFilter, setBridgeReplayNodeFilter] = useState("all");
   const [riskThresholdPercent, setRiskThresholdPercent] = useState(0);
   const [enableEdgeHeatmap, setEnableEdgeHeatmap] = useState(true);
+  const [graphLensMode, setGraphLensMode] = useState<GraphLensMode>("full");
   const [pathPushHint, setPathPushHint] = useState("");
 
   const loadGraph = useCallback(async () => {
@@ -689,13 +692,6 @@ export function GraphDemo() {
     return total / filteredNodes.length;
   }, [filteredNodes]);
 
-  const isolatedCount = useMemo(() => {
-    if (placements.length === 0) {
-      return 0;
-    }
-    return placements.filter((node) => node.degree === 0).length;
-  }, [placements]);
-
   const activeTimeline = graphHistory[0] ?? null;
   const previousTimeline = graphHistory[1] ?? null;
   const timelineDelta = useMemo(() => {
@@ -709,6 +705,66 @@ export function GraphDemo() {
     () => new Map(riskBridgeSuggestions.map((item) => [item.id, item])),
     [riskBridgeSuggestions]
   );
+  const selectedBridgeSuggestion = useMemo(() => {
+    if (selectedBridgeId) {
+      return riskBridgeSuggestions.find((item) => item.id === selectedBridgeId) ?? null;
+    }
+    return riskBridgeSuggestions[0] ?? null;
+  }, [riskBridgeSuggestions, selectedBridgeId]);
+
+  const bridgeLensNodeIds = useMemo(() => {
+    if (graphLensMode !== "bridge_focus" || !selectedBridgeSuggestion) {
+      return new Set(filteredNodes.map((item) => item.id));
+    }
+    const nodeIds = new Set<string>([
+      selectedBridgeSuggestion.source.id,
+      selectedBridgeSuggestion.target.id
+    ]);
+    for (const edge of filteredEdges) {
+      if (nodeIds.has(edge.source)) {
+        nodeIds.add(edge.target);
+      }
+      if (nodeIds.has(edge.target)) {
+        nodeIds.add(edge.source);
+      }
+    }
+    return nodeIds;
+  }, [filteredEdges, filteredNodes, graphLensMode, selectedBridgeSuggestion]);
+
+  const canvasPlacements = useMemo(() => {
+    if (graphLensMode !== "bridge_focus") {
+      return placements;
+    }
+    return placements.filter((item) => bridgeLensNodeIds.has(item.id));
+  }, [bridgeLensNodeIds, graphLensMode, placements]);
+
+  const canvasNodeIds = useMemo(
+    () => new Set(canvasPlacements.map((item) => item.id)),
+    [canvasPlacements]
+  );
+
+  const canvasEdges = useMemo(
+    () =>
+      filteredEdges.filter(
+        (edge) => canvasNodeIds.has(edge.source) && canvasNodeIds.has(edge.target)
+      ),
+    [canvasNodeIds, filteredEdges]
+  );
+
+  const canvasIsolatedCount = useMemo(() => {
+    if (canvasPlacements.length === 0) {
+      return 0;
+    }
+    const degreeMap = new Map<string, number>();
+    for (const node of canvasPlacements) {
+      degreeMap.set(node.id, 0);
+    }
+    for (const edge of canvasEdges) {
+      degreeMap.set(edge.source, (degreeMap.get(edge.source) ?? 0) + 1);
+      degreeMap.set(edge.target, (degreeMap.get(edge.target) ?? 0) + 1);
+    }
+    return Array.from(degreeMap.values()).filter((value) => value === 0).length;
+  }, [canvasEdges, canvasPlacements]);
 
   const replayTargetBridgeId = useMemo(() => {
     if (selectedBridgeId) {
@@ -823,6 +879,15 @@ export function GraphDemo() {
       setBridgeReplayNodeFilter("all");
     }
   }, [bridgeReplayNodeFilter, bridgeReplayNodeOptions]);
+
+  useEffect(() => {
+    if (graphLensMode !== "bridge_focus" || !selectedBridgeSuggestion) {
+      return;
+    }
+    if (!activeNodeId || !bridgeLensNodeIds.has(activeNodeId)) {
+      setActiveNodeId(selectedBridgeSuggestion.primary.id);
+    }
+  }, [activeNodeId, bridgeLensNodeIds, graphLensMode, selectedBridgeSuggestion]);
 
   const handlePushActiveNodeToPath = useCallback(() => {
     if (!activeNode) {
@@ -1039,6 +1104,23 @@ export function GraphDemo() {
               onChange={(event) => setRiskThresholdPercent(Number(event.target.value))}
             />
           </label>
+          <div className="graph-control-lens">
+            <button
+              type="button"
+              className={graphLensMode === "full" ? "active" : ""}
+              onClick={() => setGraphLensMode("full")}
+            >
+              全局图
+            </button>
+            <button
+              type="button"
+              className={graphLensMode === "bridge_focus" ? "active" : ""}
+              onClick={() => setGraphLensMode("bridge_focus")}
+              disabled={!selectedBridgeSuggestion}
+            >
+              关系链聚焦
+            </button>
+          </div>
           <button
             type="button"
             className="graph-control-reset"
@@ -1048,6 +1130,7 @@ export function GraphDemo() {
               setNodeKeyword("");
               setDomainFilter("all");
               setSelectedBridgeId("");
+              setGraphLensMode("full");
             }}
           >
             重置图谱筛选
@@ -1062,12 +1145,13 @@ export function GraphDemo() {
             <header className="graph-canvas-head">
               <strong>知识网络画布</strong>
               <span>
-                节点 {filteredNodes.length} · 关系 {filteredEdges.length} · 平均掌握度{" "}
+                视图节点 {canvasPlacements.length}/{filteredNodes.length} · 视图关系{" "}
+                {canvasEdges.length}/{filteredEdges.length} · 平均掌握度{" "}
                 {toPercent(averageMastery)}
               </span>
             </header>
 
-            {placements.length === 0 ? (
+            {canvasPlacements.length === 0 ? (
               <p className="graph-empty-hint">当前筛选条件下没有节点，尝试清空关键词或切换域。</p>
             ) : (
               <>
@@ -1090,7 +1174,7 @@ export function GraphDemo() {
                     height={GRAPH_CANVAS_HEIGHT}
                     fill="url(#graphGlow)"
                   />
-                  {filteredEdges.map((edge, index) => {
+                  {canvasEdges.map((edge, index) => {
                     const source = placementMap.get(edge.source);
                     const target = placementMap.get(edge.target);
                     if (!source || !target) {
@@ -1127,7 +1211,7 @@ export function GraphDemo() {
                       />
                     );
                   })}
-                  {placements.map((node) => {
+                  {canvasPlacements.map((node) => {
                     const tone = resolveRiskTone(node.risk);
                     const selected = activeNode?.id === node.id;
                     const related = connectedNodeIds.has(node.id);
@@ -1167,8 +1251,11 @@ export function GraphDemo() {
                     <span className="graph-legend-item heatmap">热力边已开启</span>
                   ) : null}
                   <span className="graph-legend-item neutral">
-                    孤立节点 {isolatedCount} / {placements.length}
+                    孤立节点 {canvasIsolatedCount} / {canvasPlacements.length}
                   </span>
+                  {graphLensMode === "bridge_focus" ? (
+                    <span className="graph-legend-item neutral">关系链聚焦镜头</span>
+                  ) : null}
                 </div>
               </>
             )}
