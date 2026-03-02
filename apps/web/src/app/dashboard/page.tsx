@@ -602,6 +602,7 @@ export default function DashboardPage() {
     useState<BridgeRelationMode>("all");
   const [selectedBridgeIds, setSelectedBridgeIds] = useState<string[]>([]);
   const [bridgeBatchHint, setBridgeBatchHint] = useState("");
+  const [isBridgeBatchPreviewOpen, setIsBridgeBatchPreviewOpen] = useState(false);
 
   const refreshBridgeRiskRows = useCallback(async () => {
     try {
@@ -924,6 +925,11 @@ export default function DashboardPage() {
     const selectedSet = new Set(selectedBridgeIds);
     return filteredBridgeRiskRows.filter((row) => selectedSet.has(row.id));
   }, [filteredBridgeRiskRows, selectedBridgeIds]);
+  const selectedBridgeFocusBatch = useMemo(
+    () => buildBridgeFocusBatchFromRows(selectedBridgeRows),
+    [selectedBridgeRows]
+  );
+  const firstSelectedBridgeFocus = selectedBridgeFocusBatch[0] ?? null;
 
   useEffect(() => {
     if (activityNodeFilter === "all") {
@@ -950,6 +956,27 @@ export default function DashboardPage() {
     const validIds = new Set(filteredBridgeRiskRows.map((row) => row.id));
     setSelectedBridgeIds((prev) => prev.filter((id) => validIds.has(id)));
   }, [filteredBridgeRiskRows, selectedBridgeIds.length]);
+
+  useEffect(() => {
+    if (selectedBridgeRows.length === 0 && isBridgeBatchPreviewOpen) {
+      setIsBridgeBatchPreviewOpen(false);
+    }
+  }, [isBridgeBatchPreviewOpen, selectedBridgeRows.length]);
+
+  useEffect(() => {
+    if (!isBridgeBatchPreviewOpen) {
+      return;
+    }
+    const handleEscClose = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsBridgeBatchPreviewOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleEscClose);
+    return () => {
+      window.removeEventListener("keydown", handleEscClose);
+    };
+  }, [isBridgeBatchPreviewOpen]);
 
   useEffect(() => {
     if (!selectedActivityId) {
@@ -1039,7 +1066,19 @@ export default function DashboardPage() {
 
   function clearBridgeSelection() {
     setSelectedBridgeIds([]);
+    setIsBridgeBatchPreviewOpen(false);
     setBridgeBatchHint("已清空关系链批量选择。");
+  }
+
+  function openBridgeBatchPreview() {
+    if (selectedBridgeRows.length === 0) {
+      return;
+    }
+    setIsBridgeBatchPreviewOpen(true);
+  }
+
+  function closeBridgeBatchPreview() {
+    setIsBridgeBatchPreviewOpen(false);
   }
 
   function appendBatchBridgeActivities(
@@ -1066,20 +1105,21 @@ export default function DashboardPage() {
     }
   }
 
-  function pushSelectedBridgesToPath() {
-    if (selectedBridgeRows.length === 0) {
+  function pushBridgeRowsToPath(rows: DashboardBridgeRiskRow[]) {
+    if (rows.length === 0) {
       return;
     }
-    const batchFocuses = buildBridgeFocusBatchFromRows(selectedBridgeRows);
+    const batchFocuses = buildBridgeFocusBatchFromRows(rows);
     writePathFocusBatchToStorage(batchFocuses, (key, value) =>
       window.localStorage.setItem(key, value)
     );
-    const first = selectedBridgeRows[0]!;
+    const first = rows[0]!;
     const bridgeFocus = buildBridgeFocusFromRow(first);
     writePathFocusToStorage(bridgeFocus.focusPayload, (key, value) =>
       window.localStorage.setItem(key, value)
     );
-    appendBatchBridgeActivities(selectedBridgeRows, "推送路径");
+    appendBatchBridgeActivities(rows, "推送路径");
+    setIsBridgeBatchPreviewOpen(false);
     setBridgeBatchHint(`已批量推送 ${batchFocuses.length} 条关系链到路径。`);
     const params = new URLSearchParams({
       from: "graph_bridge",
@@ -1091,25 +1131,34 @@ export default function DashboardPage() {
     router.push(`/path?${params.toString()}`);
   }
 
-  function pushSelectedBridgesToWorkspace() {
-    if (selectedBridgeRows.length === 0) {
+  function pushSelectedBridgesToPath() {
+    pushBridgeRowsToPath(selectedBridgeRows);
+  }
+
+  function pushBridgeRowsToWorkspace(rows: DashboardBridgeRiskRow[]) {
+    if (rows.length === 0) {
       return;
     }
-    const batchFocuses = buildBridgeFocusBatchFromRows(selectedBridgeRows);
+    const batchFocuses = buildBridgeFocusBatchFromRows(rows);
     writeWorkspaceFocusBatchToStorage(batchFocuses, (key, value) =>
       window.localStorage.setItem(key, value)
     );
-    const first = selectedBridgeRows[0]!;
+    const first = rows[0]!;
     const bridgeFocus = buildBridgeFocusFromRow(first);
     writeWorkspaceFocusToStorage(bridgeFocus.focusPayload, (key, value) =>
       window.localStorage.setItem(key, value)
     );
-    appendBatchBridgeActivities(selectedBridgeRows, "推送工作区");
+    appendBatchBridgeActivities(rows, "推送工作区");
+    setIsBridgeBatchPreviewOpen(false);
     setBridgeBatchHint(`已批量推送 ${batchFocuses.length} 条关系链到工作区。`);
     const params = new URLSearchParams({
       batchCount: String(batchFocuses.length)
     });
     router.push(`/workspace?${params.toString()}`);
+  }
+
+  function pushSelectedBridgesToWorkspace() {
+    pushBridgeRowsToWorkspace(selectedBridgeRows);
   }
 
   const activeHoverIndex =
@@ -2034,6 +2083,13 @@ export default function DashboardPage() {
               </button>
               <button
                 type="button"
+                onClick={openBridgeBatchPreview}
+                disabled={selectedBridgeRows.length === 0}
+              >
+                批量预览
+              </button>
+              <button
+                type="button"
                 onClick={pushSelectedBridgesToPath}
                 disabled={selectedBridgeRows.length === 0}
               >
@@ -2048,6 +2104,69 @@ export default function DashboardPage() {
               </button>
             </div>
             {bridgeBatchHint ? <p className="dashboard-bridge-batch-hint">{bridgeBatchHint}</p> : null}
+            {isBridgeBatchPreviewOpen && selectedBridgeFocusBatch.length > 0 ? (
+              <div
+                className="dashboard-bridge-preview-mask"
+                role="presentation"
+                onClick={closeBridgeBatchPreview}
+              >
+                <div
+                  className="dashboard-bridge-preview-modal"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="关系链批量预览"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <header>
+                    <strong>批量推送预览（{selectedBridgeFocusBatch.length} 条）</strong>
+                    <button type="button" onClick={closeBridgeBatchPreview}>
+                      关闭
+                    </button>
+                  </header>
+                  {firstSelectedBridgeFocus ? (
+                    <div className="dashboard-bridge-preview-first">
+                      <span>首条焦点</span>
+                      <strong>
+                        {firstSelectedBridgeFocus.nodeLabel}
+                        {firstSelectedBridgeFocus.bridgePartnerLabel
+                          ? ` ↔ ${firstSelectedBridgeFocus.bridgePartnerLabel}`
+                          : ""}
+                      </strong>
+                      <em>
+                        风险 {Math.round(firstSelectedBridgeFocus.risk * 100)}% · 掌握度{" "}
+                        {Math.round(firstSelectedBridgeFocus.mastery * 100)}%
+                      </em>
+                    </div>
+                  ) : null}
+                  <div className="dashboard-bridge-preview-list">
+                    {selectedBridgeFocusBatch.map((item, index) => (
+                      <div
+                        key={`dashboard_preview_${item.nodeId}_${item.bridgePartnerLabel ?? "none"}_${index}`}
+                        className="dashboard-bridge-preview-item"
+                      >
+                        <span>{index + 1}</span>
+                        <strong>
+                          {item.nodeLabel}
+                          {item.bridgePartnerLabel ? ` ↔ ${item.bridgePartnerLabel}` : ""}
+                        </strong>
+                        <em>风险 {Math.round(item.risk * 100)}%</em>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="dashboard-bridge-preview-actions">
+                    <button type="button" onClick={() => pushBridgeRowsToPath(selectedBridgeRows)}>
+                      确认推送路径
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => pushBridgeRowsToWorkspace(selectedBridgeRows)}
+                    >
+                      确认推送工作区
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
             {filteredBridgeRiskRows.length > 0 ? (
               filteredBridgeRiskRows.map((row) => (
                 <div

@@ -503,6 +503,7 @@ export function WorkspaceDemo() {
   const [graphFocusQueue, setGraphFocusQueue] = useState<PathFocusPayload[]>([]);
   const [activeGraphFocusQueueKey, setActiveGraphFocusQueueKey] = useState("");
   const [graphFocusHint, setGraphFocusHint] = useState("");
+  const [autoApplyGraphFocusPrompt, setAutoApplyGraphFocusPrompt] = useState(false);
   const streamReplayTimerRef = useRef<number | null>(null);
   const replayStateRef = useRef<ReplayState | null>(null);
   const replayPausedRef = useRef(false);
@@ -883,10 +884,19 @@ export function WorkspaceDemo() {
   function switchGraphFocusFromQueue(target: PathFocusPayload, index: number) {
     setGraphFocus(target);
     setActiveGraphFocusQueueKey(buildFocusQueueKey(target));
+    if (autoApplyGraphFocusPrompt) {
+      setUserInput(buildWorkspacePromptFromFocus(target));
+      setGraphFocusHint(
+        `已切换批量关系链焦点：第 ${index + 1}/${graphFocusQueue.length} 条 · ${
+          target.nodeLabel
+        }，并自动应用提示词。`
+      );
+      return;
+    }
     setGraphFocusHint(
       `已切换批量关系链焦点：第 ${index + 1}/${graphFocusQueue.length} 条 · ${
         target.nodeLabel
-      }`
+      }，可手动点击应用提示词。`
     );
   }
 
@@ -1777,6 +1787,14 @@ export function WorkspaceDemo() {
             {graphFocusQueue.length > 1 ? (
               <div className="workspace-focus-queue">
                 <span>批量关系链队列（{graphFocusQueue.length}）</span>
+                <label className="workspace-focus-auto-apply">
+                  <input
+                    type="checkbox"
+                    checked={autoApplyGraphFocusPrompt}
+                    onChange={(event) => setAutoApplyGraphFocusPrompt(event.target.checked)}
+                  />
+                  <span>切换队列时自动应用提示词</span>
+                </label>
                 <div className="workspace-focus-queue-list">
                   {graphFocusQueue.map((item, index) => {
                     const queueKey = buildFocusQueueKey(item);

@@ -663,6 +663,53 @@ html[data-theme="aurora"] .dashboard-bridge-batch button {
   color: #4f719f;
 }
 
+html[data-theme="aurora"] .dashboard-bridge-preview-mask {
+  background: rgba(25, 44, 71, 0.42);
+}
+
+html[data-theme="aurora"] .dashboard-bridge-preview-modal {
+  border-color: rgba(118, 154, 216, 0.42);
+  background:
+    radial-gradient(circle at 84% 8%, rgba(122, 187, 255, 0.2), transparent 44%),
+    rgba(255, 255, 255, 0.92);
+}
+
+html[data-theme="aurora"] .dashboard-bridge-preview-modal header strong,
+html[data-theme="aurora"] .dashboard-bridge-preview-first strong,
+html[data-theme="aurora"] .dashboard-bridge-preview-item strong {
+  color: #2f5f93;
+}
+
+html[data-theme="aurora"] .dashboard-bridge-preview-modal header button,
+html[data-theme="aurora"] .dashboard-bridge-preview-actions button {
+  border-color: rgba(118, 154, 216, 0.46);
+  background: rgba(255, 255, 255, 0.9);
+  color: #4f719f;
+}
+
+html[data-theme="aurora"] .dashboard-bridge-preview-first {
+  border-color: rgba(118, 154, 216, 0.36);
+  background: rgba(255, 255, 255, 0.88);
+}
+
+html[data-theme="aurora"] .dashboard-bridge-preview-first span,
+html[data-theme="aurora"] .dashboard-bridge-preview-first em,
+html[data-theme="aurora"] .dashboard-bridge-preview-item span,
+html[data-theme="aurora"] .dashboard-bridge-preview-item em {
+  color: #5c7fad;
+}
+
+html[data-theme="aurora"] .dashboard-bridge-preview-item {
+  border-color: rgba(118, 154, 216, 0.36);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+html[data-theme="aurora"] .dashboard-bridge-preview-actions button:first-child {
+  border-color: rgba(84, 155, 255, 0.54);
+  background: rgba(122, 187, 255, 0.24);
+  color: #285887;
+}
+
 html[data-theme="aurora"] .dashboard-bridge-select {
   color: #5c7fad;
 }
@@ -890,6 +937,135 @@ html[data-theme="aurora"] .headline-badge {
   margin: 0;
   font-size: 11px;
   color: #9fc7ee;
+}
+
+.dashboard-bridge-preview-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 36;
+  background: rgba(4, 8, 14, 0.68);
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.dashboard-bridge-preview-modal {
+  width: min(560px, 100%);
+  border: 1px solid rgba(97, 132, 178, 0.4);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 84% 8%, rgba(97, 199, 255, 0.12), transparent 44%),
+    rgba(6, 10, 18, 0.96);
+  box-shadow: 0 22px 48px rgba(2, 5, 10, 0.58);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard-bridge-preview-modal header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dashboard-bridge-preview-modal header strong {
+  font-size: 13px;
+  color: #d9efff;
+}
+
+.dashboard-bridge-preview-modal header button {
+  border: 1px solid rgba(97, 132, 178, 0.42);
+  border-radius: 8px;
+  background: rgba(10, 16, 27, 0.66);
+  color: #d8efff;
+  font: inherit;
+  font-size: 11px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.dashboard-bridge-preview-first {
+  border: 1px solid rgba(97, 199, 255, 0.32);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: rgba(8, 14, 24, 0.7);
+  display: grid;
+  gap: 4px;
+}
+
+.dashboard-bridge-preview-first span {
+  font-size: 11px;
+  color: #9fc7ee;
+}
+
+.dashboard-bridge-preview-first strong {
+  font-size: 13px;
+  color: #dbf1ff;
+}
+
+.dashboard-bridge-preview-first em {
+  font-style: normal;
+  font-size: 11px;
+  color: #9fc7ee;
+}
+
+.dashboard-bridge-preview-list {
+  max-height: 260px;
+  overflow-y: auto;
+  display: grid;
+  gap: 6px;
+  padding-right: 2px;
+}
+
+.dashboard-bridge-preview-item {
+  border: 1px solid rgba(97, 132, 178, 0.3);
+  border-radius: 10px;
+  padding: 7px 9px;
+  background: rgba(10, 16, 27, 0.56);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-bridge-preview-item span {
+  font-size: 11px;
+  color: #9fc7ee;
+}
+
+.dashboard-bridge-preview-item strong {
+  font-size: 12px;
+  color: #d9efff;
+}
+
+.dashboard-bridge-preview-item em {
+  font-style: normal;
+  font-size: 11px;
+  color: #9fc7ee;
+}
+
+.dashboard-bridge-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dashboard-bridge-preview-actions button {
+  border: 1px solid rgba(97, 132, 178, 0.42);
+  border-radius: 9px;
+  background: rgba(10, 16, 27, 0.62);
+  color: #d8efff;
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.dashboard-bridge-preview-actions button:first-child {
+  border-color: rgba(97, 199, 255, 0.54);
+  background: rgba(97, 199, 255, 0.16);
 }
 
 .dashboard-bridge-item {
@@ -5473,6 +5649,37 @@ html[data-theme="aurora"] .config-diff-values em {
   font-size: 12px;
 }
 
+.path-focus-queue-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.path-focus-queue-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.path-focus-queue-nav button {
+  border: 1px solid rgba(97, 132, 178, 0.42);
+  border-radius: 999px;
+  background: rgba(10, 16, 27, 0.62);
+  color: #d8efff;
+  font: inherit;
+  font-size: 11px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.path-focus-queue-nav span {
+  font-size: 11px;
+  color: #9fc7ee;
+  min-width: 44px;
+  text-align: center;
+}
+
 .path-focus-queue-list {
   display: flex;
   flex-wrap: wrap;
@@ -5811,6 +6018,18 @@ html[data-theme="aurora"] .config-diff-values em {
 .workspace-focus-queue > span {
   font-size: 11px;
   color: #9fc7ee;
+}
+
+.workspace-focus-auto-apply {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #9fc7ee;
+}
+
+.workspace-focus-auto-apply input[type="checkbox"] {
+  accent-color: #61c7ff;
 }
 
 .workspace-focus-queue-list {
@@ -6184,6 +6403,16 @@ html[data-theme="aurora"] .path-focus-queue strong {
   color: #2f5f93;
 }
 
+html[data-theme="aurora"] .path-focus-queue-nav button {
+  border-color: rgba(118, 154, 216, 0.46);
+  background: rgba(255, 255, 255, 0.88);
+  color: #4f719f;
+}
+
+html[data-theme="aurora"] .path-focus-queue-nav span {
+  color: #5c7fad;
+}
+
 html[data-theme="aurora"] .path-focus-queue-list button {
   border-color: rgba(118, 154, 216, 0.46);
   background: rgba(255, 255, 255, 0.88);
@@ -6335,6 +6564,10 @@ html[data-theme="aurora"] .workspace-focus-card p {
 }
 
 html[data-theme="aurora"] .workspace-focus-queue > span {
+  color: #5c7fad;
+}
+
+html[data-theme="aurora"] .workspace-focus-auto-apply {
   color: #5c7fad;
 }
 

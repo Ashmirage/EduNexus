@@ -8,6 +8,7 @@ import {
   buildPathGoalFromFocus,
   readPathFocusBatchFromStorage,
   readPathFocusFromStorage,
+  writeWorkspaceFocusBatchToStorage,
   writeWorkspaceFocusToStorage,
   type PathFocusPayload
 } from "@/lib/client/path-focus-bridge";
@@ -345,6 +346,17 @@ export function PathDemo() {
       bridgeTaskTemplate: focusPayload.bridgeTaskTemplate?.trim() ?? ""
     };
   }, [focusPayload]);
+  const activeFocusQueueIndex = useMemo(() => {
+    if (focusQueue.length === 0) {
+      return -1;
+    }
+    const activeKey =
+      activeFocusQueueKey || (focusPayload ? buildFocusQueueKey(focusPayload) : "");
+    if (!activeKey) {
+      return 0;
+    }
+    return focusQueue.findIndex((item) => buildFocusQueueKey(item) === activeKey);
+  }, [activeFocusQueueKey, focusPayload, focusQueue]);
 
   const focusTasks = useMemo(() => {
     if (!data || !focusPayload) {
@@ -552,6 +564,19 @@ export function PathDemo() {
     setBridgeExportHint("");
   }
 
+  function stepFocusQueue(offset: number) {
+    if (focusQueue.length < 2) {
+      return;
+    }
+    const baseIndex = activeFocusQueueIndex >= 0 ? activeFocusQueueIndex : 0;
+    const nextIndex = (baseIndex + offset + focusQueue.length) % focusQueue.length;
+    const next = focusQueue[nextIndex];
+    if (!next) {
+      return;
+    }
+    selectFocusFromQueue(next);
+  }
+
   function toggleBridgeChecklistItem(itemId: string) {
     setBridgeChecklist((prev) =>
       prev.map((item) => (item.id === itemId ? { ...item, done: !item.done } : item))
@@ -667,8 +692,23 @@ export function PathDemo() {
     writeWorkspaceFocusToStorage(focusPayload, (key, value) =>
       window.localStorage.setItem(key, value)
     );
+    if (focusQueue.length > 1) {
+      writeWorkspaceFocusBatchToStorage(focusQueue, (key, value) =>
+        window.localStorage.setItem(key, value)
+      );
+    }
     if (bridgeWorkspaceSessionId) {
-      const params = new URLSearchParams({ sessionId: bridgeWorkspaceSessionId });
+      const params = new URLSearchParams({
+        sessionId: bridgeWorkspaceSessionId,
+        ...(focusQueue.length > 1 ? { batchCount: String(focusQueue.length) } : {})
+      });
+      router.push(`/workspace?${params.toString()}`);
+      return;
+    }
+    if (focusQueue.length > 1) {
+      const params = new URLSearchParams({
+        batchCount: String(focusQueue.length)
+      });
       router.push(`/workspace?${params.toString()}`);
       return;
     }
@@ -823,7 +863,20 @@ export function PathDemo() {
           </p>
           {focusQueue.length > 1 ? (
             <div className="path-focus-queue">
-              <strong>批量关系链队列（{focusQueue.length}）</strong>
+              <div className="path-focus-queue-head">
+                <strong>批量关系链队列（{focusQueue.length}）</strong>
+                <div className="path-focus-queue-nav">
+                  <button type="button" onClick={() => stepFocusQueue(-1)}>
+                    上一条
+                  </button>
+                  <span>
+                    {Math.max(1, activeFocusQueueIndex + 1)}/{focusQueue.length}
+                  </span>
+                  <button type="button" onClick={() => stepFocusQueue(1)}>
+                    下一条
+                  </button>
+                </div>
+              </div>
               <div className="path-focus-queue-list">
                 {focusQueue.map((item, index) => {
                   const queueKey = buildFocusQueueKey(item);
