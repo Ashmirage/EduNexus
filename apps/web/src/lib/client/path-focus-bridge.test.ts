@@ -2,10 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   buildWorkspacePromptFromFocus,
   buildPathGoalFromFocus,
+  normalizePathFocusBatchPayload,
   normalizePathFocusPayload,
+  readPathFocusBatchFromStorage,
   readPathFocusFromStorage,
+  readWorkspaceFocusBatchFromStorage,
   readWorkspaceFocusFromStorage,
+  writePathFocusBatchToStorage,
   writePathFocusToStorage,
+  writeWorkspaceFocusBatchToStorage,
   writeWorkspaceFocusToStorage
 } from "@/lib/client/path-focus-bridge";
 
@@ -99,5 +104,67 @@ describe("path-focus-bridge", () => {
     expect(prompt).toContain("苏格拉底");
     const read = readWorkspaceFocusFromStorage((key) => storage.get(key) ?? null);
     expect(read?.nodeId).toBe("math_func");
+  });
+
+  it("normalizes focus batch payload with limit", () => {
+    const batch = normalizePathFocusBatchPayload(
+      [
+        {
+          nodeId: "n1",
+          nodeLabel: "函数",
+          domain: "math",
+          mastery: 0.4,
+          risk: 0.6,
+          relatedNodes: [],
+          at: "2026-02-28T00:00:00.000Z"
+        },
+        { bad: true },
+        {
+          nodeId: "n2",
+          nodeLabel: "数列",
+          domain: "math",
+          mastery: 0.5,
+          risk: 0.5,
+          relatedNodes: [],
+          at: "2026-02-28T00:00:00.000Z"
+        }
+      ],
+      1
+    );
+    expect(batch).toHaveLength(1);
+    expect(batch[0]?.nodeId).toBe("n1");
+  });
+
+  it("writes and reads path/workspace focus batch from storage adapters", () => {
+    const storage = new Map<string, string>();
+    const batch = [
+      {
+        nodeId: "math_func",
+        nodeLabel: "函数",
+        domain: "math",
+        mastery: 0.42,
+        risk: 0.58,
+        relatedNodes: ["数列"],
+        at: "2026-02-28T00:00:00.000Z"
+      },
+      {
+        nodeId: "math_seq",
+        nodeLabel: "数列",
+        domain: "math",
+        mastery: 0.45,
+        risk: 0.55,
+        relatedNodes: ["函数"],
+        at: "2026-02-28T00:00:00.000Z"
+      }
+    ];
+    writePathFocusBatchToStorage(batch, (key, value) => storage.set(key, value));
+    writeWorkspaceFocusBatchToStorage(batch, (key, value) => storage.set(key, value));
+    const readPathBatch = readPathFocusBatchFromStorage((key) => storage.get(key) ?? null);
+    const readWorkspaceBatch = readWorkspaceFocusBatchFromStorage(
+      (key) => storage.get(key) ?? null
+    );
+    expect(readPathBatch).toHaveLength(2);
+    expect(readWorkspaceBatch).toHaveLength(2);
+    expect(readWorkspaceBatch[1]?.nodeId).toBe("math_seq");
   });
 });

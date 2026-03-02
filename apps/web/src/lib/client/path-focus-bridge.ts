@@ -1,5 +1,7 @@
 export const PATH_FOCUS_STORAGE_KEY = "edunexus_graph_path_focus";
 export const WORKSPACE_FOCUS_STORAGE_KEY = "edunexus_graph_workspace_focus";
+export const PATH_FOCUS_BATCH_STORAGE_KEY = "edunexus_graph_path_focus_batch";
+export const WORKSPACE_FOCUS_BATCH_STORAGE_KEY = "edunexus_graph_workspace_focus_batch";
 
 export type PathFocusSource = "graph" | "graph_bridge" | "dashboard" | "workspace" | "unknown";
 
@@ -15,6 +17,8 @@ export type PathFocusPayload = {
   bridgePartnerLabel?: string;
   bridgeTaskTemplate?: string;
 };
+
+const DEFAULT_FOCUS_BATCH_LIMIT = 12;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -70,6 +74,16 @@ export function normalizePathFocusPayload(input: unknown): PathFocusPayload | nu
   };
 }
 
+export function normalizePathFocusBatchPayload(input: unknown, limit = DEFAULT_FOCUS_BATCH_LIMIT) {
+  if (!Array.isArray(input)) {
+    return [];
+  }
+  return input
+    .map((item) => normalizePathFocusPayload(item))
+    .filter((item): item is PathFocusPayload => item !== null)
+    .slice(0, Math.max(1, limit));
+}
+
 export function buildPathGoalFromFocus(focus: PathFocusPayload) {
   if (
     focus.focusSource === "graph_bridge" &&
@@ -113,6 +127,28 @@ export function readPathFocusFromStorage(
   }
 }
 
+export function writePathFocusBatchToStorage(
+  focuses: PathFocusPayload[],
+  writeItem: (key: string, value: string) => void
+) {
+  writeItem(PATH_FOCUS_BATCH_STORAGE_KEY, JSON.stringify(focuses));
+}
+
+export function readPathFocusBatchFromStorage(
+  readItem: (key: string) => string | null,
+  limit = DEFAULT_FOCUS_BATCH_LIMIT
+) {
+  const raw = readItem(PATH_FOCUS_BATCH_STORAGE_KEY);
+  if (!raw) {
+    return [];
+  }
+  try {
+    return normalizePathFocusBatchPayload(JSON.parse(raw) as unknown, limit);
+  } catch {
+    return [];
+  }
+}
+
 export function writeWorkspaceFocusToStorage(
   focus: PathFocusPayload,
   writeItem: (key: string, value: string) => void
@@ -131,5 +167,27 @@ export function readWorkspaceFocusFromStorage(
     return normalizePathFocusPayload(JSON.parse(raw) as unknown);
   } catch {
     return null;
+  }
+}
+
+export function writeWorkspaceFocusBatchToStorage(
+  focuses: PathFocusPayload[],
+  writeItem: (key: string, value: string) => void
+) {
+  writeItem(WORKSPACE_FOCUS_BATCH_STORAGE_KEY, JSON.stringify(focuses));
+}
+
+export function readWorkspaceFocusBatchFromStorage(
+  readItem: (key: string) => string | null,
+  limit = DEFAULT_FOCUS_BATCH_LIMIT
+) {
+  const raw = readItem(WORKSPACE_FOCUS_BATCH_STORAGE_KEY);
+  if (!raw) {
+    return [];
+  }
+  try {
+    return normalizePathFocusBatchPayload(JSON.parse(raw) as unknown, limit);
+  } catch {
+    return [];
   }
 }

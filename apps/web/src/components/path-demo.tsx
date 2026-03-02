@@ -6,6 +6,7 @@ import { formatErrorMessage, requestJson } from "@/lib/client/api";
 import { pushGraphActivityEventToStorage } from "@/lib/client/graph-activity";
 import {
   buildPathGoalFromFocus,
+  readPathFocusBatchFromStorage,
   readPathFocusFromStorage,
   writeWorkspaceFocusToStorage,
   type PathFocusPayload
@@ -88,6 +89,19 @@ function formatFocusSourceLabel(source: PathFocusPayload["focusSource"]) {
   if (source === "dashboard") return "Dashboard 闭环事件";
   if (source === "workspace") return "工作区联动";
   return "未标注";
+}
+
+function buildFocusQueueKey(payload: Pick<PathFocusPayload, "nodeId" | "bridgePartnerLabel">) {
+  return `${payload.nodeId}__${payload.bridgePartnerLabel ?? ""}`;
+}
+
+function buildFocusHintText(payload: PathFocusPayload, batchCount: number) {
+  const bridgeHint = payload.bridgePartnerLabel ? `，桥接节点：${payload.bridgePartnerLabel}` : "";
+  return `已接收图谱焦点：${payload.nodeLabel}（风险 ${Math.round(
+    payload.risk * 100
+  )}%） · 来源：${formatFocusSourceLabel(payload.focusSource)}${bridgeHint}${
+    batchCount > 1 ? ` · 批量推送 ${batchCount} 条` : ""
+  }`;
 }
 
 function buildFallbackBridgeTemplate(nodeLabel: string, partnerLabel: string) {
@@ -218,6 +232,9 @@ export function PathDemo() {
   const searchParams = useSearchParams();
   const [goal, setGoal] = useState("两周内完成等差数列与函数基础复盘");
   const [focusPayload, setFocusPayload] = useState<PathFocusPayload | null>(null);
+  const [focusQueue, setFocusQueue] = useState<PathFocusPayload[]>([]);
+  const [activeFocusQueueKey, setActiveFocusQueueKey] = useState("");
+  const [incomingBatchCount, setIncomingBatchCount] = useState(0);
   const [focusHint, setFocusHint] = useState("");
   const [completedFocusTaskIds, setCompletedFocusTaskIds] = useState<string[]>([]);
   const [bridgeChecklist, setBridgeChecklist] = useState<BridgeChecklistItem[]>([]);
@@ -290,18 +307,25 @@ export function PathDemo() {
             })()
           : undefined)
     };
-    setFocusPayload(mergedPayload);
-    setGoal(buildPathGoalFromFocus(mergedPayload));
-    const bridgeHint = mergedPayload.bridgePartnerLabel
-      ? `，桥接节点：${mergedPayload.bridgePartnerLabel}`
-      : "";
-    setFocusHint(
-      `已接收图谱焦点：${mergedPayload.nodeLabel}（风险 ${Math.round(
-        mergedPayload.risk * 100
-      )}%） · 来源：${formatFocusSourceLabel(mergedPayload.focusSource)}${bridgeHint}${
-        Number.isFinite(batchCount) && batchCount > 1 ? ` · 批量推送 ${batchCount} 条` : ""
-      }`
+    const safeBatchCount = Number.isFinite(batchCount) && batchCount > 1 ? batchCount : 0;
+    const batchFocuses =
+      safeBatchCount > 0
+        ? readPathFocusBatchFromStorage((key) => window.localStorage.getItem(key), 12)
+        : [];
+    const activePayload =
+      batchFocuses.length > 0
+        ? batchFocuses.find(
+            (item) => buildFocusQueueKey(item) === buildFocusQueueKey(mergedPayload)
+          ) ?? batchFocuses[0]!
+        : mergedPayload;
+    setIncomingBatchCount(safeBatchCount);
+    setFocusQueue(batchFocuses);
+    setActiveFocusQueueKey(
+      batchFocuses.length > 0 ? buildFocusQueueKey(activePayload) : ""
     );
+    setFocusPayload(activePayload);
+    setGoal(buildPathGoalFromFocus(activePayload));
+    setFocusHint(buildFocusHintText(activePayload, batchFocuses.length || safeBatchCount));
     prefilledRef.current = true;
   }, [searchParams]);
 
@@ -520,6 +544,14 @@ export function PathDemo() {
     setFocusHint("已将关系链桥接模板应用到学习目标。");
   }
 
+  function selectFocusFromQueue(payload: PathFocusPayload) {
+    setFocusPayload(payload);
+    setActiveFocusQueueKey(buildFocusQueueKey(payload));
+    setGoal(buildPathGoalFromFocus(payload));
+    setFocusHint(buildFocusHintText(payload, focusQueue.length || incomingBatchCount));
+    setBridgeExportHint("");
+  }
+
   function toggleBridgeChecklistItem(itemId: string) {
     setBridgeChecklist((prev) =>
       prev.map((item) => (item.id === itemId ? { ...item, done: !item.done } : item))
@@ -732,6 +764,21 @@ export function PathDemo() {
             }
           : prev
       );
+      if (focusPayload) {
+        const currentKey = buildFocusQueueKey(focusPayload);
+        setFocusQueue((prev) =>
+          prev.map((item) =>
+            buildFocusQueueKey(item) === currentKey
+              ? {
+                  ...item,
+                  mastery: result.mastery,
+                  risk: result.risk,
+                  at: new Date().toISOString()
+                }
+              : item
+          )
+        );
+      }
       setFocusHint(
         `已回写图谱掌握度：${focusPayload.nodeLabel} -> ${Math.round(result.mastery * 100)}%（关联更新 ${result.updatedRelatedCount} 个）`
       );
@@ -774,6 +821,33 @@ export function PathDemo() {
             来源：{focusSummary.sourceText}
             {focusSummary.bridgeText ? ` · 桥接节点：${focusSummary.bridgeText}` : ""}
           </p>
+          {focusQueue.length > 1 ? (
+            <div className="path-focus-queue">
+              <strong>批量关系链队列（{focusQueue.length}）</strong>
+              <div className="path-focus-queue-list">
+                {focusQueue.map((item, index) => {
+                  const queueKey = buildFocusQueueKey(item);
+                  const active =
+                    activeFocusQueueKey === queueKey ||
+                    (focusPayload ? buildFocusQueueKey(focusPayload) === queueKey : false);
+                  return (
+                    <button
+                      type="button"
+                      key={`focus_queue_${queueKey}_${index}`}
+                      className={active ? "active" : ""}
+                      onClick={() => selectFocusFromQueue(item)}
+                    >
+                      <span>
+                        {index + 1}. {item.nodeLabel}
+                        {item.bridgePartnerLabel ? ` ↔ ${item.bridgePartnerLabel}` : ""}
+                      </span>
+                      <em>风险 {Math.round(item.risk * 100)}%</em>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
           <p>关联节点：{focusSummary.relatedText}</p>
           {focusSummary.bridgeTaskTemplate ? (
             <div className="path-bridge-template">

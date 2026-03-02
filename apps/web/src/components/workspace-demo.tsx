@@ -6,6 +6,7 @@ import { formatErrorMessage, readApiErrorMessage, requestJson } from "@/lib/clie
 import { pushGraphActivityEventToStorage } from "@/lib/client/graph-activity";
 import {
   buildWorkspacePromptFromFocus,
+  readWorkspaceFocusBatchFromStorage,
   readWorkspaceFocusFromStorage,
   type PathFocusPayload
 } from "@/lib/client/path-focus-bridge";
@@ -243,6 +244,10 @@ function formatClock(timestamp = Date.now()) {
   } catch {
     return String(timestamp);
   }
+}
+
+function buildFocusQueueKey(payload: Pick<PathFocusPayload, "nodeId" | "bridgePartnerLabel">) {
+  return `${payload.nodeId}__${payload.bridgePartnerLabel ?? ""}`;
 }
 
 function deriveStreamStageMap(
@@ -495,6 +500,8 @@ export function WorkspaceDemo() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [graphFocus, setGraphFocus] = useState<PathFocusPayload | null>(null);
+  const [graphFocusQueue, setGraphFocusQueue] = useState<PathFocusPayload[]>([]);
+  const [activeGraphFocusQueueKey, setActiveGraphFocusQueueKey] = useState("");
   const [graphFocusHint, setGraphFocusHint] = useState("");
   const streamReplayTimerRef = useRef<number | null>(null);
   const replayStateRef = useRef<ReplayState | null>(null);
@@ -612,25 +619,43 @@ export function WorkspaceDemo() {
       return;
     }
     const focus = readWorkspaceFocusFromStorage((key) => window.localStorage.getItem(key));
-    if (!focus) {
+    const batchFocuses =
+      Number.isFinite(queryBatchCount) && queryBatchCount > 1
+        ? readWorkspaceFocusBatchFromStorage((key) => window.localStorage.getItem(key), 12)
+        : [];
+    if (!focus && batchFocuses.length === 0) {
       return;
     }
-    setGraphFocus(focus);
+    const activeFocus =
+      batchFocuses.length > 0
+        ? batchFocuses.find((item) =>
+            focus ? buildFocusQueueKey(item) === buildFocusQueueKey(focus) : false
+          ) ?? batchFocuses[0]!
+        : focus!;
+    setGraphFocusQueue(batchFocuses);
+    setActiveGraphFocusQueueKey(
+      batchFocuses.length > 0 ? buildFocusQueueKey(activeFocus) : ""
+    );
+    setGraphFocus(activeFocus);
     setGraphFocusHint(
-      `已接收图谱焦点：${focus.nodeLabel}（风险 ${Math.round(focus.risk * 100)}%），已预填工作区引导问题。`
+      `已接收图谱焦点：${activeFocus.nodeLabel}（风险 ${Math.round(
+        activeFocus.risk * 100
+      )}%），已预填工作区引导问题。${
+        batchFocuses.length > 1 ? `（本次批量推送 ${batchFocuses.length} 条）` : ""
+      }`
     );
     setUserInput((prev) => {
       const trimmed = prev.trim();
       if (!trimmed || trimmed === "我先尝试列出等差数列前 n 项和公式。") {
-        return buildWorkspacePromptFromFocus(focus);
+        return buildWorkspacePromptFromFocus(activeFocus);
       }
-      return `${buildWorkspacePromptFromFocus(focus)}\n\n补充上下文：${trimmed}`;
+      return `${buildWorkspacePromptFromFocus(activeFocus)}\n\n补充上下文：${trimmed}`;
     });
     setSessionTitle((prev) =>
-      prev.trim() ? prev : `图谱焦点复盘：${focus.nodeLabel}`
+      prev.trim() ? prev : `图谱焦点复盘：${activeFocus.nodeLabel}`
     );
     hasAppliedGraphFocusRef.current = true;
-  }, []);
+  }, [queryBatchCount]);
 
   useEffect(() => {
     try {
@@ -855,21 +880,15 @@ export function WorkspaceDemo() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [querySessionId]);
 
-  useEffect(() => {
-    if (!Number.isFinite(queryBatchCount) || queryBatchCount <= 1) {
-      return;
-    }
-    setGraphFocusHint((prev) => {
-      const batchText = `本次批量推送 ${queryBatchCount} 条`;
-      if (!prev.trim()) {
-        return `已接收${batchText}关系链，当前展示首条焦点。`;
-      }
-      if (prev.includes("本次批量推送")) {
-        return prev;
-      }
-      return `${prev}（${batchText}）`;
-    });
-  }, [queryBatchCount]);
+  function switchGraphFocusFromQueue(target: PathFocusPayload, index: number) {
+    setGraphFocus(target);
+    setActiveGraphFocusQueueKey(buildFocusQueueKey(target));
+    setGraphFocusHint(
+      `已切换批量关系链焦点：第 ${index + 1}/${graphFocusQueue.length} 条 · ${
+        target.nodeLabel
+      }`
+    );
+  }
 
   async function createSession() {
     setLoading(true);
@@ -1755,6 +1774,34 @@ export function WorkspaceDemo() {
               节点：{graphFocus?.nodeLabel} · 风险：{graphFocusSummary.risk} · 掌握度：
               {graphFocusSummary.mastery}
             </p>
+            {graphFocusQueue.length > 1 ? (
+              <div className="workspace-focus-queue">
+                <span>批量关系链队列（{graphFocusQueue.length}）</span>
+                <div className="workspace-focus-queue-list">
+                  {graphFocusQueue.map((item, index) => {
+                    const queueKey = buildFocusQueueKey(item);
+                    const active =
+                      activeGraphFocusQueueKey === queueKey ||
+                      (graphFocus ? buildFocusQueueKey(graphFocus) === queueKey : false);
+                    return (
+                      <button
+                        type="button"
+                        key={`workspace_focus_queue_${queueKey}_${index}`}
+                        className={active ? "active" : ""}
+                        onClick={() => switchGraphFocusFromQueue(item, index)}
+                        disabled={loading}
+                      >
+                        <span>
+                          {index + 1}. {item.nodeLabel}
+                          {item.bridgePartnerLabel ? ` ↔ ${item.bridgePartnerLabel}` : ""}
+                        </span>
+                        <em>风险 {Math.round(item.risk * 100)}%</em>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
             <p>关联节点：{graphFocusSummary.related}</p>
             <button type="button" onClick={applyGraphFocusPrompt} disabled={loading}>
               重新应用图谱焦点提示词

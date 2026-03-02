@@ -5460,6 +5460,49 @@ html[data-theme="aurora"] .config-diff-values em {
   margin-top: 4px;
 }
 
+.path-focus-queue {
+  margin-top: 8px;
+  border-top: 1px dashed rgba(97, 132, 178, 0.34);
+  padding-top: 7px;
+  display: grid;
+  gap: 6px;
+}
+
+.path-focus-queue strong {
+  margin: 0;
+  font-size: 12px;
+}
+
+.path-focus-queue-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.path-focus-queue-list button {
+  border: 1px solid rgba(97, 132, 178, 0.4);
+  border-radius: 9px;
+  background: rgba(10, 16, 27, 0.54);
+  color: #d8efff;
+  font: inherit;
+  font-size: 11px;
+  padding: 5px 8px;
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.path-focus-queue-list button em {
+  font-style: normal;
+  color: #9fc7ee;
+}
+
+.path-focus-queue-list button.active {
+  border-color: rgba(159, 255, 210, 0.56);
+  box-shadow: 0 0 0 1px rgba(159, 255, 210, 0.18);
+}
+
 .path-bridge-template {
   margin-top: 8px;
   border: 1px solid rgba(97, 132, 178, 0.34);
@@ -5755,6 +5798,49 @@ html[data-theme="aurora"] .config-diff-values em {
   font-size: 12px;
   padding: 7px 10px;
   cursor: pointer;
+}
+
+.workspace-focus-queue {
+  margin-top: 7px;
+  border-top: 1px dashed rgba(97, 132, 178, 0.34);
+  padding-top: 7px;
+  display: grid;
+  gap: 6px;
+}
+
+.workspace-focus-queue > span {
+  font-size: 11px;
+  color: #9fc7ee;
+}
+
+.workspace-focus-queue-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.workspace-focus-queue-list button {
+  border: 1px solid rgba(97, 132, 178, 0.4);
+  border-radius: 9px;
+  background: rgba(10, 16, 27, 0.54);
+  color: #d8efff;
+  font: inherit;
+  font-size: 11px;
+  padding: 5px 8px;
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.workspace-focus-queue-list button em {
+  font-style: normal;
+  color: #9fc7ee;
+}
+
+.workspace-focus-queue-list button.active {
+  border-color: rgba(159, 255, 210, 0.56);
+  box-shadow: 0 0 0 1px rgba(159, 255, 210, 0.18);
 }
 
 html[data-theme="aurora"] .graph-control-bar > button {
@@ -6094,6 +6180,25 @@ html[data-theme="aurora"] .path-focus-summary p {
   color: #5c7fad;
 }
 
+html[data-theme="aurora"] .path-focus-queue strong {
+  color: #2f5f93;
+}
+
+html[data-theme="aurora"] .path-focus-queue-list button {
+  border-color: rgba(118, 154, 216, 0.46);
+  background: rgba(255, 255, 255, 0.88);
+  color: #4f719f;
+}
+
+html[data-theme="aurora"] .path-focus-queue-list button em {
+  color: #5c7fad;
+}
+
+html[data-theme="aurora"] .path-focus-queue-list button.active {
+  border-color: rgba(64, 174, 138, 0.46);
+  box-shadow: 0 0 0 1px rgba(64, 174, 138, 0.2);
+}
+
 html[data-theme="aurora"] .path-bridge-template {
   border-color: rgba(118, 154, 216, 0.4);
   background: rgba(255, 255, 255, 0.84);
@@ -6227,6 +6332,25 @@ html[data-theme="aurora"] .workspace-focus-card {
 
 html[data-theme="aurora"] .workspace-focus-card p {
   color: #5c7fad;
+}
+
+html[data-theme="aurora"] .workspace-focus-queue > span {
+  color: #5c7fad;
+}
+
+html[data-theme="aurora"] .workspace-focus-queue-list button {
+  border-color: rgba(118, 154, 216, 0.46);
+  background: rgba(255, 255, 255, 0.88);
+  color: #4f719f;
+}
+
+html[data-theme="aurora"] .workspace-focus-queue-list button em {
+  color: #5c7fad;
+}
+
+html[data-theme="aurora"] .workspace-focus-queue-list button.active {
+  border-color: rgba(64, 174, 138, 0.46);
+  box-shadow: 0 0 0 1px rgba(64, 174, 138, 0.2);
 }
 
 .result-box {

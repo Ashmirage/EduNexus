@@ -16,7 +16,9 @@ import {
 import { writeGraphFocusNodeToStorage } from "@/lib/client/graph-focus-bridge";
 import {
   type PathFocusPayload,
+  writePathFocusBatchToStorage,
   writePathFocusToStorage,
+  writeWorkspaceFocusBatchToStorage,
   writeWorkspaceFocusToStorage
 } from "@/lib/client/path-focus-bridge";
 import {
@@ -550,6 +552,21 @@ function buildBridgeFocusFromRow(row: DashboardBridgeRiskRow): {
   };
 }
 
+function buildBridgeFocusBatchFromRows(rows: DashboardBridgeRiskRow[]) {
+  const seen = new Set<string>();
+  const batch: PathFocusPayload[] = [];
+  for (const row of rows) {
+    const bridgeFocus = buildBridgeFocusFromRow(row).focusPayload;
+    const key = `${bridgeFocus.nodeId}__${bridgeFocus.bridgePartnerLabel ?? ""}`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    batch.push(bridgeFocus);
+  }
+  return batch.slice(0, 12);
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [period, setPeriod] = useState<PeriodKey>("7d");
@@ -1053,18 +1070,23 @@ export default function DashboardPage() {
     if (selectedBridgeRows.length === 0) {
       return;
     }
+    const batchFocuses = buildBridgeFocusBatchFromRows(selectedBridgeRows);
+    writePathFocusBatchToStorage(batchFocuses, (key, value) =>
+      window.localStorage.setItem(key, value)
+    );
     const first = selectedBridgeRows[0]!;
     const bridgeFocus = buildBridgeFocusFromRow(first);
     writePathFocusToStorage(bridgeFocus.focusPayload, (key, value) =>
       window.localStorage.setItem(key, value)
     );
     appendBatchBridgeActivities(selectedBridgeRows, "推送路径");
+    setBridgeBatchHint(`已批量推送 ${batchFocuses.length} 条关系链到路径。`);
     const params = new URLSearchParams({
       from: "graph_bridge",
       focusNode: first.primaryNodeId,
       focusLabel: first.primaryNodeLabel,
       bridgePartner: bridgeFocus.partnerLabel,
-      batchCount: String(selectedBridgeRows.length)
+      batchCount: String(batchFocuses.length)
     });
     router.push(`/path?${params.toString()}`);
   }
@@ -1073,14 +1095,19 @@ export default function DashboardPage() {
     if (selectedBridgeRows.length === 0) {
       return;
     }
+    const batchFocuses = buildBridgeFocusBatchFromRows(selectedBridgeRows);
+    writeWorkspaceFocusBatchToStorage(batchFocuses, (key, value) =>
+      window.localStorage.setItem(key, value)
+    );
     const first = selectedBridgeRows[0]!;
     const bridgeFocus = buildBridgeFocusFromRow(first);
     writeWorkspaceFocusToStorage(bridgeFocus.focusPayload, (key, value) =>
       window.localStorage.setItem(key, value)
     );
     appendBatchBridgeActivities(selectedBridgeRows, "推送工作区");
+    setBridgeBatchHint(`已批量推送 ${batchFocuses.length} 条关系链到工作区。`);
     const params = new URLSearchParams({
-      batchCount: String(selectedBridgeRows.length)
+      batchCount: String(batchFocuses.length)
     });
     router.push(`/workspace?${params.toString()}`);
   }
