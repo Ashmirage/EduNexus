@@ -32,7 +32,10 @@ import {
   type GraphViewNode
 } from "@/lib/client/graph-view-model";
 import {
+  type PathFocusPayload,
+  writePathFocusBatchToStorage,
   writePathFocusToStorage,
+  writeWorkspaceFocusBatchToStorage,
   writeWorkspaceFocusToStorage
 } from "@/lib/client/path-focus-bridge";
 import {
@@ -315,6 +318,7 @@ export function GraphDemo() {
   const [isBridgeReplayPlaying, setIsBridgeReplayPlaying] = useState(false);
   const [bridgeReplayCursor, setBridgeReplayCursor] = useState(0);
   const [bridgeReplaySpeed, setBridgeReplaySpeed] = useState<BridgeReplaySpeed>("1x");
+  const [bridgeReplayBatchLimit, setBridgeReplayBatchLimit] = useState(4);
   const [riskThresholdPercent, setRiskThresholdPercent] = useState(0);
   const [enableEdgeHeatmap, setEnableEdgeHeatmap] = useState(true);
   const [canvasZoomPercent, setCanvasZoomPercent] = useState(100);
@@ -1069,6 +1073,106 @@ export function GraphDemo() {
     };
   }, [activeBridgeReplayFrame, bridgeSuggestionMap, placements]);
 
+  const replayFrameSuggestions = useMemo<
+    Array<{ frame: (typeof orderedBridgeReplayFrames)[number]; suggestion: RiskBridgeSuggestion }>
+  >(
+    () =>
+      orderedBridgeReplayFrames
+        .map((frame) => {
+          const byId = bridgeSuggestionMap.get(frame.bridge.id);
+          if (byId) {
+            return { frame, suggestion: byId };
+          }
+          const source = placements.find((item) => item.label === frame.bridge.sourceLabel);
+          const target = placements.find((item) => item.label === frame.bridge.targetLabel);
+          if (!source || !target) {
+            return null;
+          }
+          const primary = source.risk >= target.risk ? source : target;
+          const secondary = primary.id === source.id ? target : source;
+          return {
+            frame,
+            suggestion: {
+              id: frame.bridge.id,
+              source,
+              target,
+              primary,
+              secondary,
+              risk: frame.bridge.risk,
+              weight: frame.bridge.weight,
+              summary:
+                source.domain === target.domain
+                  ? `同域脆弱链：${source.domain} 内部迁移不稳，建议先做“反例诊断 + 变式巩固”。`
+                  : `跨域断裂链：${source.domain} -> ${target.domain} 迁移弱，建议补“桥接任务”。`
+            }
+          };
+        })
+        .filter(
+          (
+            item
+          ): item is {
+            frame: (typeof orderedBridgeReplayFrames)[number];
+            suggestion: RiskBridgeSuggestion;
+          } => item !== null
+        ),
+    [bridgeSuggestionMap, orderedBridgeReplayFrames, placements]
+  );
+
+  const replayBatchFocuses = useMemo<PathFocusPayload[]>(() => {
+    if (replayFrameSuggestions.length === 0) {
+      return [];
+    }
+    const frameUpperBound = Math.max(
+      0,
+      Math.min(bridgeReplayCursor, replayFrameSuggestions.length - 1)
+    );
+    const candidateRows = replayFrameSuggestions
+      .slice(0, frameUpperBound + 1)
+      .map((item) => {
+        const bridge = item.suggestion;
+        return {
+          bridge,
+          at: item.frame.at,
+          risk: item.frame.bridge.risk
+        };
+      })
+      .sort((a, b) => b.risk - a.risk || b.at.localeCompare(a.at, "zh-CN"));
+    const deduped = new Map<string, PathFocusPayload>();
+    for (const row of candidateRows) {
+      const key = `${row.bridge.primary.id}__${row.bridge.secondary.label}`;
+      if (deduped.has(key)) {
+        continue;
+      }
+      deduped.set(key, {
+        nodeId: row.bridge.primary.id,
+        nodeLabel: row.bridge.primary.label,
+        domain: row.bridge.primary.domain,
+        mastery: row.bridge.primary.mastery,
+        risk: row.risk,
+        relatedNodes: [
+          row.bridge.secondary.label,
+          ...resolveRelatedNodeLabelsForFocus(row.bridge.primary.id, 5)
+        ].slice(0, 5),
+        at: row.at,
+        focusSource: "graph_bridge",
+        bridgePartnerLabel: row.bridge.secondary.label,
+        bridgeTaskTemplate: buildBridgeTaskTemplate(
+          row.bridge.primary.label,
+          row.bridge.secondary.label
+        )
+      });
+      if (deduped.size >= Math.max(2, bridgeReplayBatchLimit)) {
+        break;
+      }
+    }
+    return Array.from(deduped.values());
+  }, [
+    bridgeReplayBatchLimit,
+    bridgeReplayCursor,
+    replayFrameSuggestions,
+    resolveRelatedNodeLabelsForFocus
+  ]);
+
   const bridgeReplayNodeStats = useMemo<BridgeReplayNodeStat[]>(() => {
     if (displayedBridgeReplayFrames.length === 0) {
       return [];
@@ -1584,6 +1688,59 @@ export function GraphDemo() {
     }
     handlePushBridgeToWorkspace(activeReplayBridgeSuggestion);
   }, [activeReplayBridgeSuggestion, handlePushBridgeToWorkspace]);
+
+  const handlePushReplayBatchToPath = useCallback(() => {
+    if (replayBatchFocuses.length === 0) {
+      setError("当前回放筛选下暂无可推送的关系链队列。");
+      return;
+    }
+    const primary = replayBatchFocuses[0]!;
+    writePathFocusBatchToStorage(replayBatchFocuses, (key, value) =>
+      window.localStorage.setItem(key, value)
+    );
+    writePathFocusToStorage(primary, (key, value) =>
+      window.localStorage.setItem(key, value)
+    );
+    const params = new URLSearchParams({
+      from: "graph_bridge",
+      focusNode: primary.nodeId,
+      focusLabel: primary.nodeLabel,
+      batchCount: String(replayBatchFocuses.length)
+    });
+    if (primary.bridgePartnerLabel?.trim()) {
+      params.set("bridgePartner", primary.bridgePartnerLabel.trim());
+    }
+    router.push(`/path?${params.toString()}`);
+    setPathPushHint(
+      `已批量推送回放关系链到路径：${replayBatchFocuses.length} 条（首条 ${primary.nodeLabel} ↔ ${
+        primary.bridgePartnerLabel ?? "关联节点"
+      }）。`
+    );
+  }, [replayBatchFocuses, router]);
+
+  const handlePushReplayBatchToWorkspace = useCallback(() => {
+    if (replayBatchFocuses.length === 0) {
+      setError("当前回放筛选下暂无可推送的关系链队列。");
+      return;
+    }
+    const primary = replayBatchFocuses[0]!;
+    writeWorkspaceFocusBatchToStorage(replayBatchFocuses, (key, value) =>
+      window.localStorage.setItem(key, value)
+    );
+    writeWorkspaceFocusToStorage(primary, (key, value) =>
+      window.localStorage.setItem(key, value)
+    );
+    const params = new URLSearchParams({
+      from: "graph",
+      batchCount: String(replayBatchFocuses.length)
+    });
+    router.push(`/workspace?${params.toString()}`);
+    setPathPushHint(
+      `已批量推送回放关系链到工作区：${replayBatchFocuses.length} 条（首条 ${primary.nodeLabel} ↔ ${
+        primary.bridgePartnerLabel ?? "关联节点"
+      }）。`
+    );
+  }, [replayBatchFocuses, router]);
 
   const handleFocusGraphActivity = useCallback(
     (event: GraphActivityEvent) => {
@@ -2314,6 +2471,40 @@ export function GraphDemo() {
                         disabled={!activeReplayBridgeSuggestion}
                       >
                         推送当前帧到工作区
+                      </button>
+                    </div>
+                  ) : null}
+                  {orderedBridgeReplayFrames.length > 0 ? (
+                    <div className="graph-bridge-replay-batch">
+                      <label>
+                        批量条数
+                        <select
+                          value={bridgeReplayBatchLimit}
+                          onChange={(event) =>
+                            setBridgeReplayBatchLimit(Number(event.target.value))
+                          }
+                        >
+                          {[3, 4, 6, 8].map((item) => (
+                            <option key={`bridge_replay_batch_${item}`} value={item}>
+                              Top {item}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <span>当前可推送 {replayBatchFocuses.length} 条</span>
+                      <button
+                        type="button"
+                        onClick={handlePushReplayBatchToPath}
+                        disabled={replayBatchFocuses.length < 2}
+                      >
+                        批量推送到路径
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handlePushReplayBatchToWorkspace}
+                        disabled={replayBatchFocuses.length < 2}
+                      >
+                        批量推送到工作区
                       </button>
                     </div>
                   ) : null}
