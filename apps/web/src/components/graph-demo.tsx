@@ -1035,6 +1035,40 @@ export function GraphDemo() {
     });
   }, [activeBridgeReplayFrame]);
 
+  const activeReplayBridgeSuggestion = useMemo<RiskBridgeSuggestion | null>(() => {
+    if (!activeBridgeReplayFrame) {
+      return null;
+    }
+    const byId = bridgeSuggestionMap.get(activeBridgeReplayFrame.bridge.id);
+    if (byId) {
+      return byId;
+    }
+    const source = placements.find(
+      (item) => item.label === activeBridgeReplayFrame.bridge.sourceLabel
+    );
+    const target = placements.find(
+      (item) => item.label === activeBridgeReplayFrame.bridge.targetLabel
+    );
+    if (!source || !target) {
+      return null;
+    }
+    const primary = source.risk >= target.risk ? source : target;
+    const secondary = primary.id === source.id ? target : source;
+    return {
+      id: activeBridgeReplayFrame.bridge.id,
+      source,
+      target,
+      primary,
+      secondary,
+      risk: activeBridgeReplayFrame.bridge.risk,
+      weight: activeBridgeReplayFrame.bridge.weight,
+      summary:
+        source.domain === target.domain
+          ? `同域脆弱链：${source.domain} 内部迁移不稳，建议先做“反例诊断 + 变式巩固”。`
+          : `跨域断裂链：${source.domain} -> ${target.domain} 迁移弱，建议补“桥接任务”。`
+    };
+  }, [activeBridgeReplayFrame, bridgeSuggestionMap, placements]);
+
   const bridgeReplayNodeStats = useMemo<BridgeReplayNodeStat[]>(() => {
     if (displayedBridgeReplayFrames.length === 0) {
       return [];
@@ -1534,6 +1568,22 @@ export function GraphDemo() {
     },
     [resolveRelatedNodeLabelsForFocus, router]
   );
+
+  const handlePushActiveReplayBridgeToPath = useCallback(() => {
+    if (!activeReplayBridgeSuggestion) {
+      setError("当前回放帧无法映射到可执行关系链，请切换到可见帧后再试。");
+      return;
+    }
+    handlePushBridgeToPath(activeReplayBridgeSuggestion);
+  }, [activeReplayBridgeSuggestion, handlePushBridgeToPath]);
+
+  const handlePushActiveReplayBridgeToWorkspace = useCallback(() => {
+    if (!activeReplayBridgeSuggestion) {
+      setError("当前回放帧无法映射到可执行关系链，请切换到可见帧后再试。");
+      return;
+    }
+    handlePushBridgeToWorkspace(activeReplayBridgeSuggestion);
+  }, [activeReplayBridgeSuggestion, handlePushBridgeToWorkspace]);
 
   const handleFocusGraphActivity = useCallback(
     (event: GraphActivityEvent) => {
@@ -2248,6 +2298,24 @@ export function GraphDemo() {
                       {toPercent(activeBridgeReplayFrame.bridge.risk)} ·{" "}
                       {formatDateTime(activeBridgeReplayFrame.at)}
                     </p>
+                  ) : null}
+                  {activeBridgeReplayFrame ? (
+                    <div className="graph-bridge-replay-jump">
+                      <button
+                        type="button"
+                        onClick={handlePushActiveReplayBridgeToPath}
+                        disabled={!activeReplayBridgeSuggestion}
+                      >
+                        推送当前帧到路径
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handlePushActiveReplayBridgeToWorkspace}
+                        disabled={!activeReplayBridgeSuggestion}
+                      >
+                        推送当前帧到工作区
+                      </button>
+                    </div>
                   ) : null}
                 </div>
               ) : null}

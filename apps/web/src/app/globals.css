@@ -5714,6 +5714,38 @@ html[data-theme="aurora"] .config-diff-values em {
   color: #cfe8ff;
 }
 
+.graph-bridge-replay-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.graph-bridge-replay-jump button {
+  border: 1px solid rgba(97, 132, 178, 0.42);
+  border-radius: 999px;
+  background: rgba(10, 16, 27, 0.56);
+  color: #d8efff;
+  font: inherit;
+  font-size: 11px;
+  padding: 4px 9px;
+  cursor: pointer;
+}
+
+.graph-bridge-replay-jump button:first-child {
+  border-color: rgba(97, 199, 255, 0.52);
+  background: rgba(97, 199, 255, 0.18);
+}
+
+.graph-bridge-replay-jump button:last-child {
+  border-color: rgba(159, 255, 210, 0.54);
+  background: rgba(159, 255, 210, 0.16);
+}
+
+.graph-bridge-replay-jump button:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
 .graph-bridge-node-stats {
   margin-top: 8px;
   display: grid;
@@ -6875,6 +6907,22 @@ html[data-theme="aurora"] .graph-bridge-replay-current {
 html[data-theme="aurora"] .graph-bridge-replay-speed button.active {
   border-color: rgba(64, 174, 138, 0.46);
   box-shadow: 0 0 0 1px rgba(64, 174, 138, 0.2);
+}
+
+html[data-theme="aurora"] .graph-bridge-replay-jump button {
+  border-color: rgba(118, 154, 216, 0.46);
+  background: rgba(255, 255, 255, 0.88);
+  color: #4f719f;
+}
+
+html[data-theme="aurora"] .graph-bridge-replay-jump button:first-child {
+  border-color: rgba(84, 155, 255, 0.52);
+  background: rgba(122, 187, 255, 0.24);
+}
+
+html[data-theme="aurora"] .graph-bridge-replay-jump button:last-child {
+  border-color: rgba(64, 174, 138, 0.46);
+  background: rgba(103, 210, 174, 0.2);
 }
 
 html[data-theme="aurora"] .graph-bridge-node-stat {
