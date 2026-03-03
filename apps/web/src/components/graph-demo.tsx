@@ -32,6 +32,7 @@ import {
   type GraphViewNode
 } from "@/lib/client/graph-view-model";
 import {
+  normalizePathFocusBatchPayload,
   type PathFocusPayload,
   writePathFocusBatchToStorage,
   writePathFocusToStorage,
@@ -52,6 +53,8 @@ const GRAPH_RISK_THRESHOLD_STORAGE_KEY = "edunexus_graph_risk_threshold";
 const GRAPH_CANVAS_ZOOM_STORAGE_KEY = "edunexus_graph_canvas_zoom";
 const GRAPH_BRIDGE_HISTORY_STORAGE_KEY = "edunexus_graph_bridge_history_timeline";
 const GRAPH_BRIDGE_HISTORY_LIMIT = 14;
+const GRAPH_REPLAY_PUSH_HISTORY_STORAGE_KEY = "edunexus_graph_replay_push_history";
+const GRAPH_REPLAY_PUSH_HISTORY_LIMIT = 12;
 const BRIDGE_REPLAY_INTERVAL_MS: Record<BridgeReplaySpeed, number> = {
   "1x": 1300,
   "1.5x": 950,
@@ -146,6 +149,10 @@ type OpenWorkspaceSessionOptions = {
   nodeLabel?: string;
 };
 
+type ReplayPushTarget = "path" | "workspace";
+
+type ReplayPushSource = "single_frame" | "batch_queue" | "history_repush";
+
 type ReplayPushMeta = {
   replayBatchId?: string;
   replayBatchIndex?: number;
@@ -153,6 +160,21 @@ type ReplayPushMeta = {
   replayFrameAt?: string;
   replayMode?: BridgeReplayMode;
 };
+
+type ReplayPushHistoryEntry = {
+  id: string;
+  batchId: string;
+  target: ReplayPushTarget;
+  source: ReplayPushSource;
+  at: string;
+  count: number;
+  mode?: BridgeReplayMode;
+  primaryNodeLabel: string;
+  bridgePartnerLabel?: string;
+  queue: PathFocusPayload[];
+};
+
+type ReplayPushHistoryModeFilter = "all" | BridgeReplayMode | "unknown";
 
 function resolveRiskTone(risk: number) {
   if (risk >= 0.65) {
@@ -179,6 +201,20 @@ function formatDateTime(value: string) {
   } catch {
     return value;
   }
+}
+
+function resolveReplayPushSourceLabel(source: ReplayPushSource) {
+  if (source === "single_frame") {
+    return "当前帧推送";
+  }
+  if (source === "batch_queue") {
+    return "批量队列推送";
+  }
+  return "历史复推";
+}
+
+function resolveReplayPushTargetLabel(target: ReplayPushTarget) {
+  return target === "path" ? "路径" : "工作区";
 }
 
 function formatDelta(value: number, options?: { precision?: number; suffix?: string }) {
@@ -213,6 +249,39 @@ function buildEdgeKey(sourceId: string, targetId: string) {
 
 function buildBridgeReplayFrameKey(input: { snapshotId: string; bridgeId: string }) {
   return `${input.snapshotId}__${input.bridgeId}`;
+}
+
+function normalizeReplayPushHistoryPayload(
+  payload: unknown,
+  limit: number
+): ReplayPushHistoryEntry[] {
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+  return payload
+    .filter((item): item is ReplayPushHistoryEntry => {
+      if (!item || typeof item !== "object") {
+        return false;
+      }
+      const value = item as ReplayPushHistoryEntry;
+      return (
+        typeof value.id === "string" &&
+        typeof value.batchId === "string" &&
+        (value.target === "path" || value.target === "workspace") &&
+        (value.source === "single_frame" ||
+          value.source === "batch_queue" ||
+          value.source === "history_repush") &&
+        typeof value.at === "string" &&
+        typeof value.count === "number" &&
+        Array.isArray(value.queue)
+      );
+    })
+    .map((item) => ({
+      ...item,
+      queue: normalizePathFocusBatchPayload(item.queue, 12)
+    }))
+    .filter((item) => item.queue.length > 0)
+    .slice(0, Math.max(1, limit));
 }
 
 function buildBridgeTaskTemplate(primaryLabel: string, secondaryLabel: string) {
@@ -341,6 +410,15 @@ export function GraphDemo() {
   const [loadingHoverSessions, setLoadingHoverSessions] = useState(false);
   const [hoverSaveResult, setHoverSaveResult] = useState<HoverSaveResult | null>(null);
   const [pathPushHint, setPathPushHint] = useState("");
+  const [replayPushHistory, setReplayPushHistory] = useState<ReplayPushHistoryEntry[]>([]);
+  const [replayHistoryTargetFilter, setReplayHistoryTargetFilter] = useState<
+    "all" | ReplayPushTarget
+  >("all");
+  const [replayHistorySourceFilter, setReplayHistorySourceFilter] = useState<
+    "all" | ReplayPushSource
+  >("all");
+  const [replayHistoryModeFilter, setReplayHistoryModeFilter] =
+    useState<ReplayPushHistoryModeFilter>("all");
   const bridgeReplayTimerRef = useRef<number | null>(null);
 
   const clearBridgeReplayTimer = useCallback(() => {
@@ -348,6 +426,21 @@ export function GraphDemo() {
       window.clearTimeout(bridgeReplayTimerRef.current);
       bridgeReplayTimerRef.current = null;
     }
+  }, []);
+
+  const appendReplayPushHistory = useCallback((entry: ReplayPushHistoryEntry) => {
+    setReplayPushHistory((prev) => {
+      const next = [entry, ...prev].slice(0, GRAPH_REPLAY_PUSH_HISTORY_LIMIT);
+      try {
+        window.localStorage.setItem(
+          GRAPH_REPLAY_PUSH_HISTORY_STORAGE_KEY,
+          JSON.stringify(next)
+        );
+      } catch {
+        // ignore localStorage failures
+      }
+      return next;
+    });
   }, []);
 
   const loadGraph = useCallback(async () => {
@@ -441,6 +534,91 @@ export function GraphDemo() {
       setBridgeHistory([]);
     }
   }, []);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(GRAPH_REPLAY_PUSH_HISTORY_STORAGE_KEY);
+      if (!raw) {
+        setReplayPushHistory([]);
+        return;
+      }
+      const parsed = JSON.parse(raw) as unknown;
+      setReplayPushHistory(
+        normalizeReplayPushHistoryPayload(parsed, GRAPH_REPLAY_PUSH_HISTORY_LIMIT)
+      );
+    } catch {
+      setReplayPushHistory([]);
+    }
+  }, []);
+
+  const replayPushHistoryStats = useMemo(() => {
+    return replayPushHistory.reduce(
+      (acc, item) => {
+        acc.totalBatches += 1;
+        acc.totalFocusCount += item.count;
+        if (item.target === "path") {
+          acc.pathBatches += 1;
+        } else {
+          acc.workspaceBatches += 1;
+        }
+        if (item.source === "single_frame") {
+          acc.singleFrameBatches += 1;
+        } else if (item.source === "batch_queue") {
+          acc.batchQueueBatches += 1;
+        } else {
+          acc.historyRepushBatches += 1;
+        }
+        return acc;
+      },
+      {
+        totalBatches: 0,
+        totalFocusCount: 0,
+        pathBatches: 0,
+        workspaceBatches: 0,
+        singleFrameBatches: 0,
+        batchQueueBatches: 0,
+        historyRepushBatches: 0
+      }
+    );
+  }, [replayPushHistory]);
+
+  const replayPushHistoryModeOptions = useMemo(() => {
+    const set = new Set<BridgeReplayMode>();
+    for (const item of replayPushHistory) {
+      if (item.mode) {
+        set.add(item.mode);
+      }
+    }
+    return Array.from(set);
+  }, [replayPushHistory]);
+
+  const replayPushHistoryModeHasUnknown = useMemo(
+    () => replayPushHistory.some((item) => !item.mode),
+    [replayPushHistory]
+  );
+
+  const filteredReplayPushHistory = useMemo(() => {
+    return replayPushHistory.filter((item) => {
+      if (replayHistoryTargetFilter !== "all" && item.target !== replayHistoryTargetFilter) {
+        return false;
+      }
+      if (replayHistorySourceFilter !== "all" && item.source !== replayHistorySourceFilter) {
+        return false;
+      }
+      if (replayHistoryModeFilter === "unknown") {
+        return !item.mode;
+      }
+      if (replayHistoryModeFilter !== "all") {
+        return item.mode === replayHistoryModeFilter;
+      }
+      return true;
+    });
+  }, [
+    replayHistoryModeFilter,
+    replayHistorySourceFilter,
+    replayHistoryTargetFilter,
+    replayPushHistory
+  ]);
 
   useEffect(() => {
     const loadGraphActivities = () => {
@@ -1687,25 +1865,144 @@ export function GraphDemo() {
     [buildBridgeFocusPayload, router]
   );
 
+  const pushReplayFocusQueueToPath = useCallback(
+    (input: {
+      queue: PathFocusPayload[];
+      batchId: string;
+      mode?: BridgeReplayMode;
+      source: ReplayPushSource;
+    }) => {
+      if (input.queue.length === 0) {
+        setError("当前回放筛选下暂无可推送的关系链队列。");
+        return;
+      }
+      const primary = input.queue[0]!;
+      writePathFocusBatchToStorage(input.queue, (key, value) =>
+        window.localStorage.setItem(key, value)
+      );
+      writePathFocusToStorage(primary, (key, value) =>
+        window.localStorage.setItem(key, value)
+      );
+      const params = new URLSearchParams({
+        from: "graph_bridge",
+        focusNode: primary.nodeId,
+        focusLabel: primary.nodeLabel,
+        batchCount: String(input.queue.length),
+        replayBatchId: input.batchId
+      });
+      if (primary.bridgePartnerLabel?.trim()) {
+        params.set("bridgePartner", primary.bridgePartnerLabel.trim());
+      }
+      if (primary.replayMode) {
+        params.set("replayMode", primary.replayMode);
+      }
+      router.push(`/path?${params.toString()}`);
+      setPathPushHint(
+        `${input.source === "single_frame" ? "已推送回放当前帧到路径" : "已批量推送回放关系链到路径"}：${
+          input.queue.length
+        } 条（批次 ${input.batchId}，首条 ${primary.nodeLabel} ↔ ${
+          primary.bridgePartnerLabel ?? "关联节点"
+        }）。`
+      );
+      appendReplayPushHistory({
+        id: `replay_push_${Date.now().toString(36)}_${Math.random()
+          .toString(36)
+          .slice(2, 5)}`,
+        batchId: input.batchId,
+        target: "path",
+        source: input.source,
+        at: new Date().toISOString(),
+        count: input.queue.length,
+        mode: input.mode,
+        primaryNodeLabel: primary.nodeLabel,
+        bridgePartnerLabel: primary.bridgePartnerLabel,
+        queue: input.queue
+      });
+    },
+    [appendReplayPushHistory, router]
+  );
+
+  const pushReplayFocusQueueToWorkspace = useCallback(
+    (input: {
+      queue: PathFocusPayload[];
+      batchId: string;
+      mode?: BridgeReplayMode;
+      source: ReplayPushSource;
+    }) => {
+      if (input.queue.length === 0) {
+        setError("当前回放筛选下暂无可推送的关系链队列。");
+        return;
+      }
+      const primary = input.queue[0]!;
+      writeWorkspaceFocusBatchToStorage(input.queue, (key, value) =>
+        window.localStorage.setItem(key, value)
+      );
+      writeWorkspaceFocusToStorage(primary, (key, value) =>
+        window.localStorage.setItem(key, value)
+      );
+      const params = new URLSearchParams({
+        from: "graph",
+        batchCount: String(input.queue.length),
+        replayBatchId: input.batchId
+      });
+      if (primary.replayMode) {
+        params.set("replayMode", primary.replayMode);
+      }
+      router.push(`/workspace?${params.toString()}`);
+      setPathPushHint(
+        `${input.source === "single_frame" ? "已推送回放当前帧到工作区" : "已批量推送回放关系链到工作区"}：${
+          input.queue.length
+        } 条（批次 ${input.batchId}，首条 ${primary.nodeLabel} ↔ ${
+          primary.bridgePartnerLabel ?? "关联节点"
+        }）。`
+      );
+      appendReplayPushHistory({
+        id: `replay_push_${Date.now().toString(36)}_${Math.random()
+          .toString(36)
+          .slice(2, 5)}`,
+        batchId: input.batchId,
+        target: "workspace",
+        source: input.source,
+        at: new Date().toISOString(),
+        count: input.queue.length,
+        mode: input.mode,
+        primaryNodeLabel: primary.nodeLabel,
+        bridgePartnerLabel: primary.bridgePartnerLabel,
+        queue: input.queue
+      });
+    },
+    [appendReplayPushHistory, router]
+  );
+
   const handlePushActiveReplayBridgeToPath = useCallback(() => {
     if (!activeReplayBridgeSuggestion) {
       setError("当前回放帧无法映射到可执行关系链，请切换到可见帧后再试。");
       return;
     }
-    handlePushBridgeToPath(activeReplayBridgeSuggestion, {
-      replayBatchId: `bridge_replay_single_${Date.now().toString(36)}`,
-      replayBatchIndex: Math.max(1, bridgeReplayCursor + 1),
-      replayBatchTotal: Math.max(1, orderedBridgeReplayFrames.length),
-      replayFrameAt: activeBridgeReplayFrame?.at,
-      replayMode: bridgeReplayMode
+    const replayBatchId = `bridge_replay_single_${Date.now().toString(36)}`;
+    const queue = [
+      buildBridgeFocusPayload(activeReplayBridgeSuggestion, {
+        replayBatchId,
+        replayBatchIndex: Math.max(1, bridgeReplayCursor + 1),
+        replayBatchTotal: Math.max(1, orderedBridgeReplayFrames.length),
+        replayFrameAt: activeBridgeReplayFrame?.at,
+        replayMode: bridgeReplayMode
+      })
+    ];
+    pushReplayFocusQueueToPath({
+      queue,
+      batchId: replayBatchId,
+      mode: bridgeReplayMode,
+      source: "single_frame"
     });
   }, [
     activeBridgeReplayFrame?.at,
     activeReplayBridgeSuggestion,
     bridgeReplayCursor,
     bridgeReplayMode,
-    handlePushBridgeToPath,
-    orderedBridgeReplayFrames.length
+    buildBridgeFocusPayload,
+    orderedBridgeReplayFrames.length,
+    pushReplayFocusQueueToPath
   ]);
 
   const handlePushActiveReplayBridgeToWorkspace = useCallback(() => {
@@ -1713,20 +2010,30 @@ export function GraphDemo() {
       setError("当前回放帧无法映射到可执行关系链，请切换到可见帧后再试。");
       return;
     }
-    handlePushBridgeToWorkspace(activeReplayBridgeSuggestion, {
-      replayBatchId: `bridge_replay_single_${Date.now().toString(36)}`,
-      replayBatchIndex: Math.max(1, bridgeReplayCursor + 1),
-      replayBatchTotal: Math.max(1, orderedBridgeReplayFrames.length),
-      replayFrameAt: activeBridgeReplayFrame?.at,
-      replayMode: bridgeReplayMode
+    const replayBatchId = `bridge_replay_single_${Date.now().toString(36)}`;
+    const queue = [
+      buildBridgeFocusPayload(activeReplayBridgeSuggestion, {
+        replayBatchId,
+        replayBatchIndex: Math.max(1, bridgeReplayCursor + 1),
+        replayBatchTotal: Math.max(1, orderedBridgeReplayFrames.length),
+        replayFrameAt: activeBridgeReplayFrame?.at,
+        replayMode: bridgeReplayMode
+      })
+    ];
+    pushReplayFocusQueueToWorkspace({
+      queue,
+      batchId: replayBatchId,
+      mode: bridgeReplayMode,
+      source: "single_frame"
     });
   }, [
     activeBridgeReplayFrame?.at,
     activeReplayBridgeSuggestion,
     bridgeReplayCursor,
     bridgeReplayMode,
-    handlePushBridgeToWorkspace,
-    orderedBridgeReplayFrames.length
+    buildBridgeFocusPayload,
+    orderedBridgeReplayFrames.length,
+    pushReplayFocusQueueToWorkspace
   ]);
 
   const handlePushReplayBatchToPath = useCallback(() => {
@@ -1740,35 +2047,16 @@ export function GraphDemo() {
       replayBatchId,
       replayBatchIndex: index + 1,
       replayBatchTotal: replayBatchFocuses.length,
+      replayFrameAt: item.replayFrameAt ?? item.at,
       replayMode: bridgeReplayMode
     }));
-    const primary = queue[0]!;
-    writePathFocusBatchToStorage(queue, (key, value) =>
-      window.localStorage.setItem(key, value)
-    );
-    writePathFocusToStorage(primary, (key, value) =>
-      window.localStorage.setItem(key, value)
-    );
-    const params = new URLSearchParams({
-      from: "graph_bridge",
-      focusNode: primary.nodeId,
-      focusLabel: primary.nodeLabel,
-      batchCount: String(queue.length),
-      replayBatchId
+    pushReplayFocusQueueToPath({
+      queue,
+      batchId: replayBatchId,
+      mode: bridgeReplayMode,
+      source: "batch_queue"
     });
-    if (primary.bridgePartnerLabel?.trim()) {
-      params.set("bridgePartner", primary.bridgePartnerLabel.trim());
-    }
-    if (primary.replayMode) {
-      params.set("replayMode", primary.replayMode);
-    }
-    router.push(`/path?${params.toString()}`);
-    setPathPushHint(
-      `已批量推送回放关系链到路径：${queue.length} 条（批次 ${replayBatchId}，首条 ${primary.nodeLabel} ↔ ${
-        primary.bridgePartnerLabel ?? "关联节点"
-      }）。`
-    );
-  }, [bridgeReplayMode, replayBatchFocuses, router]);
+  }, [bridgeReplayMode, pushReplayFocusQueueToPath, replayBatchFocuses]);
 
   const handlePushReplayBatchToWorkspace = useCallback(() => {
     if (replayBatchFocuses.length === 0) {
@@ -1781,30 +2069,57 @@ export function GraphDemo() {
       replayBatchId,
       replayBatchIndex: index + 1,
       replayBatchTotal: replayBatchFocuses.length,
+      replayFrameAt: item.replayFrameAt ?? item.at,
       replayMode: bridgeReplayMode
     }));
-    const primary = queue[0]!;
-    writeWorkspaceFocusBatchToStorage(queue, (key, value) =>
-      window.localStorage.setItem(key, value)
-    );
-    writeWorkspaceFocusToStorage(primary, (key, value) =>
-      window.localStorage.setItem(key, value)
-    );
-    const params = new URLSearchParams({
-      from: "graph",
-      batchCount: String(queue.length),
-      replayBatchId
+    pushReplayFocusQueueToWorkspace({
+      queue,
+      batchId: replayBatchId,
+      mode: bridgeReplayMode,
+      source: "batch_queue"
     });
-    if (primary.replayMode) {
-      params.set("replayMode", primary.replayMode);
+  }, [bridgeReplayMode, pushReplayFocusQueueToWorkspace, replayBatchFocuses]);
+
+  const handleRepushHistoryEntry = useCallback(
+    (entry: ReplayPushHistoryEntry, target: ReplayPushTarget) => {
+      const replayBatchId = `${entry.batchId}_repush_${Date.now().toString(36)}`;
+      const queue = entry.queue.map((item, index) => ({
+        ...item,
+        replayBatchId,
+        replayBatchIndex: index + 1,
+        replayBatchTotal: entry.queue.length,
+        replayMode: item.replayMode ?? entry.mode
+      }));
+      if (target === "path") {
+        pushReplayFocusQueueToPath({
+          queue,
+          batchId: replayBatchId,
+          mode: entry.mode,
+          source: "history_repush"
+        });
+      } else {
+        pushReplayFocusQueueToWorkspace({
+          queue,
+          batchId: replayBatchId,
+          mode: entry.mode,
+          source: "history_repush"
+        });
+      }
+    },
+    [pushReplayFocusQueueToPath, pushReplayFocusQueueToWorkspace]
+  );
+
+  const clearReplayPushHistory = useCallback(() => {
+    setReplayPushHistory([]);
+    setReplayHistoryTargetFilter("all");
+    setReplayHistorySourceFilter("all");
+    setReplayHistoryModeFilter("all");
+    try {
+      window.localStorage.removeItem(GRAPH_REPLAY_PUSH_HISTORY_STORAGE_KEY);
+    } catch {
+      // ignore localStorage failures
     }
-    router.push(`/workspace?${params.toString()}`);
-    setPathPushHint(
-      `已批量推送回放关系链到工作区：${queue.length} 条（批次 ${replayBatchId}，首条 ${primary.nodeLabel} ↔ ${
-        primary.bridgePartnerLabel ?? "关联节点"
-      }）。`
-    );
-  }, [bridgeReplayMode, replayBatchFocuses, router]);
+  }, []);
 
   const handleFocusGraphActivity = useCallback(
     (event: GraphActivityEvent) => {
@@ -2636,6 +2951,166 @@ export function GraphDemo() {
                 </div>
               ) : (
                 <p className="muted">暂无关系链回放记录，请先刷新图谱或调整筛选。</p>
+              )}
+            </div>
+
+            <div className="graph-insight-card">
+              <strong>回放批次历史</strong>
+              <p className="muted">记录最近从回放推送的批次，支持一键复推到路径或工作区。</p>
+              {replayPushHistory.length > 0 ? (
+                <>
+                  <div className="graph-replay-history-head">
+                    <span>最近 {replayPushHistory.length} 条</span>
+                    <button type="button" onClick={clearReplayPushHistory}>
+                      清空历史
+                    </button>
+                  </div>
+                  <div className="graph-replay-history-metrics">
+                    <span>累计批次 {replayPushHistoryStats.totalBatches}</span>
+                    <span>累计关系链 {replayPushHistoryStats.totalFocusCount}</span>
+                    <span>路径 {replayPushHistoryStats.pathBatches}</span>
+                    <span>工作区 {replayPushHistoryStats.workspaceBatches}</span>
+                  </div>
+                  <div className="graph-replay-history-filters">
+                    <div className="graph-replay-history-filter-group">
+                      <span>目标</span>
+                      <div className="graph-replay-history-filter-buttons">
+                        <button
+                          type="button"
+                          className={replayHistoryTargetFilter === "all" ? "active" : ""}
+                          onClick={() => setReplayHistoryTargetFilter("all")}
+                        >
+                          全部
+                        </button>
+                        <button
+                          type="button"
+                          className={replayHistoryTargetFilter === "path" ? "active" : ""}
+                          onClick={() => setReplayHistoryTargetFilter("path")}
+                        >
+                          路径
+                        </button>
+                        <button
+                          type="button"
+                          className={replayHistoryTargetFilter === "workspace" ? "active" : ""}
+                          onClick={() => setReplayHistoryTargetFilter("workspace")}
+                        >
+                          工作区
+                        </button>
+                      </div>
+                    </div>
+                    <div className="graph-replay-history-filter-group">
+                      <span>来源</span>
+                      <div className="graph-replay-history-filter-buttons">
+                        <button
+                          type="button"
+                          className={replayHistorySourceFilter === "all" ? "active" : ""}
+                          onClick={() => setReplayHistorySourceFilter("all")}
+                        >
+                          全部
+                        </button>
+                        <button
+                          type="button"
+                          className={
+                            replayHistorySourceFilter === "single_frame" ? "active" : ""
+                          }
+                          onClick={() => setReplayHistorySourceFilter("single_frame")}
+                        >
+                          当前帧
+                        </button>
+                        <button
+                          type="button"
+                          className={replayHistorySourceFilter === "batch_queue" ? "active" : ""}
+                          onClick={() => setReplayHistorySourceFilter("batch_queue")}
+                        >
+                          批量队列
+                        </button>
+                        <button
+                          type="button"
+                          className={
+                            replayHistorySourceFilter === "history_repush" ? "active" : ""
+                          }
+                          onClick={() => setReplayHistorySourceFilter("history_repush")}
+                        >
+                          历史复推
+                        </button>
+                      </div>
+                    </div>
+                    <div className="graph-replay-history-filter-group">
+                      <span>模式</span>
+                      <div className="graph-replay-history-filter-buttons">
+                        <button
+                          type="button"
+                          className={replayHistoryModeFilter === "all" ? "active" : ""}
+                          onClick={() => setReplayHistoryModeFilter("all")}
+                        >
+                          全部
+                        </button>
+                        {replayPushHistoryModeOptions.map((mode) => (
+                          <button
+                            type="button"
+                            key={`history_mode_${mode}`}
+                            className={replayHistoryModeFilter === mode ? "active" : ""}
+                            onClick={() => setReplayHistoryModeFilter(mode)}
+                          >
+                            {mode}
+                          </button>
+                        ))}
+                        {replayPushHistoryModeHasUnknown ? (
+                          <button
+                            type="button"
+                            className={replayHistoryModeFilter === "unknown" ? "active" : ""}
+                            onClick={() => setReplayHistoryModeFilter("unknown")}
+                          >
+                            未标注
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                  {filteredReplayPushHistory.length > 0 ? (
+                    <div className="graph-replay-history-list">
+                      {filteredReplayPushHistory.map((entry) => (
+                        <article className="graph-replay-history-item" key={entry.id}>
+                          <header>
+                            <strong>{entry.batchId}</strong>
+                            <span>
+                              {resolveReplayPushSourceLabel(entry.source)} ·
+                              {resolveReplayPushTargetLabel(entry.target)} · {entry.count} 条
+                            </span>
+                          </header>
+                          <p>
+                            首条：{entry.primaryNodeLabel}
+                            {entry.bridgePartnerLabel
+                              ? ` ↔ ${entry.bridgePartnerLabel}`
+                              : ""}{" "}
+                            · {entry.mode ? `模式 ${entry.mode}` : "模式未标注"}
+                          </p>
+                          <em>{formatDateTime(entry.at)}</em>
+                          <div className="graph-replay-history-actions">
+                            <button
+                              type="button"
+                              disabled={entry.queue.length === 0}
+                              onClick={() => handleRepushHistoryEntry(entry, "path")}
+                            >
+                              复推到路径
+                            </button>
+                            <button
+                              type="button"
+                              disabled={entry.queue.length === 0}
+                              onClick={() => handleRepushHistoryEntry(entry, "workspace")}
+                            >
+                              复推到工作区
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="muted">当前筛选下暂无历史批次，尝试切换筛选条件。</p>
+                  )}
+                </>
+              ) : (
+                <p className="muted">暂无回放推送历史，先执行一次“推送当前帧”或“批量推送”。</p>
               )}
             </div>
 

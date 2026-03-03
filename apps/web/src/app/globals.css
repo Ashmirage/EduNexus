@@ -5804,6 +5804,163 @@ html[data-theme="aurora"] .config-diff-values em {
   cursor: not-allowed;
 }
 
+.graph-replay-history-head {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.graph-replay-history-head span {
+  font-size: 11px;
+  color: #9fc7ee;
+}
+
+.graph-replay-history-head button {
+  border: 1px solid rgba(97, 132, 178, 0.42);
+  border-radius: 999px;
+  background: rgba(10, 16, 27, 0.56);
+  color: #d8efff;
+  font: inherit;
+  font-size: 11px;
+  padding: 4px 9px;
+  cursor: pointer;
+}
+
+.graph-replay-history-metrics {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.graph-replay-history-metrics span {
+  border: 1px solid rgba(97, 132, 178, 0.34);
+  border-radius: 999px;
+  background: rgba(8, 13, 22, 0.46);
+  color: #9fc7ee;
+  font-size: 11px;
+  padding: 3px 8px;
+}
+
+.graph-replay-history-filters {
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.graph-replay-history-filter-group {
+  display: grid;
+  gap: 5px;
+}
+
+.graph-replay-history-filter-group > span {
+  font-size: 11px;
+  color: #9fc7ee;
+}
+
+.graph-replay-history-filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.graph-replay-history-filter-buttons button {
+  border: 1px solid rgba(97, 132, 178, 0.42);
+  border-radius: 999px;
+  background: rgba(10, 16, 27, 0.56);
+  color: #d8efff;
+  font: inherit;
+  font-size: 11px;
+  padding: 4px 9px;
+  cursor: pointer;
+}
+
+.graph-replay-history-filter-buttons button.active {
+  border-color: rgba(97, 199, 255, 0.56);
+  background: rgba(97, 199, 255, 0.2);
+  color: #f2fbff;
+}
+
+.graph-replay-history-list {
+  margin-top: 8px;
+  display: grid;
+  gap: 7px;
+  max-height: 250px;
+  overflow: auto;
+}
+
+.graph-replay-history-item {
+  border: 1px solid rgba(97, 132, 178, 0.34);
+  border-radius: 10px;
+  background: rgba(8, 13, 22, 0.52);
+  padding: 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.graph-replay-history-item header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.graph-replay-history-item header strong {
+  font-size: 12px;
+  color: #d8efff;
+}
+
+.graph-replay-history-item header span {
+  font-size: 11px;
+  color: #9fc7ee;
+}
+
+.graph-replay-history-item p {
+  margin: 0;
+  font-size: 12px;
+  color: #cfe8ff;
+}
+
+.graph-replay-history-item em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.graph-replay-history-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.graph-replay-history-actions button {
+  border: 1px solid rgba(97, 132, 178, 0.42);
+  border-radius: 999px;
+  background: rgba(10, 16, 27, 0.56);
+  color: #d8efff;
+  font: inherit;
+  font-size: 11px;
+  padding: 4px 9px;
+  cursor: pointer;
+}
+
+.graph-replay-history-actions button:first-child {
+  border-color: rgba(97, 199, 255, 0.52);
+  background: rgba(97, 199, 255, 0.16);
+}
+
+.graph-replay-history-actions button:last-child {
+  border-color: rgba(159, 255, 210, 0.54);
+  background: rgba(159, 255, 210, 0.14);
+}
+
+.graph-replay-history-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .graph-bridge-node-stats {
   margin-top: 8px;
   display: grid;
@@ -7005,6 +7162,62 @@ html[data-theme="aurora"] .graph-bridge-replay-batch button:first-of-type {
 }
 
 html[data-theme="aurora"] .graph-bridge-replay-batch button:last-of-type {
+  border-color: rgba(64, 174, 138, 0.46);
+  background: rgba(103, 210, 174, 0.2);
+}
+
+html[data-theme="aurora"] .graph-replay-history-head span,
+html[data-theme="aurora"] .graph-replay-history-item header span {
+  color: #5c7fad;
+}
+
+html[data-theme="aurora"] .graph-replay-history-metrics span {
+  border-color: rgba(118, 154, 216, 0.4);
+  background: rgba(255, 255, 255, 0.84);
+  color: #5c7fad;
+}
+
+html[data-theme="aurora"] .graph-replay-history-filter-group > span {
+  color: #5c7fad;
+}
+
+html[data-theme="aurora"] .graph-replay-history-head button,
+html[data-theme="aurora"] .graph-replay-history-actions button,
+html[data-theme="aurora"] .graph-replay-history-filter-buttons button {
+  border-color: rgba(118, 154, 216, 0.46);
+  background: rgba(255, 255, 255, 0.88);
+  color: #4f719f;
+}
+
+html[data-theme="aurora"] .graph-replay-history-filter-buttons button.active {
+  border-color: rgba(84, 155, 255, 0.52);
+  background: rgba(122, 187, 255, 0.24);
+  color: #2e5a8b;
+}
+
+html[data-theme="aurora"] .graph-replay-history-item {
+  border-color: rgba(118, 154, 216, 0.38);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+html[data-theme="aurora"] .graph-replay-history-item header strong {
+  color: #2e5a8b;
+}
+
+html[data-theme="aurora"] .graph-replay-history-item p {
+  color: #4f719f;
+}
+
+html[data-theme="aurora"] .graph-replay-history-item em {
+  color: #6a8db6;
+}
+
+html[data-theme="aurora"] .graph-replay-history-actions button:first-child {
+  border-color: rgba(84, 155, 255, 0.52);
+  background: rgba(122, 187, 255, 0.24);
+}
+
+html[data-theme="aurora"] .graph-replay-history-actions button:last-child {
   border-color: rgba(64, 174, 138, 0.46);
   background: rgba(103, 210, 174, 0.2);
 }
