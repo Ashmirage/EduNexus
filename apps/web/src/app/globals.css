@@ -5883,6 +5883,11 @@ html[data-theme="aurora"] .config-diff-values em {
   color: #f2fbff;
 }
 
+.graph-replay-history-viewport {
+  font-size: 11px;
+  color: #9fc7ee;
+}
+
 .graph-replay-history-list {
   margin-top: 8px;
   display: grid;
@@ -5946,12 +5951,12 @@ html[data-theme="aurora"] .config-diff-values em {
   cursor: pointer;
 }
 
-.graph-replay-history-actions button:first-child {
+.graph-replay-history-actions button:nth-child(2) {
   border-color: rgba(97, 199, 255, 0.52);
   background: rgba(97, 199, 255, 0.16);
 }
 
-.graph-replay-history-actions button:last-child {
+.graph-replay-history-actions button:nth-child(3) {
   border-color: rgba(159, 255, 210, 0.54);
   background: rgba(159, 255, 210, 0.14);
 }
@@ -6329,6 +6334,66 @@ html[data-theme="aurora"] .config-diff-values em {
 .path-focus-queue-list button.active {
   border-color: rgba(159, 255, 210, 0.56);
   box-shadow: 0 0 0 1px rgba(159, 255, 210, 0.18);
+}
+
+.path-replay-history {
+  margin-top: 8px;
+  border-top: 1px dashed rgba(97, 132, 178, 0.34);
+  padding-top: 7px;
+  display: grid;
+  gap: 6px;
+}
+
+.path-replay-history header {
+  display: grid;
+  gap: 2px;
+}
+
+.path-replay-history header strong {
+  font-size: 12px;
+  color: #d8efff;
+}
+
+.path-replay-history header span {
+  font-size: 11px;
+  color: #9fc7ee;
+}
+
+.path-replay-history-list {
+  display: grid;
+  gap: 6px;
+}
+
+.path-replay-history-item {
+  border: 1px solid rgba(97, 132, 178, 0.32);
+  border-radius: 9px;
+  background: rgba(8, 13, 22, 0.5);
+  padding: 7px 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.path-replay-history-item p {
+  margin: 0;
+  font-size: 12px;
+  color: #d8efff;
+}
+
+.path-replay-history-item span {
+  font-size: 11px;
+  color: #9fc7ee;
+}
+
+.path-replay-history-item button {
+  justify-self: start;
+  border: 1px solid rgba(97, 132, 178, 0.42);
+  border-radius: 999px;
+  background: rgba(10, 16, 27, 0.56);
+  color: #d8efff;
+  font: inherit;
+  font-size: 11px;
+  padding: 4px 9px;
+  cursor: pointer;
 }
 
 .path-bridge-template {
@@ -6780,6 +6845,66 @@ html[data-theme="aurora"] .config-diff-values em {
   box-shadow: 0 0 0 1px rgba(159, 255, 210, 0.18);
 }
 
+.workspace-replay-history {
+  margin-top: 8px;
+  border-top: 1px dashed rgba(97, 132, 178, 0.34);
+  padding-top: 7px;
+  display: grid;
+  gap: 6px;
+}
+
+.workspace-replay-history header {
+  display: grid;
+  gap: 2px;
+}
+
+.workspace-replay-history header strong {
+  font-size: 12px;
+  color: #d8efff;
+}
+
+.workspace-replay-history header span {
+  font-size: 11px;
+  color: #9fc7ee;
+}
+
+.workspace-replay-history-list {
+  display: grid;
+  gap: 6px;
+}
+
+.workspace-replay-history-item {
+  border: 1px solid rgba(97, 132, 178, 0.32);
+  border-radius: 9px;
+  background: rgba(8, 13, 22, 0.5);
+  padding: 7px 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.workspace-replay-history-item p {
+  margin: 0;
+  font-size: 12px;
+  color: #d8efff;
+}
+
+.workspace-replay-history-item span {
+  font-size: 11px;
+  color: #9fc7ee;
+}
+
+.workspace-replay-history-item button {
+  justify-self: start;
+  border: 1px solid rgba(97, 132, 178, 0.42);
+  border-radius: 999px;
+  background: rgba(10, 16, 27, 0.56);
+  color: #d8efff;
+  font: inherit;
+  font-size: 11px;
+  padding: 4px 9px;
+  cursor: pointer;
+}
+
 html[data-theme="aurora"] .graph-control-bar > button {
   border-color: rgba(84, 155, 255, 0.56);
   background:
@@ -7181,6 +7306,10 @@ html[data-theme="aurora"] .graph-replay-history-filter-group > span {
   color: #5c7fad;
 }
 
+html[data-theme="aurora"] .graph-replay-history-viewport {
+  color: #5c7fad;
+}
+
 html[data-theme="aurora"] .graph-replay-history-head button,
 html[data-theme="aurora"] .graph-replay-history-actions button,
 html[data-theme="aurora"] .graph-replay-history-filter-buttons button {
@@ -7212,12 +7341,12 @@ html[data-theme="aurora"] .graph-replay-history-item em {
   color: #6a8db6;
 }
 
-html[data-theme="aurora"] .graph-replay-history-actions button:first-child {
+html[data-theme="aurora"] .graph-replay-history-actions button:nth-child(2) {
   border-color: rgba(84, 155, 255, 0.52);
   background: rgba(122, 187, 255, 0.24);
 }
 
-html[data-theme="aurora"] .graph-replay-history-actions button:last-child {
+html[data-theme="aurora"] .graph-replay-history-actions button:nth-child(3) {
   border-color: rgba(64, 174, 138, 0.46);
   background: rgba(103, 210, 174, 0.2);
 }
@@ -7379,6 +7508,30 @@ html[data-theme="aurora"] .path-focus-queue-list button em {
 html[data-theme="aurora"] .path-focus-queue-list button.active {
   border-color: rgba(64, 174, 138, 0.46);
   box-shadow: 0 0 0 1px rgba(64, 174, 138, 0.2);
+}
+
+html[data-theme="aurora"] .path-replay-history header strong {
+  color: #2f5f93;
+}
+
+html[data-theme="aurora"] .path-replay-history header span,
+html[data-theme="aurora"] .path-replay-history-item span {
+  color: #5c7fad;
+}
+
+html[data-theme="aurora"] .path-replay-history-item {
+  border-color: rgba(118, 154, 216, 0.4);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+html[data-theme="aurora"] .path-replay-history-item p {
+  color: #4f719f;
+}
+
+html[data-theme="aurora"] .path-replay-history-item button {
+  border-color: rgba(84, 155, 255, 0.52);
+  background: rgba(122, 187, 255, 0.2);
+  color: #285887;
 }
 
 html[data-theme="aurora"] .path-bridge-template {
@@ -7578,6 +7731,30 @@ html[data-theme="aurora"] .workspace-focus-queue-list button em {
 html[data-theme="aurora"] .workspace-focus-queue-list button.active {
   border-color: rgba(64, 174, 138, 0.46);
   box-shadow: 0 0 0 1px rgba(64, 174, 138, 0.2);
+}
+
+html[data-theme="aurora"] .workspace-replay-history header strong {
+  color: #2f5f93;
+}
+
+html[data-theme="aurora"] .workspace-replay-history header span,
+html[data-theme="aurora"] .workspace-replay-history-item span {
+  color: #5c7fad;
+}
+
+html[data-theme="aurora"] .workspace-replay-history-item {
+  border-color: rgba(118, 154, 216, 0.4);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+html[data-theme="aurora"] .workspace-replay-history-item p {
+  color: #4f719f;
+}
+
+html[data-theme="aurora"] .workspace-replay-history-item button {
+  border-color: rgba(84, 155, 255, 0.52);
+  background: rgba(122, 187, 255, 0.2);
+  color: #285887;
 }
 
 .result-box {

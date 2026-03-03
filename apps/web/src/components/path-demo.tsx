@@ -8,10 +8,19 @@ import {
   buildPathGoalFromFocus,
   readPathFocusBatchFromStorage,
   readPathFocusFromStorage,
+  writePathFocusBatchToStorage,
+  writePathFocusToStorage,
   writeWorkspaceFocusBatchToStorage,
   writeWorkspaceFocusToStorage,
   type PathFocusPayload
 } from "@/lib/client/path-focus-bridge";
+import {
+  readReplayPushHistoryFromStorage,
+  resolveReplayPushSourceLabel,
+  resolveReplayPushTargetLabel,
+  sortReplayPushHistory,
+  type ReplayPushHistoryEntry
+} from "@/lib/client/replay-push-history";
 
 type LearningTask = {
   taskId: string;
@@ -252,6 +261,9 @@ export function PathDemo() {
   const [bridgeSaveMode, setBridgeSaveMode] = useState<BridgeSaveMode>("create_new");
   const [bridgeTargetSessionId, setBridgeTargetSessionId] = useState("");
   const [workspaceSessions, setWorkspaceSessions] = useState<WorkspaceSessionSummary[]>([]);
+  const [replayPushHistoryEntries, setReplayPushHistoryEntries] = useState<
+    ReplayPushHistoryEntry[]
+  >([]);
   const [submittingTaskId, setSubmittingTaskId] = useState("");
   const [data, setData] = useState<PathPayload | null>(null);
   const [error, setError] = useState("");
@@ -371,6 +383,24 @@ export function PathDemo() {
       replayMode: focusPayload.replayMode ?? ""
     };
   }, [focusPayload]);
+
+  const replayPushHistoryPreview = useMemo(
+    () => sortReplayPushHistory(replayPushHistoryEntries, "latest").slice(0, 6),
+    [replayPushHistoryEntries]
+  );
+
+  const loadReplayPushHistory = useCallback(() => {
+    setReplayPushHistoryEntries(
+      readReplayPushHistoryFromStorage((key) => window.localStorage.getItem(key), 12)
+    );
+  }, []);
+
+  useEffect(() => {
+    loadReplayPushHistory();
+    window.addEventListener("focus", loadReplayPushHistory);
+    return () => window.removeEventListener("focus", loadReplayPushHistory);
+  }, [loadReplayPushHistory]);
+
   const activeFocusQueueIndex = useMemo(() => {
     if (focusQueue.length === 0) {
       return -1;
@@ -588,6 +618,34 @@ export function PathDemo() {
     setFocusHint(buildFocusHintText(payload, focusQueue.length || incomingBatchCount));
     setBridgeExportHint("");
   }, [focusQueue.length, incomingBatchCount]);
+
+  const applyReplayHistoryToPath = useCallback((entry: ReplayPushHistoryEntry) => {
+    if (entry.queue.length === 0) {
+      setError("该回放批次无可用关系链，无法载入。");
+      return;
+    }
+    const queue = entry.queue.map((item, index) => ({
+      ...item,
+      replayBatchId: item.replayBatchId ?? entry.batchId,
+      replayBatchIndex: index + 1,
+      replayBatchTotal: entry.queue.length,
+      replayMode: item.replayMode ?? entry.mode
+    }));
+    const primary = queue[0]!;
+    writePathFocusBatchToStorage(queue, (key, value) => window.localStorage.setItem(key, value));
+    writePathFocusToStorage(primary, (key, value) => window.localStorage.setItem(key, value));
+    setIncomingBatchCount(queue.length);
+    setFocusQueue(queue);
+    setActiveFocusQueueKey(buildFocusQueueKey(primary));
+    setFocusPayload(primary);
+    setGoal(buildPathGoalFromFocus(primary));
+    setBridgeExportHint("");
+    setFocusHint(
+      `已从回放历史载入路径批次：${entry.batchId} · ${queue.length} 条（原目标：${resolveReplayPushTargetLabel(
+        entry.target
+      )}）`
+    );
+  }, []);
 
   const stepFocusQueue = useCallback((offset: number) => {
     if (focusQueue.length < 2) {
@@ -960,6 +1018,33 @@ export function PathDemo() {
               </div>
             </div>
           ) : null}
+          <div className="path-replay-history">
+            <header>
+              <strong>回放批次历史入口</strong>
+              <span>支持一键载入为当前路径焦点队列</span>
+            </header>
+            {replayPushHistoryPreview.length > 0 ? (
+              <div className="path-replay-history-list">
+                {replayPushHistoryPreview.map((entry) => (
+                  <article key={entry.id} className="path-replay-history-item">
+                    <p>
+                      <strong>{entry.batchId}</strong> · {entry.count} 条 · 原目标{" "}
+                      {resolveReplayPushTargetLabel(entry.target)}
+                    </p>
+                    <span>
+                      {resolveReplayPushSourceLabel(entry.source)}
+                      {entry.mode ? ` · 模式 ${entry.mode}` : ""}
+                    </span>
+                    <button type="button" onClick={() => applyReplayHistoryToPath(entry)}>
+                      载入到路径
+                    </button>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="muted">暂无回放批次历史，可先在图谱页执行批量推送。</p>
+            )}
+          </div>
           <p>关联节点：{focusSummary.relatedText}</p>
           {focusSummary.bridgeTaskTemplate ? (
             <div className="path-bridge-template">

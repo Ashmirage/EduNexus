@@ -32,7 +32,6 @@ import {
   type GraphViewNode
 } from "@/lib/client/graph-view-model";
 import {
-  normalizePathFocusBatchPayload,
   type PathFocusPayload,
   writePathFocusBatchToStorage,
   writePathFocusToStorage,
@@ -43,6 +42,18 @@ import {
   buildBridgeReplayFrames,
   type BridgeReplayMode
 } from "@/lib/client/bridge-insight";
+import {
+  GRAPH_REPLAY_PUSH_HISTORY_LIMIT,
+  GRAPH_REPLAY_PUSH_HISTORY_STORAGE_KEY,
+  normalizeReplayPushHistoryPayload,
+  resolveReplayPushSourceLabel,
+  resolveReplayPushTargetLabel,
+  sortReplayPushHistory,
+  type ReplayPushHistoryEntry,
+  type ReplayPushHistorySort,
+  type ReplayPushSource,
+  type ReplayPushTarget
+} from "@/lib/client/replay-push-history";
 
 const GRAPH_CANVAS_WIDTH = 920;
 const GRAPH_CANVAS_HEIGHT = 520;
@@ -53,8 +64,6 @@ const GRAPH_RISK_THRESHOLD_STORAGE_KEY = "edunexus_graph_risk_threshold";
 const GRAPH_CANVAS_ZOOM_STORAGE_KEY = "edunexus_graph_canvas_zoom";
 const GRAPH_BRIDGE_HISTORY_STORAGE_KEY = "edunexus_graph_bridge_history_timeline";
 const GRAPH_BRIDGE_HISTORY_LIMIT = 14;
-const GRAPH_REPLAY_PUSH_HISTORY_STORAGE_KEY = "edunexus_graph_replay_push_history";
-const GRAPH_REPLAY_PUSH_HISTORY_LIMIT = 12;
 const BRIDGE_REPLAY_INTERVAL_MS: Record<BridgeReplaySpeed, number> = {
   "1x": 1300,
   "1.5x": 950,
@@ -149,10 +158,6 @@ type OpenWorkspaceSessionOptions = {
   nodeLabel?: string;
 };
 
-type ReplayPushTarget = "path" | "workspace";
-
-type ReplayPushSource = "single_frame" | "batch_queue" | "history_repush";
-
 type ReplayPushMeta = {
   replayBatchId?: string;
   replayBatchIndex?: number;
@@ -160,21 +165,7 @@ type ReplayPushMeta = {
   replayFrameAt?: string;
   replayMode?: BridgeReplayMode;
 };
-
-type ReplayPushHistoryEntry = {
-  id: string;
-  batchId: string;
-  target: ReplayPushTarget;
-  source: ReplayPushSource;
-  at: string;
-  count: number;
-  mode?: BridgeReplayMode;
-  primaryNodeLabel: string;
-  bridgePartnerLabel?: string;
-  queue: PathFocusPayload[];
-};
-
-type ReplayPushHistoryModeFilter = "all" | BridgeReplayMode | "unknown";
+type ReplayPushHistoryModeFilter = "all" | PathFocusPayload["replayMode"] | "unknown";
 
 function resolveRiskTone(risk: number) {
   if (risk >= 0.65) {
@@ -201,20 +192,6 @@ function formatDateTime(value: string) {
   } catch {
     return value;
   }
-}
-
-function resolveReplayPushSourceLabel(source: ReplayPushSource) {
-  if (source === "single_frame") {
-    return "当前帧推送";
-  }
-  if (source === "batch_queue") {
-    return "批量队列推送";
-  }
-  return "历史复推";
-}
-
-function resolveReplayPushTargetLabel(target: ReplayPushTarget) {
-  return target === "path" ? "路径" : "工作区";
 }
 
 function formatDelta(value: number, options?: { precision?: number; suffix?: string }) {
@@ -249,39 +226,6 @@ function buildEdgeKey(sourceId: string, targetId: string) {
 
 function buildBridgeReplayFrameKey(input: { snapshotId: string; bridgeId: string }) {
   return `${input.snapshotId}__${input.bridgeId}`;
-}
-
-function normalizeReplayPushHistoryPayload(
-  payload: unknown,
-  limit: number
-): ReplayPushHistoryEntry[] {
-  if (!Array.isArray(payload)) {
-    return [];
-  }
-  return payload
-    .filter((item): item is ReplayPushHistoryEntry => {
-      if (!item || typeof item !== "object") {
-        return false;
-      }
-      const value = item as ReplayPushHistoryEntry;
-      return (
-        typeof value.id === "string" &&
-        typeof value.batchId === "string" &&
-        (value.target === "path" || value.target === "workspace") &&
-        (value.source === "single_frame" ||
-          value.source === "batch_queue" ||
-          value.source === "history_repush") &&
-        typeof value.at === "string" &&
-        typeof value.count === "number" &&
-        Array.isArray(value.queue)
-      );
-    })
-    .map((item) => ({
-      ...item,
-      queue: normalizePathFocusBatchPayload(item.queue, 12)
-    }))
-    .filter((item) => item.queue.length > 0)
-    .slice(0, Math.max(1, limit));
 }
 
 function buildBridgeTaskTemplate(primaryLabel: string, secondaryLabel: string) {
@@ -419,6 +363,9 @@ export function GraphDemo() {
   >("all");
   const [replayHistoryModeFilter, setReplayHistoryModeFilter] =
     useState<ReplayPushHistoryModeFilter>("all");
+  const [replayHistorySort, setReplayHistorySort] =
+    useState<ReplayPushHistorySort>("latest");
+  const [replayHistoryTopN, setReplayHistoryTopN] = useState<"all" | 3 | 5 | 10>("all");
   const bridgeReplayTimerRef = useRef<number | null>(null);
 
   const clearBridgeReplayTimer = useCallback(() => {
@@ -583,7 +530,7 @@ export function GraphDemo() {
   }, [replayPushHistory]);
 
   const replayPushHistoryModeOptions = useMemo(() => {
-    const set = new Set<BridgeReplayMode>();
+    const set = new Set<PathFocusPayload["replayMode"]>();
     for (const item of replayPushHistory) {
       if (item.mode) {
         set.add(item.mode);
@@ -619,6 +566,18 @@ export function GraphDemo() {
     replayHistoryTargetFilter,
     replayPushHistory
   ]);
+
+  const sortedReplayPushHistory = useMemo(
+    () => sortReplayPushHistory(filteredReplayPushHistory, replayHistorySort),
+    [filteredReplayPushHistory, replayHistorySort]
+  );
+
+  const visibleReplayPushHistory = useMemo(() => {
+    if (replayHistoryTopN === "all") {
+      return sortedReplayPushHistory;
+    }
+    return sortedReplayPushHistory.slice(0, replayHistoryTopN);
+  }, [replayHistoryTopN, sortedReplayPushHistory]);
 
   useEffect(() => {
     const loadGraphActivities = () => {
@@ -2114,6 +2073,8 @@ export function GraphDemo() {
     setReplayHistoryTargetFilter("all");
     setReplayHistorySourceFilter("all");
     setReplayHistoryModeFilter("all");
+    setReplayHistorySort("latest");
+    setReplayHistoryTopN("all");
     try {
       window.localStorage.removeItem(GRAPH_REPLAY_PUSH_HISTORY_STORAGE_KEY);
     } catch {
@@ -3066,10 +3027,73 @@ export function GraphDemo() {
                         ) : null}
                       </div>
                     </div>
+                    <div className="graph-replay-history-filter-group">
+                      <span>排序</span>
+                      <div className="graph-replay-history-filter-buttons">
+                        <button
+                          type="button"
+                          className={replayHistorySort === "latest" ? "active" : ""}
+                          onClick={() => setReplayHistorySort("latest")}
+                        >
+                          最新时间
+                        </button>
+                        <button
+                          type="button"
+                          className={replayHistorySort === "count_desc" ? "active" : ""}
+                          onClick={() => setReplayHistorySort("count_desc")}
+                        >
+                          数量降序
+                        </button>
+                        <button
+                          type="button"
+                          className={replayHistorySort === "count_asc" ? "active" : ""}
+                          onClick={() => setReplayHistorySort("count_asc")}
+                        >
+                          数量升序
+                        </button>
+                      </div>
+                    </div>
+                    <div className="graph-replay-history-filter-group">
+                      <span>快速 TopN</span>
+                      <div className="graph-replay-history-filter-buttons">
+                        <button
+                          type="button"
+                          className={replayHistoryTopN === 3 ? "active" : ""}
+                          onClick={() => setReplayHistoryTopN(3)}
+                        >
+                          Top 3
+                        </button>
+                        <button
+                          type="button"
+                          className={replayHistoryTopN === 5 ? "active" : ""}
+                          onClick={() => setReplayHistoryTopN(5)}
+                        >
+                          Top 5
+                        </button>
+                        <button
+                          type="button"
+                          className={replayHistoryTopN === 10 ? "active" : ""}
+                          onClick={() => setReplayHistoryTopN(10)}
+                        >
+                          Top 10
+                        </button>
+                        <button
+                          type="button"
+                          className={replayHistoryTopN === "all" ? "active" : ""}
+                          onClick={() => setReplayHistoryTopN("all")}
+                        >
+                          全部
+                        </button>
+                      </div>
+                    </div>
+                    <span className="graph-replay-history-viewport">
+                      当前展示 {visibleReplayPushHistory.length}/{filteredReplayPushHistory.length}{" "}
+                      条
+                    </span>
                   </div>
-                  {filteredReplayPushHistory.length > 0 ? (
+                  {visibleReplayPushHistory.length > 0 ? (
                     <div className="graph-replay-history-list">
-                      {filteredReplayPushHistory.map((entry) => (
+                      {visibleReplayPushHistory.map((entry) => (
                         <article className="graph-replay-history-item" key={entry.id}>
                           <header>
                             <strong>{entry.batchId}</strong>
@@ -3087,6 +3111,13 @@ export function GraphDemo() {
                           </p>
                           <em>{formatDateTime(entry.at)}</em>
                           <div className="graph-replay-history-actions">
+                            <button
+                              type="button"
+                              disabled={entry.queue.length === 0}
+                              onClick={() => handleRepushHistoryEntry(entry, entry.target)}
+                            >
+                              复推到原目标
+                            </button>
                             <button
                               type="button"
                               disabled={entry.queue.length === 0}

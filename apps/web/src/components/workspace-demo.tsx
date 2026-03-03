@@ -8,8 +8,17 @@ import {
   buildWorkspacePromptFromFocus,
   readWorkspaceFocusBatchFromStorage,
   readWorkspaceFocusFromStorage,
+  writeWorkspaceFocusBatchToStorage,
+  writeWorkspaceFocusToStorage,
   type PathFocusPayload
 } from "@/lib/client/path-focus-bridge";
+import {
+  readReplayPushHistoryFromStorage,
+  resolveReplayPushSourceLabel,
+  resolveReplayPushTargetLabel,
+  sortReplayPushHistory,
+  type ReplayPushHistoryEntry
+} from "@/lib/client/replay-push-history";
 
 type Citation = {
   sourceId: string;
@@ -507,6 +516,9 @@ export function WorkspaceDemo() {
   const [graphFocusQueue, setGraphFocusQueue] = useState<PathFocusPayload[]>([]);
   const [activeGraphFocusQueueKey, setActiveGraphFocusQueueKey] = useState("");
   const [graphFocusHint, setGraphFocusHint] = useState("");
+  const [replayPushHistoryEntries, setReplayPushHistoryEntries] = useState<
+    ReplayPushHistoryEntry[]
+  >([]);
   const [autoApplyGraphFocusPrompt, setAutoApplyGraphFocusPrompt] = useState(false);
   const streamReplayTimerRef = useRef<number | null>(null);
   const replayStateRef = useRef<ReplayState | null>(null);
@@ -581,6 +593,18 @@ export function WorkspaceDemo() {
           : "")
     };
   }, [graphFocus, queryReplayBatchId, queryReplayMode]);
+
+  const replayPushHistoryPreview = useMemo(
+    () => sortReplayPushHistory(replayPushHistoryEntries, "latest").slice(0, 6),
+    [replayPushHistoryEntries]
+  );
+
+  const loadReplayPushHistory = useCallback(() => {
+    setReplayPushHistoryEntries(
+      readReplayPushHistoryFromStorage((key) => window.localStorage.getItem(key), 12)
+    );
+  }, []);
+
   const citations = useMemo(() => {
     const merged = [
       ...(nextData?.citations ?? []),
@@ -687,6 +711,12 @@ export function WorkspaceDemo() {
       // ignore preference write errors
     }
   }, [autoApplyGraphFocusPrompt]);
+
+  useEffect(() => {
+    loadReplayPushHistory();
+    window.addEventListener("focus", loadReplayPushHistory);
+    return () => window.removeEventListener("focus", loadReplayPushHistory);
+  }, [loadReplayPushHistory]);
 
   useEffect(() => {
     if (hasAppliedGraphFocusRef.current) {
@@ -995,6 +1025,36 @@ export function WorkspaceDemo() {
     }
     switchGraphFocusFromQueue(next, nextIndex);
   }, [activeGraphFocusQueueIndex, graphFocusQueue, switchGraphFocusFromQueue]);
+
+  const applyReplayHistoryToWorkspace = useCallback((entry: ReplayPushHistoryEntry) => {
+    if (entry.queue.length === 0) {
+      setError("该回放批次无可用关系链，无法载入。");
+      return;
+    }
+    const queue = entry.queue.map((item, index) => ({
+      ...item,
+      replayBatchId: item.replayBatchId ?? entry.batchId,
+      replayBatchIndex: index + 1,
+      replayBatchTotal: entry.queue.length,
+      replayMode: item.replayMode ?? entry.mode
+    }));
+    const primary = queue[0]!;
+    writeWorkspaceFocusBatchToStorage(queue, (key, value) =>
+      window.localStorage.setItem(key, value)
+    );
+    writeWorkspaceFocusToStorage(primary, (key, value) => window.localStorage.setItem(key, value));
+    setGraphFocusQueue(queue);
+    setActiveGraphFocusQueueKey(buildFocusQueueKey(primary));
+    setGraphFocus(primary);
+    if (autoApplyGraphFocusPrompt) {
+      setUserInput(buildWorkspacePromptFromFocus(primary));
+    }
+    setGraphFocusHint(
+      `已从回放历史载入工作区焦点：${entry.batchId} · ${queue.length} 条（原目标：${resolveReplayPushTargetLabel(
+        entry.target
+      )}）`
+    );
+  }, [autoApplyGraphFocusPrompt]);
 
   useEffect(() => {
     if (graphFocusQueue.length < 2) {
@@ -2061,6 +2121,33 @@ export function WorkspaceDemo() {
                 </div>
               </div>
             ) : null}
+            <div className="workspace-replay-history">
+              <header>
+                <strong>回放批次历史入口</strong>
+                <span>一键载入为当前工作区关系链队列</span>
+              </header>
+              {replayPushHistoryPreview.length > 0 ? (
+                <div className="workspace-replay-history-list">
+                  {replayPushHistoryPreview.map((entry) => (
+                    <article key={entry.id} className="workspace-replay-history-item">
+                      <p>
+                        <strong>{entry.batchId}</strong> · {entry.count} 条 · 原目标{" "}
+                        {resolveReplayPushTargetLabel(entry.target)}
+                      </p>
+                      <span>
+                        {resolveReplayPushSourceLabel(entry.source)}
+                        {entry.mode ? ` · 模式 ${entry.mode}` : ""}
+                      </span>
+                      <button type="button" onClick={() => applyReplayHistoryToWorkspace(entry)}>
+                        载入到工作区
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className="muted">暂无回放批次历史，可先在图谱页执行批量推送。</p>
+              )}
+            </div>
             <p>关联节点：{graphFocusSummary.related}</p>
             <button type="button" onClick={applyGraphFocusPrompt} disabled={loading}>
               重新应用图谱焦点提示词
