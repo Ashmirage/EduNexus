@@ -4915,6 +4915,35 @@ html[data-theme="aurora"] .config-diff-values em {
   accent-color: #61c7ff;
 }
 
+.graph-control-zoom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.graph-control-zoom span {
+  font-size: 11px;
+  color: #9fc7ee;
+  min-width: 88px;
+}
+
+.graph-control-zoom button {
+  border: 1px solid rgba(97, 132, 178, 0.42);
+  border-radius: 999px;
+  background: rgba(10, 16, 27, 0.62);
+  color: #cfe6ff;
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+
+.graph-control-zoom button:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
 .graph-control-lens {
   display: flex;
   flex-wrap: wrap;
@@ -5017,17 +5046,26 @@ html[data-theme="aurora"] .config-diff-values em {
   color: #9fc7ee;
 }
 
-.graph-canvas {
+.graph-canvas-stage {
   margin-top: 10px;
-  display: block;
-  width: 100%;
-  min-height: 380px;
+  overflow-x: auto;
+  overflow-y: hidden;
   border: 1px solid rgba(97, 132, 178, 0.32);
   border-radius: 12px;
   background:
     radial-gradient(circle at 20% 15%, rgba(97, 199, 255, 0.12), transparent 34%),
     radial-gradient(circle at 82% 82%, rgba(159, 255, 210, 0.1), transparent 30%),
     linear-gradient(160deg, rgba(9, 15, 26, 0.96), rgba(8, 13, 22, 0.92));
+}
+
+.graph-canvas {
+  display: block;
+  width: 100%;
+  min-width: 100%;
+  min-height: 380px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .graph-empty-hint {
@@ -6455,6 +6493,16 @@ html[data-theme="aurora"] .graph-control-slider {
   color: #5c7fad;
 }
 
+html[data-theme="aurora"] .graph-control-zoom span {
+  color: #5c7fad;
+}
+
+html[data-theme="aurora"] .graph-control-zoom button {
+  border-color: rgba(118, 154, 216, 0.46);
+  background: rgba(255, 255, 255, 0.88);
+  color: #4f719f;
+}
+
 html[data-theme="aurora"] .graph-control-lens button {
   border-color: rgba(118, 154, 216, 0.46);
   background: rgba(255, 255, 255, 0.88);
@@ -6501,7 +6549,7 @@ html[data-theme="aurora"] .graph-canvas-head span {
   color: #678cb7;
 }
 
-html[data-theme="aurora"] .graph-canvas {
+html[data-theme="aurora"] .graph-canvas-stage {
   border-color: rgba(118, 154, 216, 0.4);
   background:
     radial-gradient(circle at 20% 15%, rgba(122, 187, 255, 0.2), transparent 34%),

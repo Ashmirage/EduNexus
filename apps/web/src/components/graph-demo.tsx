@@ -46,6 +46,7 @@ const GRAPH_HISTORY_STORAGE_KEY = "edunexus_graph_history_timeline";
 const GRAPH_HISTORY_LIMIT = 10;
 const GRAPH_HEATMAP_ENABLED_STORAGE_KEY = "edunexus_graph_heatmap_enabled";
 const GRAPH_RISK_THRESHOLD_STORAGE_KEY = "edunexus_graph_risk_threshold";
+const GRAPH_CANVAS_ZOOM_STORAGE_KEY = "edunexus_graph_canvas_zoom";
 const GRAPH_BRIDGE_HISTORY_STORAGE_KEY = "edunexus_graph_bridge_history_timeline";
 const GRAPH_BRIDGE_HISTORY_LIMIT = 14;
 
@@ -183,6 +184,10 @@ function resolveActivityRiskTone(risk: number) {
   return "low";
 }
 
+function clampZoomPercent(value: number) {
+  return Math.max(75, Math.min(145, Math.round(value)));
+}
+
 function buildEdgeKey(sourceId: string, targetId: string) {
   return sourceId < targetId
     ? `${sourceId}__${targetId}`
@@ -299,6 +304,7 @@ export function GraphDemo() {
   const [bridgeReplayNodeFilter, setBridgeReplayNodeFilter] = useState("all");
   const [riskThresholdPercent, setRiskThresholdPercent] = useState(0);
   const [enableEdgeHeatmap, setEnableEdgeHeatmap] = useState(true);
+  const [canvasZoomPercent, setCanvasZoomPercent] = useState(100);
   const [graphLensMode, setGraphLensMode] = useState<GraphLensMode>("full");
   const [bridgeLensCrossDomainOnly, setBridgeLensCrossDomainOnly] = useState(false);
   const [savingHoverSuggestion, setSavingHoverSuggestion] = useState(false);
@@ -437,6 +443,13 @@ export function GraphDemo() {
           setRiskThresholdPercent(Math.max(0, Math.min(80, Math.round(parsed))));
         }
       }
+      const rawZoom = window.localStorage.getItem(GRAPH_CANVAS_ZOOM_STORAGE_KEY);
+      if (rawZoom) {
+        const parsed = Number(rawZoom);
+        if (Number.isFinite(parsed)) {
+          setCanvasZoomPercent(clampZoomPercent(parsed));
+        }
+      }
     } catch {
       // ignore storage read errors
     }
@@ -452,10 +465,14 @@ export function GraphDemo() {
         GRAPH_RISK_THRESHOLD_STORAGE_KEY,
         String(riskThresholdPercent)
       );
+      window.localStorage.setItem(
+        GRAPH_CANVAS_ZOOM_STORAGE_KEY,
+        String(canvasZoomPercent)
+      );
     } catch {
       // ignore storage write errors
     }
-  }, [enableEdgeHeatmap, riskThresholdPercent]);
+  }, [canvasZoomPercent, enableEdgeHeatmap, riskThresholdPercent]);
 
   useEffect(() => {
     if (!focusedActivityId) {
@@ -1396,6 +1413,30 @@ export function GraphDemo() {
               onChange={(event) => setRiskThresholdPercent(Number(event.target.value))}
             />
           </label>
+          <div className="graph-control-zoom">
+            <button
+              type="button"
+              onClick={() => setCanvasZoomPercent((prev) => clampZoomPercent(prev - 5))}
+              disabled={canvasZoomPercent <= 75}
+            >
+              缩小
+            </button>
+            <span>画布缩放 {canvasZoomPercent}%</span>
+            <button
+              type="button"
+              onClick={() => setCanvasZoomPercent((prev) => clampZoomPercent(prev + 5))}
+              disabled={canvasZoomPercent >= 145}
+            >
+              放大
+            </button>
+            <button
+              type="button"
+              onClick={() => setCanvasZoomPercent(100)}
+              disabled={canvasZoomPercent === 100}
+            >
+              复位
+            </button>
+          </div>
           <div className="graph-control-lens">
             <button
               type="button"
@@ -1419,6 +1460,7 @@ export function GraphDemo() {
             onClick={() => {
               setRiskThresholdPercent(0);
               setEnableEdgeHeatmap(true);
+              setCanvasZoomPercent(100);
               setNodeKeyword("");
               setDomainFilter("all");
               setSelectedBridgeId("");
@@ -1468,129 +1510,144 @@ export function GraphDemo() {
               <p className="graph-empty-hint">当前筛选条件下没有节点，尝试清空关键词或切换域。</p>
             ) : (
               <>
-                <svg
-                  className="graph-canvas"
-                  viewBox={`0 0 ${GRAPH_CANVAS_WIDTH} ${GRAPH_CANVAS_HEIGHT}`}
-                  role="img"
-                  aria-label="知识图谱可视化"
-                >
-                  <defs>
-                    <radialGradient id="graphGlow" cx="50%" cy="50%" r="50%">
-                      <stop offset="0%" stopColor="rgba(144, 224, 255, 0.28)" />
-                      <stop offset="100%" stopColor="rgba(144, 224, 255, 0)" />
-                    </radialGradient>
-                  </defs>
-                  <rect
-                    x="0"
-                    y="0"
-                    width={GRAPH_CANVAS_WIDTH}
-                    height={GRAPH_CANVAS_HEIGHT}
-                    fill="url(#graphGlow)"
-                  />
-                  {canvasEdges.map((edge, index) => {
-                    const source = placementMap.get(edge.source);
-                    const target = placementMap.get(edge.target);
-                    if (!source || !target) {
-                      return null;
-                    }
-                    const edgeKey = buildEdgeKey(edge.source, edge.target);
-                    const midRisk = (source.risk + target.risk) / 2;
-                    const tone = resolveRiskTone(midRisk);
-                    const highlighted =
-                      activeNode &&
-                      (activeNode.id === source.id || activeNode.id === target.id);
-                    const bridgeHighlighted = selectedBridgeId === edgeKey;
-                    const bridgeCoreEdge =
-                      graphLensMode === "bridge_focus" && selectedBridgeSuggestion
-                        ? edgeKey === selectedBridgeSuggestion.id ||
-                          edge.source === selectedBridgeSuggestion.source.id ||
-                          edge.source === selectedBridgeSuggestion.target.id ||
-                          edge.target === selectedBridgeSuggestion.source.id ||
-                          edge.target === selectedBridgeSuggestion.target.id
-                        : false;
-                    const bridgeContextEdge =
-                      graphLensMode === "bridge_focus" && !bridgeCoreEdge;
-                    const heatOpacity = enableEdgeHeatmap
-                      ? Number((0.15 + midRisk * 0.85).toFixed(2))
-                      : undefined;
-                    const resolvedOpacity = bridgeContextEdge
-                      ? Number((((heatOpacity ?? 0.46) * 0.58)).toFixed(2))
-                      : heatOpacity;
-                    return (
-                      <line
-                        key={`${edge.source}_${edge.target}_${index}`}
-                        x1={source.x}
-                        y1={source.y}
-                        x2={target.x}
-                        y2={target.y}
-                        className={`graph-edge graph-edge-${tone}${highlighted ? " highlighted" : ""}${bridgeHighlighted ? " bridge-highlighted" : ""}${bridgeCoreEdge ? " bridge-path-core" : ""}${bridgeContextEdge ? " bridge-path-context" : ""}${enableEdgeHeatmap ? " heatmap" : ""}`}
-                        strokeWidth={
-                          bridgeHighlighted
-                            ? 3.1
-                            : bridgeCoreEdge
-                              ? enableEdgeHeatmap
-                                ? 2 + midRisk * 2.2
-                                : 2.8
-                              : bridgeContextEdge
+                <div className="graph-canvas-stage">
+                  <svg
+                    className="graph-canvas"
+                    style={{ width: `${canvasZoomPercent}%` }}
+                    viewBox={`0 0 ${GRAPH_CANVAS_WIDTH} ${GRAPH_CANVAS_HEIGHT}`}
+                    role="img"
+                    aria-label="知识图谱可视化"
+                  >
+                    <defs>
+                      <radialGradient id="graphGlow" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stopColor="rgba(144, 224, 255, 0.28)" />
+                        <stop offset="100%" stopColor="rgba(144, 224, 255, 0)" />
+                      </radialGradient>
+                    </defs>
+                    <rect
+                      x="0"
+                      y="0"
+                      width={GRAPH_CANVAS_WIDTH}
+                      height={GRAPH_CANVAS_HEIGHT}
+                      fill="url(#graphGlow)"
+                    />
+                    {canvasEdges.map((edge, index) => {
+                      const source = placementMap.get(edge.source);
+                      const target = placementMap.get(edge.target);
+                      if (!source || !target) {
+                        return null;
+                      }
+                      const edgeKey = buildEdgeKey(edge.source, edge.target);
+                      const midRisk = (source.risk + target.risk) / 2;
+                      const tone = resolveRiskTone(midRisk);
+                      const highlighted =
+                        activeNode &&
+                        (activeNode.id === source.id || activeNode.id === target.id);
+                      const bridgeHighlighted = selectedBridgeId === edgeKey;
+                      const bridgeCoreEdge =
+                        graphLensMode === "bridge_focus" && selectedBridgeSuggestion
+                          ? edgeKey === selectedBridgeSuggestion.id ||
+                            edge.source === selectedBridgeSuggestion.source.id ||
+                            edge.source === selectedBridgeSuggestion.target.id ||
+                            edge.target === selectedBridgeSuggestion.source.id ||
+                            edge.target === selectedBridgeSuggestion.target.id
+                          : false;
+                      const bridgeContextEdge =
+                        graphLensMode === "bridge_focus" && !bridgeCoreEdge;
+                      const heatOpacity = enableEdgeHeatmap
+                        ? Number((0.15 + midRisk * 0.85).toFixed(2))
+                        : undefined;
+                      const resolvedOpacity = bridgeContextEdge
+                        ? Number((((heatOpacity ?? 0.46) * 0.58)).toFixed(2))
+                        : heatOpacity;
+                      return (
+                        <line
+                          key={`${edge.source}_${edge.target}_${index}`}
+                          x1={source.x}
+                          y1={source.y}
+                          x2={target.x}
+                          y2={target.y}
+                          className={`graph-edge graph-edge-${tone}${highlighted ? " highlighted" : ""}${bridgeHighlighted ? " bridge-highlighted" : ""}${bridgeCoreEdge ? " bridge-path-core" : ""}${bridgeContextEdge ? " bridge-path-context" : ""}${enableEdgeHeatmap ? " heatmap" : ""}`}
+                          strokeWidth={
+                            bridgeHighlighted
+                              ? 3.1
+                              : bridgeCoreEdge
                                 ? enableEdgeHeatmap
-                                  ? 0.9 + midRisk * 1.2
-                                  : 1.05
-                            : enableEdgeHeatmap
-                              ? 1.2 + midRisk * 2.6
-                            : highlighted
-                              ? 2.4
-                              : 1.2 + Math.min(1.8, edge.weight ?? 1)
-                        }
-                        style={
-                          enableEdgeHeatmap || bridgeContextEdge
-                            ? { opacity: resolvedOpacity ?? 0.42 }
-                            : undefined
-                        }
-                      />
-                    );
-                  })}
-                  {canvasPlacements.map((node) => {
-                    const tone = resolveRiskTone(node.risk);
-                    const selected = activeNode?.id === node.id;
-                    const related = connectedNodeIds.has(node.id);
-                    const bridgeCoreNode =
-                      graphLensMode === "bridge_focus" &&
-                      selectedBridgeSuggestion &&
-                      (node.id === selectedBridgeSuggestion.source.id ||
-                        node.id === selectedBridgeSuggestion.target.id);
-                    return (
-                      <g
-                        key={node.id}
-                        className={`graph-node graph-node-${tone}${selected ? " selected" : ""}${related ? " related" : ""}${bridgeCoreNode ? " bridge-core" : ""}`}
-                        onClick={() => setActiveNodeId(node.id)}
-                        onMouseEnter={() => setHoveredNodeId(node.id)}
-                        onMouseLeave={() =>
-                          setHoveredNodeId((prev) => (prev === node.id ? "" : prev))
-                        }
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            setActiveNodeId(node.id);
+                                  ? 2 + midRisk * 2.2
+                                  : 2.8
+                                : bridgeContextEdge
+                                  ? enableEdgeHeatmap
+                                    ? 0.9 + midRisk * 1.2
+                                    : 1.05
+                              : enableEdgeHeatmap
+                                ? 1.2 + midRisk * 2.6
+                              : highlighted
+                                ? 2.4
+                                : 1.2 + Math.min(1.8, edge.weight ?? 1)
                           }
-                        }}
-                        onFocus={() => setHoveredNodeId(node.id)}
-                        onBlur={() => setHoveredNodeId((prev) => (prev === node.id ? "" : prev))}
-                        role="button"
-                        tabIndex={0}
-                      >
-                        <title>
-                          {node.label} | 掌握度 {toPercent(node.mastery)} | 风险{" "}
-                          {toPercent(node.risk)} | 关联度 {node.degree}
-                        </title>
-                        <circle cx={node.x} cy={node.y} r={node.radius + 5} className="graph-node-halo" />
-                        <circle cx={node.x} cy={node.y} r={node.radius} className="graph-node-core" />
-                        <text x={node.x} y={node.y + 4} textAnchor="middle">
-                          {node.label.slice(0, 4)}
-                        </text>
-                      </g>
-                    );
-                  })}
-                </svg>
+                          style={
+                            enableEdgeHeatmap || bridgeContextEdge
+                              ? { opacity: resolvedOpacity ?? 0.42 }
+                              : undefined
+                          }
+                        />
+                      );
+                    })}
+                    {canvasPlacements.map((node) => {
+                      const tone = resolveRiskTone(node.risk);
+                      const selected = activeNode?.id === node.id;
+                      const related = connectedNodeIds.has(node.id);
+                      const bridgeCoreNode =
+                        graphLensMode === "bridge_focus" &&
+                        selectedBridgeSuggestion &&
+                        (node.id === selectedBridgeSuggestion.source.id ||
+                          node.id === selectedBridgeSuggestion.target.id);
+                      return (
+                        <g
+                          key={node.id}
+                          className={`graph-node graph-node-${tone}${selected ? " selected" : ""}${related ? " related" : ""}${bridgeCoreNode ? " bridge-core" : ""}`}
+                          onClick={() => setActiveNodeId(node.id)}
+                          onMouseEnter={() => setHoveredNodeId(node.id)}
+                          onMouseLeave={() =>
+                            setHoveredNodeId((prev) => (prev === node.id ? "" : prev))
+                          }
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              setActiveNodeId(node.id);
+                            }
+                          }}
+                          onFocus={() => setHoveredNodeId(node.id)}
+                          onBlur={() =>
+                            setHoveredNodeId((prev) => (prev === node.id ? "" : prev))
+                          }
+                          role="button"
+                          tabIndex={0}
+                        >
+                          <title>
+                            {node.label} | 掌握度 {toPercent(node.mastery)} | 风险{" "}
+                            {toPercent(node.risk)} | 关联度 {node.degree}
+                          </title>
+                          <circle
+                            cx={node.x}
+                            cy={node.y}
+                            r={node.radius + 5}
+                            className="graph-node-halo"
+                          />
+                          <circle
+                            cx={node.x}
+                            cy={node.y}
+                            r={node.radius}
+                            className="graph-node-core"
+                          />
+                          <text x={node.x} y={node.y + 4} textAnchor="middle">
+                            {node.label.slice(0, 4)}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                </div>
 
                 <div className="graph-legend-row">
                   <span className="graph-legend-item low">低风险</span>
