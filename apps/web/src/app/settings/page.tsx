@@ -784,16 +784,16 @@ export default function SettingsPage() {
 
       <div className="panel-grid settings-layout" data-view={settingsViewMode}>
         <GalaxyHero
-          badge="Config Center · Local Persistence"
+          badge="配置中心 · 本地持久化"
           title="一处配置，三处联动"
-          description="配置写入本地并实时广播到各子系统，支持 schema 迁移、画像管理和配置快照。"
+          description="配置写入本地并实时广播到各子系统，支持配置迁移、画像管理和快照回滚。"
           quote="“把策略参数从代码里拿出来，放进可视化配置中心。”"
-          chips={["Dashboard 预警策略", "Workspace 回放策略", "KB 章节策略", "JSON 配置快照"]}
+          chips={["看板预警策略", "工作区回放策略", "知识库章节策略", "JSON 配置快照"]}
           metrics={[
             {
               label: "配置版本",
               value: `v${bundle.version}`,
-              hint: `schema 当前版本 v${CONFIG_SCHEMA_VERSION}`
+              hint: `配置 schema 版本 v${CONFIG_SCHEMA_VERSION}`
             },
             { label: "最后更新时间", value: formattedBundleUpdatedAt, hint: "本地时间" },
             {

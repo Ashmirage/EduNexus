@@ -116,7 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <div className="nav-foot">
-          <p>Web-only · LangGraph · ModelScope</p>
+          <p>纯 Web · LangGraph · ModelScope</p>
           <p>统一学习、图谱、路径与教学协同</p>
         </div>
       </aside>

@@ -40,7 +40,7 @@ export default function HomePage() {
       <PageHeader
         title="AI 教育生态平台"
         description="统一学习引导、知识沉淀、图谱分析与路径干预。全部能力围绕“先学会，再答题”构建。"
-        tags={["Web-Only", "LangGraph", "ModelScope", "Local-first KB"]}
+        tags={["纯 Web", "LangGraph", "ModelScope", "本地优先知识库"]}
         actions={
           <div className="page-head-cta">
             <Link href="/workspace">开始学习</Link>
@@ -63,4 +63,3 @@ export default function HomePage() {
     </section>
   );
 }
-
