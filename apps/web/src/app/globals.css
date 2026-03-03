@@ -5817,6 +5817,13 @@ html[data-theme="aurora"] .config-diff-values em {
   color: #9fc7ee;
 }
 
+.graph-replay-history-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
 .graph-replay-history-head button {
   border: 1px solid rgba(97, 132, 178, 0.42);
   border-radius: 999px;
@@ -5826,6 +5833,11 @@ html[data-theme="aurora"] .config-diff-values em {
   font-size: 11px;
   padding: 4px 9px;
   cursor: pointer;
+}
+
+.graph-replay-history-head button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .graph-replay-history-metrics {
@@ -5903,6 +5915,11 @@ html[data-theme="aurora"] .config-diff-values em {
   padding: 8px;
   display: grid;
   gap: 4px;
+}
+
+.graph-replay-history-item.located {
+  border-color: rgba(255, 201, 126, 0.62);
+  box-shadow: 0 0 0 1px rgba(255, 201, 126, 0.24);
 }
 
 .graph-replay-history-item header {
@@ -6394,6 +6411,17 @@ html[data-theme="aurora"] .config-diff-values em {
   font-size: 11px;
   padding: 4px 9px;
   cursor: pointer;
+}
+
+.path-replay-history-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.path-replay-history-actions button:last-child {
+  border-color: rgba(159, 255, 210, 0.52);
+  background: rgba(159, 255, 210, 0.14);
 }
 
 .path-bridge-template {
@@ -6905,6 +6933,17 @@ html[data-theme="aurora"] .config-diff-values em {
   cursor: pointer;
 }
 
+.workspace-replay-history-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.workspace-replay-history-actions button:last-child {
+  border-color: rgba(159, 255, 210, 0.52);
+  background: rgba(159, 255, 210, 0.14);
+}
+
 html[data-theme="aurora"] .graph-control-bar > button {
   border-color: rgba(84, 155, 255, 0.56);
   background:
@@ -7329,6 +7368,11 @@ html[data-theme="aurora"] .graph-replay-history-item {
   background: rgba(255, 255, 255, 0.84);
 }
 
+html[data-theme="aurora"] .graph-replay-history-item.located {
+  border-color: rgba(236, 172, 92, 0.5);
+  box-shadow: 0 0 0 1px rgba(236, 172, 92, 0.22);
+}
+
 html[data-theme="aurora"] .graph-replay-history-item header strong {
   color: #2e5a8b;
 }
@@ -7532,6 +7576,12 @@ html[data-theme="aurora"] .path-replay-history-item button {
   border-color: rgba(84, 155, 255, 0.52);
   background: rgba(122, 187, 255, 0.2);
   color: #285887;
+}
+
+html[data-theme="aurora"] .path-replay-history-actions button:last-child {
+  border-color: rgba(64, 174, 138, 0.46);
+  background: rgba(103, 210, 174, 0.2);
+  color: #2f6850;
 }
 
 html[data-theme="aurora"] .path-bridge-template {
@@ -7755,6 +7805,12 @@ html[data-theme="aurora"] .workspace-replay-history-item button {
   border-color: rgba(84, 155, 255, 0.52);
   background: rgba(122, 187, 255, 0.2);
   color: #285887;
+}
+
+html[data-theme="aurora"] .workspace-replay-history-actions button:last-child {
+  border-color: rgba(64, 174, 138, 0.46);
+  background: rgba(103, 210, 174, 0.2);
+  color: #2f6850;
 }
 
 .result-box {

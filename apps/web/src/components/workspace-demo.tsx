@@ -1056,6 +1056,17 @@ export function WorkspaceDemo() {
     );
   }, [autoApplyGraphFocusPrompt]);
 
+  const openReplayBatchInGraph = useCallback(
+    (entry: ReplayPushHistoryEntry) => {
+      const params = new URLSearchParams({
+        replayBatchId: entry.batchId,
+        from: "workspace"
+      });
+      router.push(`/graph?${params.toString()}`);
+    },
+    [router]
+  );
+
   useEffect(() => {
     if (graphFocusQueue.length < 2) {
       return;
@@ -2138,9 +2149,17 @@ export function WorkspaceDemo() {
                         {resolveReplayPushSourceLabel(entry.source)}
                         {entry.mode ? ` · 模式 ${entry.mode}` : ""}
                       </span>
-                      <button type="button" onClick={() => applyReplayHistoryToWorkspace(entry)}>
-                        载入到工作区
-                      </button>
+                      <div className="workspace-replay-history-actions">
+                        <button
+                          type="button"
+                          onClick={() => applyReplayHistoryToWorkspace(entry)}
+                        >
+                          载入到工作区
+                        </button>
+                        <button type="button" onClick={() => openReplayBatchInGraph(entry)}>
+                          回图谱定位
+                        </button>
+                      </div>
                     </article>
                   ))}
                 </div>

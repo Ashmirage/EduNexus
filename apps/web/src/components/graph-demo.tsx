@@ -232,6 +232,31 @@ function buildBridgeTaskTemplate(primaryLabel: string, secondaryLabel: string) {
   return `桥接任务模板：围绕「${primaryLabel}」与「${secondaryLabel}」先做概念映射，再完成“同构例题 + 反例辨析 + 迁移应用”三段训练。`;
 }
 
+function normalizeReplayBatchMatchId(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function matchReplayBatchId(candidate: string, target: string) {
+  const left = normalizeReplayBatchMatchId(candidate);
+  const right = normalizeReplayBatchMatchId(target);
+  if (!left || !right) {
+    return false;
+  }
+  return left === right || left.startsWith(`${right}_repush_`) || right.startsWith(left);
+}
+
+function downloadTextFile(content: string, filename: string, type: string) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function buildNodeInterventionTips(node: GraphNodePlacement) {
   const tips: string[] = [];
   if (node.risk >= 0.65) {
@@ -366,7 +391,10 @@ export function GraphDemo() {
   const [replayHistorySort, setReplayHistorySort] =
     useState<ReplayPushHistorySort>("latest");
   const [replayHistoryTopN, setReplayHistoryTopN] = useState<"all" | 3 | 5 | 10>("all");
+  const [queryReplayBatchId, setQueryReplayBatchId] = useState("");
+  const [queryReplayFrom, setQueryReplayFrom] = useState("");
   const bridgeReplayTimerRef = useRef<number | null>(null);
+  const replayBatchQueryAppliedRef = useRef("");
 
   const clearBridgeReplayTimer = useCallback(() => {
     if (bridgeReplayTimerRef.current !== null) {
@@ -451,6 +479,22 @@ export function GraphDemo() {
   useEffect(() => {
     void loadGraph();
   }, [loadGraph]);
+
+  useEffect(() => {
+    const readReplayQuery = () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        setQueryReplayBatchId(params.get("replayBatchId")?.trim() ?? "");
+        setQueryReplayFrom((params.get("from")?.trim().toLowerCase() ?? "").slice(0, 24));
+      } catch {
+        setQueryReplayBatchId("");
+        setQueryReplayFrom("");
+      }
+    };
+    readReplayQuery();
+    window.addEventListener("popstate", readReplayQuery);
+    return () => window.removeEventListener("popstate", readReplayQuery);
+  }, []);
 
   useEffect(() => {
     try {
@@ -578,6 +622,55 @@ export function GraphDemo() {
     }
     return sortedReplayPushHistory.slice(0, replayHistoryTopN);
   }, [replayHistoryTopN, sortedReplayPushHistory]);
+
+  const locatedReplayHistoryBatch = useMemo(() => {
+    if (!queryReplayBatchId) {
+      return null;
+    }
+    return replayPushHistory.find((entry) => matchReplayBatchId(entry.batchId, queryReplayBatchId));
+  }, [queryReplayBatchId, replayPushHistory]);
+
+  useEffect(() => {
+    if (!queryReplayBatchId) {
+      replayBatchQueryAppliedRef.current = "";
+      return;
+    }
+    setReplayHistoryTargetFilter("all");
+    setReplayHistorySourceFilter("all");
+    setReplayHistoryModeFilter("all");
+    setReplayHistorySort("latest");
+    setReplayHistoryTopN("all");
+  }, [queryReplayBatchId]);
+
+  useEffect(() => {
+    if (!queryReplayBatchId) {
+      return;
+    }
+    const signature = `${queryReplayFrom}::${queryReplayBatchId}`;
+    if (replayBatchQueryAppliedRef.current === signature) {
+      return;
+    }
+    if (locatedReplayHistoryBatch) {
+      setPathPushHint(
+        `已从${queryReplayFrom === "path" ? "路径" : queryReplayFrom === "workspace" ? "工作区" : "外部页面"}定位回放批次：${
+          locatedReplayHistoryBatch.batchId
+        }（${locatedReplayHistoryBatch.count} 条）。`
+      );
+      replayBatchQueryAppliedRef.current = signature;
+      return;
+    }
+    if (replayPushHistory.length > 0) {
+      setPathPushHint(
+        `未匹配到批次 ${queryReplayBatchId}，可在回放历史面板中检查筛选或重新推送。`
+      );
+      replayBatchQueryAppliedRef.current = signature;
+    }
+  }, [
+    locatedReplayHistoryBatch,
+    queryReplayBatchId,
+    queryReplayFrom,
+    replayPushHistory.length
+  ]);
 
   useEffect(() => {
     const loadGraphActivities = () => {
@@ -2082,6 +2175,94 @@ export function GraphDemo() {
     }
   }, []);
 
+  const exportVisibleReplayHistoryAsJson = useCallback(() => {
+    if (visibleReplayPushHistory.length === 0) {
+      setError("当前筛选下暂无可导出的回放批次。");
+      return;
+    }
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      source: "graph_replay_history",
+      filters: {
+        target: replayHistoryTargetFilter,
+        source: replayHistorySourceFilter,
+        mode: replayHistoryModeFilter,
+        sort: replayHistorySort,
+        topN: replayHistoryTopN
+      },
+      total: visibleReplayPushHistory.length,
+      items: visibleReplayPushHistory
+    };
+    const stamp = new Date()
+      .toISOString()
+      .replace(/[-:]/g, "")
+      .replace("T", "_")
+      .slice(0, 13);
+    downloadTextFile(
+      `${JSON.stringify(payload, null, 2)}\n`,
+      `graph-replay-history-${stamp}.json`,
+      "application/json;charset=utf-8"
+    );
+    setPathPushHint(`已导出回放批次历史 JSON（${visibleReplayPushHistory.length} 条）。`);
+  }, [
+    replayHistoryModeFilter,
+    replayHistorySort,
+    replayHistorySourceFilter,
+    replayHistoryTargetFilter,
+    replayHistoryTopN,
+    visibleReplayPushHistory
+  ]);
+
+  const exportVisibleReplayHistoryAsMarkdown = useCallback(() => {
+    if (visibleReplayPushHistory.length === 0) {
+      setError("当前筛选下暂无可导出的回放批次。");
+      return;
+    }
+    const content = [
+      "# 图谱回放批次历史导出",
+      "",
+      `- 导出时间：${new Date().toISOString()}`,
+      `- 数量：${visibleReplayPushHistory.length}`,
+      `- 筛选：目标 ${replayHistoryTargetFilter} / 来源 ${replayHistorySourceFilter} / 模式 ${replayHistoryModeFilter}`,
+      `- 排序：${replayHistorySort} / TopN：${replayHistoryTopN}`,
+      "",
+      "## 批次列表",
+      ...visibleReplayPushHistory.map((entry, index) => {
+        const first = entry.queue[0];
+        const relation = first?.bridgePartnerLabel
+          ? `${first.nodeLabel} ↔ ${first.bridgePartnerLabel}`
+          : first?.nodeLabel ?? entry.primaryNodeLabel;
+        return [
+          `### ${index + 1}. ${entry.batchId}`,
+          `- 时间：${entry.at}`,
+          `- 目标：${resolveReplayPushTargetLabel(entry.target)}`,
+          `- 来源：${resolveReplayPushSourceLabel(entry.source)}`,
+          `- 模式：${entry.mode ?? "未标注"}`,
+          `- 数量：${entry.count}`,
+          `- 首条关系：${relation}`
+        ].join("\n");
+      })
+    ].join("\n\n");
+    const stamp = new Date()
+      .toISOString()
+      .replace(/[-:]/g, "")
+      .replace("T", "_")
+      .slice(0, 13);
+    downloadTextFile(
+      `${content}\n`,
+      `graph-replay-history-${stamp}.md`,
+      "text/markdown;charset=utf-8"
+    );
+    setPathPushHint(`已导出回放批次历史 Markdown（${visibleReplayPushHistory.length} 条）。`);
+  }, [
+    replayHistoryModeFilter,
+    replayHistorySort,
+    replayHistorySourceFilter,
+    replayHistoryTargetFilter,
+    replayHistoryTopN,
+    visibleReplayPushHistory
+  ]);
+
   const handleFocusGraphActivity = useCallback(
     (event: GraphActivityEvent) => {
       const matchedNode = payload?.nodes.find((item) => item.id === event.nodeId);
@@ -2922,9 +3103,25 @@ export function GraphDemo() {
                 <>
                   <div className="graph-replay-history-head">
                     <span>最近 {replayPushHistory.length} 条</span>
-                    <button type="button" onClick={clearReplayPushHistory}>
-                      清空历史
-                    </button>
+                    <div className="graph-replay-history-head-actions">
+                      <button
+                        type="button"
+                        onClick={exportVisibleReplayHistoryAsJson}
+                        disabled={visibleReplayPushHistory.length === 0}
+                      >
+                        导出 JSON
+                      </button>
+                      <button
+                        type="button"
+                        onClick={exportVisibleReplayHistoryAsMarkdown}
+                        disabled={visibleReplayPushHistory.length === 0}
+                      >
+                        导出 Markdown
+                      </button>
+                      <button type="button" onClick={clearReplayPushHistory}>
+                        清空历史
+                      </button>
+                    </div>
                   </div>
                   <div className="graph-replay-history-metrics">
                     <span>累计批次 {replayPushHistoryStats.totalBatches}</span>
@@ -3094,7 +3291,14 @@ export function GraphDemo() {
                   {visibleReplayPushHistory.length > 0 ? (
                     <div className="graph-replay-history-list">
                       {visibleReplayPushHistory.map((entry) => (
-                        <article className="graph-replay-history-item" key={entry.id}>
+                        <article
+                          className={`graph-replay-history-item${
+                            queryReplayBatchId && matchReplayBatchId(entry.batchId, queryReplayBatchId)
+                              ? " located"
+                              : ""
+                          }`}
+                          key={entry.id}
+                        >
                           <header>
                             <strong>{entry.batchId}</strong>
                             <span>

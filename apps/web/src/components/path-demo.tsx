@@ -647,6 +647,17 @@ export function PathDemo() {
     );
   }, []);
 
+  const openReplayBatchInGraph = useCallback(
+    (entry: ReplayPushHistoryEntry) => {
+      const params = new URLSearchParams({
+        replayBatchId: entry.batchId,
+        from: "path"
+      });
+      router.push(`/graph?${params.toString()}`);
+    },
+    [router]
+  );
+
   const stepFocusQueue = useCallback((offset: number) => {
     if (focusQueue.length < 2) {
       return;
@@ -1035,9 +1046,14 @@ export function PathDemo() {
                       {resolveReplayPushSourceLabel(entry.source)}
                       {entry.mode ? ` · 模式 ${entry.mode}` : ""}
                     </span>
-                    <button type="button" onClick={() => applyReplayHistoryToPath(entry)}>
-                      载入到路径
-                    </button>
+                    <div className="path-replay-history-actions">
+                      <button type="button" onClick={() => applyReplayHistoryToPath(entry)}>
+                        载入到路径
+                      </button>
+                      <button type="button" onClick={() => openReplayBatchInGraph(entry)}>
+                        回图谱定位
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>
