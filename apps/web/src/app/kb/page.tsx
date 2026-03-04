@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 
 export default function KbPage() {
   return (
-    <section>
+    <section className="ecosystem-page">
       <PageHeader
         title="本地知识库"
         description="以 Markdown 双链为核心组织个人知识资产，支持检索、关系导航与上下文引用。"
@@ -22,4 +22,3 @@ export default function KbPage() {
     </section>
   );
 }
-

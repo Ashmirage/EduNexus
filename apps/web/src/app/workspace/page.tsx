@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 
 export default function WorkspacePage() {
   return (
-    <section>
+    <section className="ecosystem-page">
       <PageHeader
         title="学习工作区"
         description="以过程引导替代直接答案。每次会话都可检索、回放、沉淀并回流到图谱。"
@@ -22,4 +22,3 @@ export default function WorkspacePage() {
     </section>
   );
 }
-

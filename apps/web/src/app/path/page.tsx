@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 
 export default function PathPage() {
   return (
-    <section>
+    <section className="ecosystem-page">
       <PageHeader
         title="学习路径"
         description="把目标、风险与掌握度统一成可执行任务序列，并在执行后持续回写图谱。"
@@ -22,4 +22,3 @@ export default function PathPage() {
     </section>
   );
 }
-

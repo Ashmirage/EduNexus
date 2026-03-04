@@ -11,6 +11,10 @@ export function PageHeader({ title, description, tags = [], actions }: PageHeade
   return (
     <header className="page-head page-head-unified">
       <div className="page-head-main">
+        <div className="page-head-meta">
+          <span className="page-head-meta-dot" />
+          <em>EduNexus · Web 学习生态</em>
+        </div>
         <h2>{title}</h2>
         <p>{description}</p>
         {tags.length > 0 ? (
@@ -25,4 +29,3 @@ export function PageHeader({ title, description, tags = [], actions }: PageHeade
     </header>
   );
 }
-

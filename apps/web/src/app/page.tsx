@@ -36,7 +36,7 @@ const entries = [
 
 export default function HomePage() {
   return (
-    <section>
+    <section className="ecosystem-page">
       <PageHeader
         title="AI 教育生态平台"
         description="统一学习引导、知识沉淀、图谱分析与路径干预。全部能力围绕“先学会，再答题”构建。"

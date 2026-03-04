@@ -267,6 +267,13 @@ function normalizeReplayBatchMatchId(value: string) {
   return value.trim().toLowerCase();
 }
 
+function escapeSelectorValue(value: string) {
+  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+    return CSS.escape(value);
+  }
+  return value.replace(/["\\]/g, "\\$&");
+}
+
 function matchReplayBatchId(candidate: string, target: string) {
   const left = normalizeReplayBatchMatchId(candidate);
   const right = normalizeReplayBatchMatchId(target);
@@ -436,6 +443,8 @@ export function GraphDemo() {
   const [queryReplayFrom, setQueryReplayFrom] = useState("");
   const bridgeReplayTimerRef = useRef<number | null>(null);
   const replayBatchQueryAppliedRef = useRef("");
+  const insightPanelRef = useRef<HTMLElement | null>(null);
+  const [pulseNodeId, setPulseNodeId] = useState("");
 
   const clearBridgeReplayTimer = useCallback(() => {
     if (bridgeReplayTimerRef.current !== null) {
@@ -1097,6 +1106,29 @@ export function GraphDemo() {
       setActiveNodeId(activeNode.id);
     }
   }, [activeNode, activeNodeId]);
+
+  useEffect(() => {
+    if (!activeNode) {
+      setPulseNodeId("");
+      return;
+    }
+    setPulseNodeId(activeNode.id);
+    const timer = window.setTimeout(() => {
+      setPulseNodeId((prev) => (prev === activeNode.id ? "" : prev));
+    }, 820);
+    const panel = insightPanelRef.current;
+    if (panel) {
+      const riskTarget = panel.querySelector<HTMLElement>(
+        `[data-risk-node-id="${escapeSelectorValue(activeNode.id)}"]`
+      );
+      riskTarget?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      const domainTarget = panel.querySelector<HTMLElement>(
+        `[data-domain-cluster="${escapeSelectorValue(activeNode.domain ?? "general")}"]`
+      );
+      domainTarget?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    return () => window.clearTimeout(timer);
+  }, [activeNode]);
 
   const connectedNodeIds = useMemo(() => {
     if (!activeNode) {
@@ -2846,7 +2878,7 @@ export function GraphDemo() {
                       return (
                         <g
                           key={node.id}
-                          className={`graph-node graph-node-${tone}${selected ? " selected" : ""}${related ? " related" : ""}${bridgeCoreNode ? " bridge-core" : ""}`}
+                          className={`graph-node graph-node-${tone}${selected ? " selected" : ""}${related ? " related" : ""}${bridgeCoreNode ? " bridge-core" : ""}${pulseNodeId === node.id ? " pulse" : ""}`}
                           onClick={() => setActiveNodeId(node.id)}
                           onMouseEnter={() => setHoveredNodeId(node.id)}
                           onMouseLeave={() =>
@@ -3018,7 +3050,7 @@ export function GraphDemo() {
             )}
           </article>
 
-          <aside className="graph-insight-panel">
+          <aside className="graph-insight-panel" ref={insightPanelRef}>
             <div className="graph-insight-toggle-bar">
               <span>
                 侧栏分组：已折叠 {visibleCollapsedInsightCount}/{visibleInsightSections.length}
@@ -3087,8 +3119,13 @@ export function GraphDemo() {
                         <button
                           type="button"
                           key={`cluster_${cluster.domain}`}
+                          data-domain-cluster={cluster.domain}
                           className={`graph-domain-cluster-item${
                             domainFilter === cluster.domain ? " active" : ""
+                          }${
+                            activeNode?.domain === cluster.domain && pulseNodeId === activeNode.id
+                              ? " sync"
+                              : ""
                           }`}
                           onClick={() => {
                             setSelectedBridgeId("");
@@ -3144,7 +3181,10 @@ export function GraphDemo() {
                       <button
                         key={`risk_${node.id}`}
                         type="button"
-                        className={`graph-risk-row${activeNode?.id === node.id ? " active" : ""}`}
+                        data-risk-node-id={node.id}
+                        className={`graph-risk-row${activeNode?.id === node.id ? " active" : ""}${
+                          pulseNodeId === node.id ? " sync" : ""
+                        }`}
                         onClick={() => setActiveNodeId(node.id)}
                       >
                         <span>{node.label}</span>

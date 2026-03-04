@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/page-header";
 
 export default function GraphPage() {
   return (
-    <section className="graph-page">
+    <section className="graph-page ecosystem-page">
       <PageHeader
         title="知识图谱"
         description="把学习行为和知识关系放进同一画布，实时定位风险链路并一键联动到路径与工作区。"
@@ -19,4 +19,3 @@ export default function GraphPage() {
     </section>
   );
 }
-

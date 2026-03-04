@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/page-header";
 
 export default function TeacherPage() {
   return (
-    <section>
+    <section className="ecosystem-page">
       <PageHeader
         title="教师工作台"
         description="围绕教学准备与课堂改进生成结构化方案，减少重复整理时间。"
@@ -19,4 +19,3 @@ export default function TeacherPage() {
     </section>
   );
 }
-

@@ -130,6 +130,15 @@ type Message = {
   createdAt: string;
 };
 
+type LearningGuideAction =
+  | "create_session"
+  | "fill_thinking"
+  | "request_guidance"
+  | "write_reflection"
+  | "run_workflow"
+  | "save_note"
+  | "done";
+
 type SaveNoteResponse = {
   noteId: string;
   path: string;
@@ -532,6 +541,8 @@ export function WorkspaceDemo() {
   const autoExportReplaySummaryRef = useRef(true);
   const hasAppliedGraphFocusRef = useRef(false);
   const appliedQuerySessionIdRef = useRef("");
+  const userInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const reflectionRef = useRef<HTMLTextAreaElement | null>(null);
   const messageListRef = useRef<HTMLDivElement | null>(null);
   const [messageScrollTop, setMessageScrollTop] = useState(0);
   const [messageViewportHeight, setMessageViewportHeight] = useState(420);
@@ -614,6 +625,66 @@ export function WorkspaceDemo() {
     () => learningChecklist.filter((item) => item.done).length,
     [learningChecklist]
   );
+  const learningFlowGuide = useMemo(() => {
+    const hasAssistantGuidance = messages.some((item) => item.role === "assistant");
+    const hasEvidence = Boolean(saveResult) || Boolean(nextData) || Boolean(agentData);
+    const normalizedThinking = userInput.trim();
+    const normalizedReflection = reflection.trim();
+    if (!sessionId) {
+      return {
+        action: "create_session" as LearningGuideAction,
+        title: "先创建会话",
+        description: "会话是所有引导、回放和沉淀的上下文容器。",
+        cta: "创建学习会话"
+      };
+    }
+    if (normalizedThinking.length < 16) {
+      return {
+        action: "fill_thinking" as LearningGuideAction,
+        title: "补全当前思路",
+        description: "先写清已知条件和你的推理步骤，再发起引导效果更好。",
+        cta: "定位到思路输入"
+      };
+    }
+    if (!hasAssistantGuidance) {
+      return {
+        action: "request_guidance" as LearningGuideAction,
+        title: "完成首轮引导",
+        description: "至少完成一轮引导反馈，形成可复盘的链路证据。",
+        cta: "请求下一层引导"
+      };
+    }
+    if (normalizedReflection.length < 12) {
+      return {
+        action: "write_reflection" as LearningGuideAction,
+        title: "记录反思",
+        description: "写下错因和下一步改进动作，最终答案门控会更稳定。",
+        cta: "定位到反思输入"
+      };
+    }
+    if (!hasEvidence) {
+      return {
+        action: "run_workflow" as LearningGuideAction,
+        title: "运行学习工作流",
+        description: "执行 LangGraph 流程，形成完整推理链路与参考证据。",
+        cta: "流式运行 LangGraph"
+      };
+    }
+    if (!saveResult && messages.length > 0) {
+      return {
+        action: "save_note" as LearningGuideAction,
+        title: "沉淀为本地笔记",
+        description: "把本次学习过程写入本地知识库，便于后续检索与关联复用。",
+        cta: "沉淀为本地笔记"
+      };
+    }
+    return {
+      action: "done" as LearningGuideAction,
+      title: "流程已闭环",
+      description: "本次会话已具备输入、引导、反思与沉淀证据，可进入下一主题。",
+      cta: "切换到会话管理"
+    };
+  }, [agentData, messages, nextData, reflection, saveResult, sessionId, userInput]);
   const activeGraphFocusQueueIndex = useMemo(() => {
     if (graphFocusQueue.length === 0) {
       return -1;
@@ -2040,6 +2111,33 @@ export function WorkspaceDemo() {
     setGraphFocusHint(`已重新应用图谱焦点提示词：${graphFocus.nodeLabel}`);
   }
 
+  function runLearningFlowGuideAction() {
+    switch (learningFlowGuide.action) {
+      case "create_session":
+        void createSession();
+        break;
+      case "fill_thinking":
+        userInputRef.current?.focus();
+        break;
+      case "request_guidance":
+        void requestNext();
+        break;
+      case "write_reflection":
+        reflectionRef.current?.focus();
+        break;
+      case "run_workflow":
+        void runLangGraphAgentStream();
+        break;
+      case "save_note":
+        void saveNote();
+        break;
+      case "done":
+      default:
+        setWorkspaceViewMode("sessions");
+        break;
+    }
+  }
+
   return (
     <div
       className="panel-grid panel-grid-tight workspace-layout"
@@ -2258,6 +2356,17 @@ export function WorkspaceDemo() {
                 打开链路回放
               </button>
             </div>
+            <div className="workspace-flow-guide">
+              <strong>{learningFlowGuide.title}</strong>
+              <p>{learningFlowGuide.description}</p>
+              <button
+                type="button"
+                onClick={runLearningFlowGuideAction}
+                disabled={loading || (learningFlowGuide.action === "save_note" && messages.length === 0)}
+              >
+                {learningFlowGuide.cta}
+              </button>
+            </div>
           </aside>
 
           <div className="workspace-control-stack">
@@ -2390,6 +2499,7 @@ export function WorkspaceDemo() {
               <label>我的当前思路</label>
               <textarea
                 rows={4}
+                ref={userInputRef}
                 value={userInput}
                 onChange={(event) => setUserInput(event.target.value)}
               />
@@ -2401,6 +2511,7 @@ export function WorkspaceDemo() {
               <label>反思内容（用于最终答案门控）</label>
               <textarea
                 rows={3}
+                ref={reflectionRef}
                 value={reflection}
                 onChange={(event) => setReflection(event.target.value)}
               />

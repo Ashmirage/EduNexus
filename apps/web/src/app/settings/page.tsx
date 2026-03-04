@@ -891,7 +891,7 @@ export default function SettingsPage() {
 
   if (!hasMounted) {
     return (
-      <section>
+      <section className="ecosystem-page">
         <PageHeader
           title="统一配置中心"
           description="正在加载配置数据..."
@@ -902,7 +902,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <section>
+    <section className="ecosystem-page">
       <PageHeader
         title="统一配置中心"
         description="在一个页面管理 Dashboard、Workspace、KB 的策略参数与画像版本。"

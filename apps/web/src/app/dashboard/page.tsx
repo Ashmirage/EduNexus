@@ -1567,7 +1567,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <section>
+    <section className="ecosystem-page">
       <PageHeader
         title="生态看板"
         description="统一观察学习效果、提示依赖与风险干预，支持从指标直接联动图谱、路径和工作区。"

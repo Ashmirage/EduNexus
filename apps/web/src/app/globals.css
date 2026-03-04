@@ -335,6 +335,16 @@ html[data-theme="aurora"] .nav-status-list li {
   margin: 0 auto;
 }
 
+.ecosystem-page {
+  display: grid;
+  gap: 14px;
+  animation: page-fade-in 0.32s ease-out;
+}
+
+.ecosystem-page .panel-grid {
+  margin-top: 0;
+}
+
 .page-head h2 {
   margin: 0;
   font-size: 34px;
@@ -348,7 +358,7 @@ html[data-theme="aurora"] .nav-status-list li {
 }
 
 .page-head-unified {
-  margin-bottom: 8px;
+  margin-bottom: 0;
   border: 1px solid rgba(97, 132, 178, 0.32);
   border-radius: 16px;
   padding: 18px 20px;
@@ -364,6 +374,29 @@ html[data-theme="aurora"] .nav-status-list li {
 .page-head-main {
   display: grid;
   gap: 8px;
+}
+
+.page-head-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.page-head-meta em {
+  margin: 0;
+  font-style: normal;
+  font-size: 11px;
+  color: #9fc7ee;
+  letter-spacing: 0.26px;
+  text-transform: uppercase;
+}
+
+.page-head-meta-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #61c7ff;
+  box-shadow: 0 0 0 3px rgba(97, 199, 255, 0.18);
 }
 
 .page-head-tags {
@@ -421,12 +454,27 @@ html[data-theme="aurora"] .nav-status-list li {
   border-radius: 15px;
   padding: 16px;
   box-shadow: 0 14px 36px rgba(4, 8, 14, 0.56);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s ease;
+}
+
+.panel:hover {
+  border-color: rgba(97, 199, 255, 0.48);
+  box-shadow: 0 18px 38px rgba(4, 8, 14, 0.62);
+  transform: translateY(-1px);
 }
 
 html[data-theme="aurora"] .panel {
   border-color: rgba(118, 154, 216, 0.45);
   background: linear-gradient(160deg, rgba(251, 254, 255, 0.94), rgba(241, 247, 255, 0.9));
   box-shadow: 0 10px 24px rgba(42, 78, 131, 0.12);
+}
+
+html[data-theme="aurora"] .panel:hover {
+  border-color: rgba(84, 155, 255, 0.52);
+  box-shadow: 0 14px 28px rgba(42, 78, 131, 0.18);
 }
 
 .panel::before {
@@ -702,6 +750,15 @@ html[data-theme="aurora"] .page-head-unified {
   background:
     radial-gradient(circle at 84% 10%, rgba(122, 187, 255, 0.18), transparent 38%),
     rgba(255, 255, 255, 0.82);
+}
+
+html[data-theme="aurora"] .page-head-meta em {
+  color: #688cb7;
+}
+
+html[data-theme="aurora"] .page-head-meta-dot {
+  background: #5a9bff;
+  box-shadow: 0 0 0 3px rgba(90, 155, 255, 0.18);
 }
 
 html[data-theme="aurora"] .page-head-tags span {
@@ -5795,6 +5852,14 @@ html[data-theme="aurora"] .config-diff-values em {
   stroke-width: 2px;
 }
 
+.graph-node.pulse .graph-node-halo {
+  animation: flowDash 0.72s ease-out;
+}
+
+.graph-node.pulse .graph-node-core {
+  filter: drop-shadow(0 0 4px rgba(144, 224, 255, 0.62));
+}
+
 .graph-node.related .graph-node-halo {
   fill: rgba(159, 255, 210, 0.12);
 }
@@ -6020,6 +6085,10 @@ html[data-theme="aurora"] .config-diff-values em {
   box-shadow: 0 0 0 1px rgba(159, 255, 210, 0.18);
 }
 
+.graph-domain-cluster-item.sync {
+  animation: graph-sync-pulse 0.8s ease-out;
+}
+
 .graph-risk-list {
   margin-top: 8px;
   display: grid;
@@ -6049,6 +6118,10 @@ html[data-theme="aurora"] .config-diff-values em {
 .graph-risk-row.active {
   border-color: rgba(255, 152, 152, 0.58);
   background: rgba(255, 144, 144, 0.15);
+}
+
+.graph-risk-row.sync {
+  animation: graph-sync-pulse 0.8s ease-out;
 }
 
 .graph-focus-box h4 {
@@ -7489,6 +7562,44 @@ html[data-theme="aurora"] .config-diff-values em {
   cursor: pointer;
 }
 
+.workspace-flow-guide {
+  border: 1px solid rgba(159, 255, 210, 0.42);
+  border-radius: 11px;
+  padding: 9px;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(97, 199, 255, 0.14), transparent 40%),
+    rgba(9, 24, 20, 0.56);
+  display: grid;
+  gap: 6px;
+}
+
+.workspace-flow-guide strong {
+  font-size: 12px;
+  color: #ddfff0;
+}
+
+.workspace-flow-guide p {
+  margin: 0;
+  font-size: 11px;
+  color: #9fd8c5;
+}
+
+.workspace-flow-guide button {
+  border: 1px solid rgba(159, 255, 210, 0.56);
+  border-radius: 10px;
+  background: rgba(159, 255, 210, 0.16);
+  color: #ddfff2;
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.workspace-flow-guide button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .workspace-control-stack {
   display: grid;
   gap: 10px;
@@ -7914,6 +8025,11 @@ html[data-theme="aurora"] .graph-domain-cluster-item.active {
   box-shadow: 0 0 0 1px rgba(64, 174, 138, 0.2);
 }
 
+html[data-theme="aurora"] .graph-domain-cluster-item.sync,
+html[data-theme="aurora"] .graph-risk-row.sync {
+  animation: graph-sync-pulse 0.8s ease-out;
+}
+
 html[data-theme="aurora"] .graph-legend-item.neutral,
 html[data-theme="aurora"] .graph-neighbor-chip em {
   color: #648ab5;
@@ -7921,6 +8037,10 @@ html[data-theme="aurora"] .graph-neighbor-chip em {
 
 html[data-theme="aurora"] .graph-node.bridge-core .graph-node-core {
   stroke: rgba(232, 168, 87, 0.9);
+}
+
+html[data-theme="aurora"] .graph-node.pulse .graph-node-core {
+  filter: drop-shadow(0 0 4px rgba(90, 155, 255, 0.5));
 }
 
 html[data-theme="aurora"] .graph-hover-card {
@@ -8608,6 +8728,27 @@ html[data-theme="aurora"] .workspace-task-actions button {
   border-color: rgba(118, 154, 216, 0.46);
   background: rgba(255, 255, 255, 0.88);
   color: #4f719f;
+}
+
+html[data-theme="aurora"] .workspace-flow-guide {
+  border-color: rgba(64, 174, 138, 0.42);
+  background:
+    radial-gradient(circle at 92% 0%, rgba(122, 187, 255, 0.2), transparent 40%),
+    rgba(255, 255, 255, 0.86);
+}
+
+html[data-theme="aurora"] .workspace-flow-guide strong {
+  color: #2f6850;
+}
+
+html[data-theme="aurora"] .workspace-flow-guide p {
+  color: #5c7fad;
+}
+
+html[data-theme="aurora"] .workspace-flow-guide button {
+  border-color: rgba(64, 174, 138, 0.46);
+  background: rgba(103, 210, 174, 0.2);
+  color: #245c4a;
 }
 
 html[data-theme="aurora"] .workspace-focus-card {
@@ -9516,6 +9657,26 @@ html[data-theme="aurora"] .stream-guidance {
   border-color: rgba(100, 143, 206, 0.5);
 }
 
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes graph-sync-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(97, 199, 255, 0.42);
+  }
+  100% {
+    box-shadow: 0 0 0 8px rgba(97, 199, 255, 0);
+  }
+}
+
 @keyframes floatGlow {
   0%,
   100% {
@@ -9529,6 +9690,10 @@ html[data-theme="aurora"] .stream-guidance {
 }
 
 @media (max-width: 980px) {
+  .panel:hover {
+    transform: none;
+  }
+
   .shell {
     grid-template-columns: 1fr;
   }
