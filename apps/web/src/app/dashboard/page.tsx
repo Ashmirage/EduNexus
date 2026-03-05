@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { requestJson } from "@/lib/client/api";
 import { GalaxyHero } from "@/components/galaxy-ui";
 import { PageHeader } from "@/components/page-header";
+import { PageQuickNav } from "@/components/page-quick-nav";
 import { RatioRing, TrendSparkCard } from "@/components/dashboard-mini-charts";
 import {
   GRAPH_ACTIVITY_STORAGE_KEY,
@@ -117,6 +118,15 @@ const PERIOD_OPTIONS: Array<{ key: PeriodKey; label: string }> = [
   { key: "14d", label: "14 天" },
   { key: "30d", label: "30 天" }
 ];
+
+const DASHBOARD_QUICK_NAV_ITEMS = [
+  { href: "#dashboard_view_switcher", label: "视图切换", hint: "决策/关系链/事件" },
+  { href: "#dashboard_trend_center", label: "趋势中心", hint: "指标与预警" },
+  { href: "#dashboard_bridge_risk", label: "关系链风险榜", hint: "批量干预" },
+  { href: "#dashboard_events", label: "闭环事件", hint: "来源与风险筛选" },
+  { href: "#dashboard_ratio_rings", label: "比例环图", hint: "关键比例概览" },
+  { href: "#dashboard_ops_actions", label: "运营动作建议", hint: "下一步动作" }
+] as const;
 
 const PERIOD_METRICS: Record<PeriodKey, PeriodMetrics> = {
   "7d": {
@@ -1573,6 +1583,9 @@ export default function DashboardPage() {
         description="统一观察学习效果、提示依赖与风险干预，支持从指标直接联动图谱、路径和工作区。"
         tags={["趋势分析", "风险分级", "事件闭环", "跨页联动"]}
       />
+      <div className="panel-grid">
+        <PageQuickNav title="看板快速导航" items={[...DASHBOARD_QUICK_NAV_ITEMS]} />
+      </div>
 
       <div className="panel-grid dashboard-layout" data-view={dashboardViewMode}>
         <GalaxyHero
@@ -1592,7 +1605,10 @@ export default function DashboardPage() {
           ]}
         />
 
-        <article className="panel wide dashboard-view-switcher">
+        <article
+          id="dashboard_view_switcher"
+          className="panel wide dashboard-view-switcher anchor-target"
+        >
           <header>
             <strong>看板视图</strong>
             <span>按工作目标切换页面密度</span>
@@ -1646,7 +1662,10 @@ export default function DashboardPage() {
           <p>知识类回答附来源引用的覆盖比例。</p>
         </article>
 
-        <article className="panel wide dashboard-section dashboard-section-decision">
+        <article
+          id="dashboard_trend_center"
+          className="panel wide dashboard-section dashboard-section-decision anchor-target"
+        >
           <h3>趋势分析（可切换周期）</h3>
           <div className="period-switch">
             {PERIOD_OPTIONS.map((item) => (
@@ -2137,7 +2156,10 @@ export default function DashboardPage() {
           </div>
         </article>
 
-        <article className="panel half dashboard-section dashboard-section-bridge">
+        <article
+          id="dashboard_bridge_risk"
+          className="panel half dashboard-section dashboard-section-bridge anchor-target"
+        >
           <h3>关系链风险榜</h3>
           <div className="dashboard-bridge-list">
             <div className="dashboard-bridge-filter">
@@ -2383,7 +2405,10 @@ export default function DashboardPage() {
           </ul>
         </article>
 
-        <article className="panel half dashboard-section dashboard-section-events">
+        <article
+          id="dashboard_events"
+          className="panel half dashboard-section dashboard-section-events anchor-target"
+        >
           <h3>生态闭环事件</h3>
           <div className="card-list">
             <div className="card-item">
@@ -2528,7 +2553,10 @@ export default function DashboardPage() {
           </div>
         </article>
 
-        <article className="panel half dashboard-section dashboard-section-decision">
+        <article
+          id="dashboard_ratio_rings"
+          className="panel half dashboard-section dashboard-section-decision anchor-target"
+        >
           <h3>关键比例环图</h3>
           <div className="ring-grid">
             {currentMetrics.rings.map((item) => (
@@ -2542,7 +2570,10 @@ export default function DashboardPage() {
           </div>
         </article>
 
-        <article className="panel wide dashboard-section dashboard-section-decision">
+        <article
+          id="dashboard_ops_actions"
+          className="panel wide dashboard-section dashboard-section-decision anchor-target"
+        >
           <h3>运营动作建议</h3>
           <div className="spotlight-list">
             <div className="galaxy-spotlight">

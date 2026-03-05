@@ -2346,7 +2346,10 @@ export function WorkspaceDemo() {
         </div>
       ) : null}
 
-      <div className="panel wide workspace-section workspace-section-sessions">
+      <div
+        id="workspace_sessions"
+        className="panel wide workspace-section workspace-section-sessions anchor-target"
+      >
         <h3>会话历史与恢复</h3>
         <div className="demo-form">
           <label>历史搜索</label>
@@ -2405,7 +2408,10 @@ export function WorkspaceDemo() {
         </div>
       </div>
 
-      <div className="panel half workspace-section workspace-section-learn workspace-section-replay">
+      <div
+        id="workspace_input_control"
+        className="panel half workspace-section workspace-section-learn workspace-section-replay anchor-target"
+      >
         <h3>输入与控制</h3>
         <div className="workspace-learn-grid">
           <aside className="workspace-task-card">
@@ -2623,7 +2629,10 @@ export function WorkspaceDemo() {
         </div>
       </div>
 
-      <div className="panel half workspace-section workspace-section-learn workspace-section-replay">
+      <div
+        id="workspace_session_records"
+        className="panel half workspace-section workspace-section-learn workspace-section-replay anchor-target"
+      >
         <h3>会话记录</h3>
         <div className="workspace-message-list-meta">
           <span>

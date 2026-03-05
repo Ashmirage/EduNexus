@@ -35,6 +35,7 @@ function isActivePath(pathname: string, href: string) {
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [themeMode, setThemeMode] = useState<"nebula" | "aurora">("nebula");
+  const [showBackTop, setShowBackTop] = useState(false);
 
   useEffect(() => {
     const saved = window.localStorage.getItem("edunexus-theme");
@@ -61,6 +62,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     document.documentElement.setAttribute("data-theme", themeMode);
     window.localStorage.setItem("edunexus-theme", themeMode);
   }, [themeMode]);
+
+  useEffect(() => {
+    const handleScroll = () => setShowBackTop(window.scrollY > 520);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <div className="shell">
@@ -124,6 +132,15 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="shell-main">
         <div className="main-backdrop" />
         <div className="main-content">{children}</div>
+        {showBackTop ? (
+          <button
+            type="button"
+            className="back-top-btn"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          >
+            回到顶部
+          </button>
+        ) : null}
       </main>
     </div>
   );
