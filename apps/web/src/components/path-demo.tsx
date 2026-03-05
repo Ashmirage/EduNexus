@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatErrorMessage, requestJson } from "@/lib/client/api";
+import { CollapsiblePanel } from "@/components/collapsible-panel";
+import { SectionAnchorNav } from "@/components/section-anchor-nav";
 import { pushGraphActivityEventToStorage } from "@/lib/client/graph-activity";
 import {
   buildPathGoalFromFocus,
@@ -268,7 +270,24 @@ export function PathDemo() {
   const [data, setData] = useState<PathPayload | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [compactMode, setCompactMode] = useState(false);
   const prefilledRef = useRef(false);
+
+  useEffect(() => {
+    try {
+      setCompactMode(window.localStorage.getItem("edunexus_path_compact_ui") === "1");
+    } catch {
+      setCompactMode(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("edunexus_path_compact_ui", compactMode ? "1" : "0");
+    } catch {
+      // ignore persistence failures
+    }
+  }, [compactMode]);
 
   useEffect(() => {
     if (prefilledRef.current) {
@@ -971,14 +990,37 @@ export function PathDemo() {
   }
 
   return (
-    <div className="demo-form demo-form-path">
+    <div className={`demo-form demo-form-path${compactMode ? " is-compact" : ""}`}>
+      <div className="demo-toolbar">
+        <span>路径执行工作台</span>
+        <button
+          type="button"
+          className={`demo-compact-toggle${compactMode ? " active" : ""}`}
+          onClick={() => setCompactMode((prev) => !prev)}
+        >
+          {compactMode ? "紧凑模式" : "舒展模式"}
+        </button>
+      </div>
+      <SectionAnchorNav
+        title="路径分区导航"
+        storageKey="path_demo"
+        items={[
+          { id: "path_focus_panel", label: "焦点联动" },
+          { id: "path_goal_panel", label: "目标设定" },
+          { id: "path_plan_panel", label: "执行回写" },
+          { id: "path_error_panel", label: "状态反馈" }
+        ]}
+      />
       {focusHint ? <div className="result-box info">{focusHint}</div> : null}
       {focusSummary ? (
-        <div id="path_focus_panel" className="path-focus-summary panel-surface anchor-target">
-          <div className="section-head">
-            <strong>图谱联动焦点</strong>
-            <span>关系链来源、批次队列与桥接执行清单</span>
-          </div>
+        <CollapsiblePanel
+          id="path_focus_panel"
+          title="图谱联动焦点"
+          subtitle="关系链来源、批次队列与桥接执行清单"
+          storageKey="path_focus_panel"
+          className="path-focus-summary panel-surface anchor-target"
+          defaultExpanded
+        >
           <p>
             节点：{focusPayload?.nodeLabel} · 域：{focusPayload?.domain} · 风险：
             {focusSummary.riskText} · 掌握度：{focusSummary.masteryText}
@@ -1192,7 +1234,7 @@ export function PathDemo() {
               ) : null}
             </div>
           ) : null}
-        </div>
+        </CollapsiblePanel>
       ) : null}
       <div id="path_goal_panel" className="path-goal-panel panel-surface anchor-target">
         <div className="section-head">
@@ -1214,59 +1256,72 @@ export function PathDemo() {
       </div>
 
       {data ? (
-        <div id="path_plan_panel" className="card-list path-plan-panel anchor-target">
-          <div className="result-box">
-            <strong>计划 ID：</strong> {data.planId}
-            {"\n"}
-            任务数：{data.tasks.length}
-            {"\n"}
-            最高优先级：{Math.max(...data.tasks.map((item) => item.priority))}
-          </div>
-          {focusTasks.length > 0 ? (
-            <div className="path-focus-task-group">
-              <header>
-                <strong>图谱焦点任务</strong>
-                <span>
-                  已完成 {completedFocusTaskIds.length}/{focusTasks.length}
-                </span>
-              </header>
-              {focusTasks.map((task, index) => {
-                const isDone = completedFocusTaskIds.includes(task.taskId);
-                const day = taskDayMap.get(task.taskId) ?? index + 1;
-                return (
-                  <div className={`path-focus-task-row${isDone ? " done" : ""}`} key={task.taskId}>
-                    <div>
-                      <strong>
-                        Day {day} · {task.title}
-                      </strong>
-                      <p>优先级：{task.priority} · 建议日期：{formatDueDate(task.dueDate)}</p>
-                      <p>{task.reason ? `安排原因：${task.reason}` : "该任务暂无具体原因说明。"}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => markFocusTaskDone(task)}
-                      disabled={isDone || submittingTaskId === task.taskId}
-                    >
-                      {isDone ? "已反馈" : submittingTaskId === task.taskId ? "写入中..." : "完成并回写掌握度"}
-                    </button>
-                  </div>
-                );
-              })}
+        <CollapsiblePanel
+          id="path_plan_panel"
+          title="计划任务与执行回写"
+          subtitle="按日执行并实时更新图谱掌握度"
+          storageKey="path_plan_panel"
+          className="anchor-target"
+          defaultExpanded
+        >
+          <div className="card-list path-plan-panel">
+            <div className="result-box">
+              <strong>计划 ID：</strong> {data.planId}
+              {"\n"}
+              任务数：{data.tasks.length}
+              {"\n"}
+              最高优先级：{Math.max(...data.tasks.map((item) => item.priority))}
             </div>
-          ) : null}
-          {regularTasks.map((task, index) => {
-            const day = taskDayMap.get(task.taskId) ?? index + 1;
-            return (
-              <div className="card-item" key={task.taskId}>
-                <strong>
-                  Day {day} · {task.title}
-                </strong>
-                <p>优先级：{task.priority} · 建议日期：{formatDueDate(task.dueDate)}</p>
-                <p>{task.reason ? `安排原因：${task.reason}` : "该任务暂无具体原因说明。"}</p>
+            {focusTasks.length > 0 ? (
+              <div className="path-focus-task-group">
+                <header>
+                  <strong>图谱焦点任务</strong>
+                  <span>
+                    已完成 {completedFocusTaskIds.length}/{focusTasks.length}
+                  </span>
+                </header>
+                {focusTasks.map((task, index) => {
+                  const isDone = completedFocusTaskIds.includes(task.taskId);
+                  const day = taskDayMap.get(task.taskId) ?? index + 1;
+                  return (
+                    <div className={`path-focus-task-row${isDone ? " done" : ""}`} key={task.taskId}>
+                      <div>
+                        <strong>
+                          Day {day} · {task.title}
+                        </strong>
+                        <p>优先级：{task.priority} · 建议日期：{formatDueDate(task.dueDate)}</p>
+                        <p>{task.reason ? `安排原因：${task.reason}` : "该任务暂无具体原因说明。"}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => markFocusTaskDone(task)}
+                        disabled={isDone || submittingTaskId === task.taskId}
+                      >
+                        {isDone
+                          ? "已反馈"
+                          : submittingTaskId === task.taskId
+                            ? "写入中..."
+                            : "完成并回写掌握度"}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+            ) : null}
+            {regularTasks.map((task, index) => {
+              const day = taskDayMap.get(task.taskId) ?? index + 1;
+              return (
+                <div className="card-item" key={task.taskId}>
+                  <strong>
+                    Day {day} · {task.title}
+                  </strong>
+                  <p>优先级：{task.priority} · 建议日期：{formatDueDate(task.dueDate)}</p>
+                  <p>{task.reason ? `安排原因：${task.reason}` : "该任务暂无具体原因说明。"}</p>
+                </div>
+              );
+            })}
+          </div>
+        </CollapsiblePanel>
       ) : null}
 
       {error ? (

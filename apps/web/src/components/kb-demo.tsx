@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatErrorMessage, requestJson } from "@/lib/client/api";
+import { CollapsiblePanel } from "@/components/collapsible-panel";
+import { SectionAnchorNav } from "@/components/section-anchor-nav";
 
 type Candidate = {
   docId: string;
@@ -269,6 +271,7 @@ export function KbDemo() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [externalContextHint, setExternalContextHint] = useState("");
+  const [compactMode, setCompactMode] = useState(false);
   const externalContextAppliedRef = useRef("");
   const presetQuery = useMemo(
     () => searchParams.get("q")?.trim() ?? "",
@@ -294,6 +297,22 @@ export function KbDemo() {
     () => searchParams.get("sessionId")?.trim() ?? "",
     [searchParams]
   );
+
+  useEffect(() => {
+    try {
+      setCompactMode(window.localStorage.getItem("edunexus_kb_compact_ui") === "1");
+    } catch {
+      setCompactMode(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("edunexus_kb_compact_ui", compactMode ? "1" : "0");
+    } catch {
+      // ignore persistence failures
+    }
+  }, [compactMode]);
 
   async function loadTags() {
     try {
@@ -1168,7 +1187,29 @@ export function KbDemo() {
   }
 
   return (
-    <div className="demo-form demo-form-kb">
+    <div className={`demo-form demo-form-kb${compactMode ? " is-compact" : ""}`}>
+      <div className="demo-toolbar">
+        <span>知识库检索工作台</span>
+        <button
+          type="button"
+          className={`demo-compact-toggle${compactMode ? " active" : ""}`}
+          onClick={() => setCompactMode((prev) => !prev)}
+        >
+          {compactMode ? "紧凑模式" : "舒展模式"}
+        </button>
+      </div>
+      <SectionAnchorNav
+        title="知识库分区导航"
+        storageKey="kb_demo"
+        items={[
+          { id: "kb_search_panel", label: "检索控制" },
+          { id: "kb_candidates_panel", label: "候选结果" },
+          { id: "kb_doc_panel", label: "文档阅读" },
+          { id: "kb_graph_panel", label: "关系图谱" },
+          { id: "kb_index_panel", label: "索引摘要" },
+          { id: "kb_error_panel", label: "状态反馈" }
+        ]}
+      />
       <div id="kb_search_panel" className="kb-search-panel panel-surface anchor-target">
         <div className="section-head">
           <strong>检索控制台</strong>
@@ -1320,22 +1361,38 @@ export function KbDemo() {
       </div>
 
       {candidates.length > 0 ? (
-        <div className="card-list kb-candidate-list">
-          {candidates.map((candidate) => (
-            <div className="card-item" key={candidate.docId}>
-              <strong>{candidate.docId}</strong>
-              <p>得分：{candidate.score.toFixed(2)}</p>
-              <p>{candidate.snippet}</p>
-              <p>召回原因：{candidate.reason.join(", ") || "未知"}</p>
-              <button type="button" onClick={() => loadDoc(candidate.docId)} disabled={loading}>
-                查看详情
-              </button>
-            </div>
-          ))}
-        </div>
+        <CollapsiblePanel
+          id="kb_candidates_panel"
+          title={`候选结果（${candidates.length}）`}
+          subtitle="按语义召回评分排序，支持快速打开详情"
+          storageKey="kb_candidates_panel"
+          className="anchor-target"
+          defaultExpanded
+        >
+          <div className="card-list kb-candidate-list">
+            {candidates.map((candidate) => (
+              <div className="card-item" key={candidate.docId}>
+                <strong>{candidate.docId}</strong>
+                <p>得分：{candidate.score.toFixed(2)}</p>
+                <p>{candidate.snippet}</p>
+                <p>召回原因：{candidate.reason.join(", ") || "未知"}</p>
+                <button type="button" onClick={() => loadDoc(candidate.docId)} disabled={loading}>
+                  查看详情
+                </button>
+              </div>
+            ))}
+          </div>
+        </CollapsiblePanel>
       ) : null}
 
-      <div id="kb_doc_panel" className="kb-doc-panel anchor-target">
+      <CollapsiblePanel
+        id="kb_doc_panel"
+        title="文档阅读与关系洞察"
+        subtitle="Obsidian 风格双链阅读与 NotebookLM 摘录融合"
+        storageKey="kb_doc_panel"
+        className="kb-doc-panel anchor-target"
+        defaultExpanded
+      >
         {selectedDoc && readingMode === "cards" ? (
           <div className="obsidian-board">
           <article className="obsidian-focus-card">
@@ -2026,7 +2083,7 @@ export function KbDemo() {
             ))}
           </div>
         ) : null}
-      </div>
+      </CollapsiblePanel>
 
       {selectedDoc && selectedDoc.backlinks.length > 0 ? (
         <div className="card-list">
@@ -2050,59 +2107,73 @@ export function KbDemo() {
         </div>
       ) : null}
 
-      <div id="kb_graph_panel" className="kb-graph-panel panel-surface anchor-target">
+      <CollapsiblePanel
+        id="kb_graph_panel"
+        title="反链图谱概览"
+        subtitle="节点关系摘要与热度分布"
+        storageKey="kb_graph_panel"
+        className="kb-graph-panel panel-surface anchor-target"
+        defaultExpanded
+      >
         {graph ? (
           <div className="card-list">
-          <div className="result-box">
-            <strong>反链图摘要 {graph.focusDocId ? `(焦点：${graph.focusDocId})` : "(全局)"}</strong>
-            {"\n"}
-            节点数：{graph.nodes.length}，关系数：{graph.edges.length}
-            {"\n\n"}
-            {graph.edges.length === 0
-              ? "暂无边关系。"
-              : graph.edges
-                  .slice(0, 20)
-                  .map((edge) => `- ${edge.source} -> ${edge.target}`)
-                  .join("\n")}
-          </div>
-          {graphHeat.length > 0 ? (
-            <div className="card-item">
-              <strong>关系热度榜（Top 8）</strong>
-              <p className="muted">用于识别知识网络中的枢纽节点与薄弱链路。</p>
-              {graphHeat.map((item) => {
-                const max = graphHeat[0]?.count || 1;
-                const ratio = Math.max(8, Math.round((item.count / max) * 100));
-                return (
-                  <div className="heat-row" key={item.id}>
-                    <span>{item.label}</span>
-                    <div className="heat-track">
-                      <div className="heat-fill" style={{ width: `${ratio}%` }} />
-                    </div>
-                    <em>{item.count}</em>
-                  </div>
-                );
-              })}
+            <div className="result-box">
+              <strong>反链图摘要 {graph.focusDocId ? `(焦点：${graph.focusDocId})` : "(全局)"}</strong>
+              {"\n"}
+              节点数：{graph.nodes.length}，关系数：{graph.edges.length}
+              {"\n\n"}
+              {graph.edges.length === 0
+                ? "暂无边关系。"
+                : graph.edges
+                    .slice(0, 20)
+                    .map((edge) => `- ${edge.source} -> ${edge.target}`)
+                    .join("\n")}
             </div>
-          ) : null}
+            {graphHeat.length > 0 ? (
+              <div className="card-item">
+                <strong>关系热度榜（Top 8）</strong>
+                <p className="muted">用于识别知识网络中的枢纽节点与薄弱链路。</p>
+                {graphHeat.map((item) => {
+                  const max = graphHeat[0]?.count || 1;
+                  const ratio = Math.max(8, Math.round((item.count / max) * 100));
+                  return (
+                    <div className="heat-row" key={item.id}>
+                      <span>{item.label}</span>
+                      <div className="heat-track">
+                        <div className="heat-fill" style={{ width: `${ratio}%` }} />
+                      </div>
+                      <em>{item.count}</em>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
         ) : null}
-      </div>
+      </CollapsiblePanel>
 
-      <div id="kb_index_panel" className="kb-index-panel panel-surface anchor-target">
+      <CollapsiblePanel
+        id="kb_index_panel"
+        title="索引重建摘要"
+        subtitle="记录文档规模、类型分布与领域覆盖"
+        storageKey="kb_index_panel"
+        className="kb-index-panel panel-surface anchor-target"
+        defaultExpanded
+      >
         {indexSummary ? (
           <div className="result-box">
-          <strong>索引重建完成</strong>
-          {"\n"}
-          生成时间：{indexSummary.generatedAt}
-          {"\n"}
-          文档总数：{indexSummary.docCount}
-          {"\n"}
-          类型统计：{JSON.stringify(indexSummary.byType)}
-          {"\n"}
-          领域统计：{JSON.stringify(indexSummary.byDomain)}
+            <strong>索引重建完成</strong>
+            {"\n"}
+            生成时间：{indexSummary.generatedAt}
+            {"\n"}
+            文档总数：{indexSummary.docCount}
+            {"\n"}
+            类型统计：{JSON.stringify(indexSummary.byType)}
+            {"\n"}
+            领域统计：{JSON.stringify(indexSummary.byDomain)}
           </div>
         ) : null}
-      </div>
+      </CollapsiblePanel>
 
       {error ? (
         <div id="kb_error_panel" className="result-box danger anchor-target">

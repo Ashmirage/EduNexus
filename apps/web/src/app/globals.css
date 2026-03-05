@@ -4227,6 +4227,179 @@ html[data-theme="aurora"] .tag {
   gap: 10px;
 }
 
+.demo-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid rgba(97, 132, 178, 0.34);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: rgba(9, 14, 24, 0.52);
+}
+
+.demo-toolbar span {
+  font-size: 12px;
+  color: #9fc7ee;
+}
+
+.demo-anchor-nav {
+  border: 1px solid rgba(97, 132, 178, 0.34);
+  border-radius: 10px;
+  padding: 8px 10px;
+  position: sticky;
+  top: 10px;
+  z-index: 4;
+  backdrop-filter: blur(4px);
+  background:
+    radial-gradient(circle at 8% 20%, rgba(92, 193, 255, 0.12), transparent 54%),
+    rgba(7, 12, 21, 0.58);
+}
+
+.demo-anchor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.demo-anchor-head strong {
+  font-size: 12px;
+  color: #d6ecff;
+}
+
+.demo-anchor-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.demo-anchor-row {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.demo-form .demo-anchor-chip,
+.demo-form .demo-anchor-tools button {
+  border: 1px solid rgba(97, 132, 178, 0.42);
+  border-radius: 999px;
+  background: rgba(9, 15, 25, 0.64);
+  color: #a7cbed;
+  font-size: 11px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.demo-form .demo-anchor-chip:hover,
+.demo-form .demo-anchor-tools button:hover {
+  border-color: rgba(96, 199, 255, 0.68);
+  color: #d8f2ff;
+  transform: translateY(-1px);
+}
+
+.demo-form .demo-anchor-chip.active {
+  border-color: rgba(159, 255, 210, 0.62);
+  background: rgba(159, 255, 210, 0.16);
+  color: #e4fff4;
+}
+
+.demo-compact-toggle {
+  border: 1px solid rgba(97, 132, 178, 0.42);
+  border-radius: 999px;
+  background: rgba(10, 16, 27, 0.58);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.demo-compact-toggle.active {
+  border-color: rgba(159, 255, 210, 0.56);
+  color: #dbfff0;
+  background: rgba(159, 255, 210, 0.12);
+}
+
+.collapsible-panel {
+  border: 1px solid rgba(97, 132, 178, 0.32);
+  border-radius: 12px;
+  background: rgba(8, 13, 22, 0.46);
+  overflow: hidden;
+}
+
+.collapsible-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.collapsible-panel-meta {
+  display: grid;
+  gap: 2px;
+}
+
+.collapsible-panel-meta strong {
+  font-size: 13px;
+  color: #d8efff;
+}
+
+.collapsible-panel-meta span {
+  font-size: 11px;
+  color: #9ec5e6;
+}
+
+.collapsible-panel-head button {
+  border: 1px solid rgba(97, 132, 178, 0.4);
+  border-radius: 999px;
+  background: rgba(10, 16, 27, 0.62);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.collapsible-panel-toggle-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(97, 132, 178, 0.45);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.collapsible-panel-body {
+  padding: 0 12px 12px;
+}
+
+.demo-form.is-compact {
+  gap: 8px;
+}
+
+.demo-form.is-compact .panel-surface,
+.demo-form.is-compact .card-item {
+  padding: 10px 11px;
+}
+
+.demo-form.is-compact .result-box {
+  padding: 9px 10px;
+}
+
+.demo-form.is-compact .section-head {
+  margin-bottom: 6px;
+}
+
 .feature-page-panel {
   background:
     radial-gradient(circle at 92% 10%, rgba(97, 199, 255, 0.13), transparent 34%),
@@ -4345,6 +4518,80 @@ html[data-theme="aurora"] .form-field > span {
   color: #678bb6;
 }
 
+html[data-theme="aurora"] .demo-toolbar {
+  border-color: rgba(118, 154, 216, 0.38);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+html[data-theme="aurora"] .demo-toolbar span {
+  color: #5e81ad;
+}
+
+html[data-theme="aurora"] .demo-anchor-nav {
+  border-color: rgba(118, 154, 216, 0.38);
+  background:
+    radial-gradient(circle at 8% 20%, rgba(122, 187, 255, 0.12), transparent 56%),
+    rgba(255, 255, 255, 0.8);
+}
+
+html[data-theme="aurora"] .demo-anchor-head strong {
+  color: #4f739f;
+}
+
+html[data-theme="aurora"] .demo-form .demo-anchor-chip,
+html[data-theme="aurora"] .demo-form .demo-anchor-tools button {
+  border-color: rgba(118, 154, 216, 0.44);
+  background: rgba(255, 255, 255, 0.86);
+  color: #5b7fab;
+}
+
+html[data-theme="aurora"] .demo-form .demo-anchor-chip:hover,
+html[data-theme="aurora"] .demo-form .demo-anchor-tools button:hover {
+  border-color: rgba(73, 163, 255, 0.56);
+  color: #366391;
+}
+
+html[data-theme="aurora"] .demo-form .demo-anchor-chip.active {
+  border-color: rgba(64, 174, 138, 0.44);
+  background: rgba(103, 210, 174, 0.22);
+  color: #285d4d;
+}
+
+html[data-theme="aurora"] .demo-compact-toggle {
+  border-color: rgba(118, 154, 216, 0.44);
+  background: rgba(255, 255, 255, 0.84);
+  color: #5579a7;
+}
+
+html[data-theme="aurora"] .demo-compact-toggle.active {
+  border-color: rgba(64, 174, 138, 0.46);
+  background: rgba(103, 210, 174, 0.2);
+  color: #245c4a;
+}
+
+html[data-theme="aurora"] .collapsible-panel {
+  border-color: rgba(118, 154, 216, 0.34);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+html[data-theme="aurora"] .collapsible-panel-meta strong {
+  color: #3b638f;
+}
+
+html[data-theme="aurora"] .collapsible-panel-meta span {
+  color: #678bb6;
+}
+
+html[data-theme="aurora"] .collapsible-panel-head button {
+  border-color: rgba(118, 154, 216, 0.46);
+  background: rgba(255, 255, 255, 0.84);
+  color: #5579a7;
+}
+
+html[data-theme="aurora"] .collapsible-panel-toggle-indicator {
+  border-color: rgba(118, 154, 216, 0.5);
+}
+
 .demo-form textarea:focus,
 .demo-form input:focus,
 .demo-form select:focus {
@@ -4375,6 +4622,25 @@ html[data-theme="aurora"] .form-field > span {
 .demo-form button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.demo-form .demo-compact-toggle,
+.demo-form .demo-anchor-tools button,
+.demo-form .demo-anchor-chip,
+.demo-form .collapsible-panel-head button {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  transform: none;
+  box-shadow: none;
+}
+
+.demo-form .demo-compact-toggle:hover:not(:disabled),
+.demo-form .demo-anchor-tools button:hover:not(:disabled),
+.demo-form .demo-anchor-chip:hover:not(:disabled),
+.demo-form .collapsible-panel-head button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(4, 10, 18, 0.28);
 }
 
 .demo-form-path {
@@ -10300,6 +10566,21 @@ html[data-theme="aurora"] .stream-guidance {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .demo-toolbar,
+  .demo-anchor-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .demo-anchor-tools {
+    width: 100%;
+  }
+
+  .demo-anchor-tools button {
+    flex: 1;
+    min-width: 0;
+  }
+
   .kb-filter-grid,
   .teacher-input-grid {
     grid-template-columns: 1fr;
@@ -10374,6 +10655,16 @@ html[data-theme="aurora"] .stream-guidance {
   .mini-chapter-config-grid,
   .hero-metric-grid {
     grid-template-columns: 1fr;
+  }
+
+  .demo-anchor-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .demo-anchor-chip {
+    border-radius: 8px;
+    text-align: center;
   }
 
   .trend-alert-head {

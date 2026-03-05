@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { formatErrorMessage, requestJson } from "@/lib/client/api";
+import { CollapsiblePanel } from "@/components/collapsible-panel";
+import { SectionAnchorNav } from "@/components/section-anchor-nav";
 
 type LessonPlan = {
   title: string;
@@ -70,6 +72,23 @@ export function TeacherPlanDemo() {
   const [result, setResult] = useState<LessonPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [compactMode, setCompactMode] = useState(false);
+
+  useEffect(() => {
+    try {
+      setCompactMode(window.localStorage.getItem("edunexus_teacher_compact_ui") === "1");
+    } catch {
+      setCompactMode(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("edunexus_teacher_compact_ui", compactMode ? "1" : "0");
+    } catch {
+      // ignore persistence failures
+    }
+  }, [compactMode]);
 
   async function loadTemplates(targetSubject = subject) {
     setTemplateLoading(true);
@@ -173,7 +192,27 @@ export function TeacherPlanDemo() {
   }
 
   return (
-    <div className="demo-form demo-form-teacher">
+    <div className={`demo-form demo-form-teacher${compactMode ? " is-compact" : ""}`}>
+      <div className="demo-toolbar">
+        <span>教师备课工作台</span>
+        <button
+          type="button"
+          className={`demo-compact-toggle${compactMode ? " active" : ""}`}
+          onClick={() => setCompactMode((prev) => !prev)}
+        >
+          {compactMode ? "紧凑模式" : "舒展模式"}
+        </button>
+      </div>
+      <SectionAnchorNav
+        title="备课分区导航"
+        storageKey="teacher_demo"
+        items={[
+          { id: "teacher_input_panel", label: "输入配置" },
+          { id: "teacher_template_panel", label: "模板套用" },
+          { id: "teacher_result_panel", label: "教案结果" },
+          { id: "teacher_error_panel", label: "状态反馈" }
+        ]}
+      />
       <div id="teacher_input_panel" className="teacher-input-panel panel-surface anchor-target">
         <div className="section-head">
           <strong>教学输入配置</strong>
@@ -219,11 +258,14 @@ export function TeacherPlanDemo() {
           </label>
         </div>
       </div>
-      <div id="teacher_template_panel" className="card-item teacher-template-panel anchor-target">
-        <div className="section-head">
-          <strong>薄弱点模板（当前：{templateSubject}）</strong>
-          <span>自动根据学科匹配，可点击“刷新模板”手动重载</span>
-        </div>
+      <CollapsiblePanel
+        id="teacher_template_panel"
+        title={`薄弱点模板（当前：${templateSubject}）`}
+        subtitle="自动根据学科匹配，可刷新并一键套用"
+        storageKey="teacher_template_panel"
+        className="card-item teacher-template-panel anchor-target"
+        defaultExpanded
+      >
         <button type="button" onClick={() => void loadTemplates(subject)} disabled={templateLoading}>
           {templateLoading ? "模板加载中..." : "刷新模板"}
         </button>
@@ -241,7 +283,7 @@ export function TeacherPlanDemo() {
             </button>
           ))}
         </div>
-      </div>
+      </CollapsiblePanel>
       <div className="teacher-meta-tags">
         <span className="tag">导出附带元数据</span>
         <span className="tag">学科模板可扩展</span>
@@ -257,50 +299,59 @@ export function TeacherPlanDemo() {
       </div>
 
       {result ? (
-        <div id="teacher_result_panel" className="card-list teacher-result-panel anchor-target">
-          <div className="result-box">
-            <strong>{result.title}</strong>
-            {"\n"}
-            来源：{result.source}
-            {result.modelHint ? `\n模型补充建议：${result.modelHint}` : ""}
+        <CollapsiblePanel
+          id="teacher_result_panel"
+          title="教案结果总览"
+          subtitle="教学目标、课堂流程、作业建议与复核清单"
+          storageKey="teacher_result_panel"
+          className="teacher-result-panel anchor-target"
+          defaultExpanded
+        >
+          <div className="card-list">
+            <div className="result-box">
+              <strong>{result.title}</strong>
+              {"\n"}
+              来源：{result.source}
+              {result.modelHint ? `\n模型补充建议：${result.modelHint}` : ""}
+            </div>
+            <div className="card-item">
+              <strong>教学目标</strong>
+              <ul>
+                {result.objectives.map((item, index) => (
+                  <li key={`obj_${index}`}>{item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="card-item">
+              <strong>课堂流程</strong>
+              <ul>
+                {result.outline.map((item, index) => (
+                  <li key={`outline_${index}`}>{item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="card-item">
+              <strong>班级调节建议</strong>
+              <p>{result.classAdjustment}</p>
+            </div>
+            <div className="card-item">
+              <strong>作业建议</strong>
+              <ul>
+                {result.homework.map((item, index) => (
+                  <li key={`work_${index}`}>{item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="card-item">
+              <strong>复核清单</strong>
+              <ul>
+                {result.reviewChecklist.map((item, index) => (
+                  <li key={`check_${index}`}>{item}</li>
+                ))}
+              </ul>
+            </div>
           </div>
-          <div className="card-item">
-            <strong>教学目标</strong>
-            <ul>
-              {result.objectives.map((item, index) => (
-                <li key={`obj_${index}`}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="card-item">
-            <strong>课堂流程</strong>
-            <ul>
-              {result.outline.map((item, index) => (
-                <li key={`outline_${index}`}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="card-item">
-            <strong>班级调节建议</strong>
-            <p>{result.classAdjustment}</p>
-          </div>
-          <div className="card-item">
-            <strong>作业建议</strong>
-            <ul>
-              {result.homework.map((item, index) => (
-                <li key={`work_${index}`}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="card-item">
-            <strong>复核清单</strong>
-            <ul>
-              {result.reviewChecklist.map((item, index) => (
-                <li key={`check_${index}`}>{item}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
+        </CollapsiblePanel>
       ) : null}
 
       {error ? (
