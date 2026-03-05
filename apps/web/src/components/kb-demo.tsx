@@ -1168,38 +1168,54 @@ export function KbDemo() {
   }
 
   return (
-    <div className="demo-form">
-      <div id="kb_search_panel" className="anchor-target">
-        <label>检索关键词</label>
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="例如：等差数列 / 单调性 / 复盘"
-        />
-        <label>类型过滤（可选）</label>
-        <input
-          value={typeFilter}
-          onChange={(event) => setTypeFilter(event.target.value)}
-          placeholder="note / source / playbook / skill / daily"
-        />
-        <label>领域过滤（可选）</label>
-        <input
-          value={domainFilter}
-          onChange={(event) => setDomainFilter(event.target.value)}
-          placeholder="math / physics / general"
-        />
-        <label>标签过滤（可选）</label>
-        <input
-          value={tagFilter}
-          onChange={(event) => setTagFilter(event.target.value)}
-          placeholder="例如：复盘"
-        />
-        <button type="button" onClick={() => void search()} disabled={loading}>
-          搜索知识库
-        </button>
-        <button type="button" onClick={rebuildIndex} disabled={loading}>
-          重建索引摘要
-        </button>
+    <div className="demo-form demo-form-kb">
+      <div id="kb_search_panel" className="kb-search-panel panel-surface anchor-target">
+        <div className="section-head">
+          <strong>检索控制台</strong>
+          <span>关键词过滤、标签聚合与索引重建入口</span>
+        </div>
+        <div className="kb-filter-grid">
+          <label className="form-field">
+            <span>检索关键词</span>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="例如：等差数列 / 单调性 / 复盘"
+            />
+          </label>
+          <label className="form-field">
+            <span>类型过滤（可选）</span>
+            <input
+              value={typeFilter}
+              onChange={(event) => setTypeFilter(event.target.value)}
+              placeholder="note / source / playbook / skill / daily"
+            />
+          </label>
+          <label className="form-field">
+            <span>领域过滤（可选）</span>
+            <input
+              value={domainFilter}
+              onChange={(event) => setDomainFilter(event.target.value)}
+              placeholder="math / physics / general"
+            />
+          </label>
+          <label className="form-field">
+            <span>标签过滤（可选）</span>
+            <input
+              value={tagFilter}
+              onChange={(event) => setTagFilter(event.target.value)}
+              placeholder="例如：复盘"
+            />
+          </label>
+        </div>
+        <div className="action-row">
+          <button type="button" onClick={() => void search()} disabled={loading}>
+            搜索知识库
+          </button>
+          <button type="button" onClick={rebuildIndex} disabled={loading}>
+            重建索引摘要
+          </button>
+        </div>
         {externalContextHint ? (
           <div className="result-box info">
             <strong>外部回看上下文</strong>
@@ -1304,7 +1320,7 @@ export function KbDemo() {
       </div>
 
       {candidates.length > 0 ? (
-        <div className="card-list">
+        <div className="card-list kb-candidate-list">
           {candidates.map((candidate) => (
             <div className="card-item" key={candidate.docId}>
               <strong>{candidate.docId}</strong>
@@ -1319,7 +1335,7 @@ export function KbDemo() {
         </div>
       ) : null}
 
-      <div id="kb_doc_panel" className="anchor-target">
+      <div id="kb_doc_panel" className="kb-doc-panel anchor-target">
         {selectedDoc && readingMode === "cards" ? (
           <div className="obsidian-board">
           <article className="obsidian-focus-card">
@@ -2034,7 +2050,7 @@ export function KbDemo() {
         </div>
       ) : null}
 
-      <div id="kb_graph_panel" className="anchor-target">
+      <div id="kb_graph_panel" className="kb-graph-panel panel-surface anchor-target">
         {graph ? (
           <div className="card-list">
           <div className="result-box">
@@ -2072,7 +2088,7 @@ export function KbDemo() {
         ) : null}
       </div>
 
-      <div id="kb_index_panel" className="anchor-target">
+      <div id="kb_index_panel" className="kb-index-panel panel-surface anchor-target">
         {indexSummary ? (
           <div className="result-box">
           <strong>索引重建完成</strong>

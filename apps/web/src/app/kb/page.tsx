@@ -23,7 +23,7 @@ export default function KbPage() {
       </div>
 
       <div className="panel-grid">
-        <article className="panel wide">
+        <article className="panel wide feature-page-panel kb-page-main">
           <h3>知识检索与文档阅读</h3>
           <Suspense fallback={<div className="result-box">正在加载知识库...</div>}>
             <KbDemo />

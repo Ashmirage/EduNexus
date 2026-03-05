@@ -173,37 +173,57 @@ export function TeacherPlanDemo() {
   }
 
   return (
-    <div className="demo-form">
-      <div id="teacher_input_panel" className="anchor-target">
-        <label>学科</label>
-        <input value={subject} onChange={(event) => setSubject(event.target.value)} />
+    <div className="demo-form demo-form-teacher">
+      <div id="teacher_input_panel" className="teacher-input-panel panel-surface anchor-target">
+        <div className="section-head">
+          <strong>教学输入配置</strong>
+          <span>学科、主题、年级与难度决定生成策略</span>
+        </div>
+        <div className="teacher-input-grid">
+          <label className="form-field">
+            <span>学科</span>
+            <input value={subject} onChange={(event) => setSubject(event.target.value)} />
+          </label>
 
-        <label>主题</label>
-        <input value={topic} onChange={(event) => setTopic(event.target.value)} />
+          <label className="form-field">
+            <span>主题</span>
+            <input value={topic} onChange={(event) => setTopic(event.target.value)} />
+          </label>
 
-        <label>学段/年级</label>
-        <input value={grade} onChange={(event) => setGrade(event.target.value)} />
+          <label className="form-field">
+            <span>学段/年级</span>
+            <input value={grade} onChange={(event) => setGrade(event.target.value)} />
+          </label>
 
-        <label>难度</label>
-        <select
-          value={difficulty}
-          onChange={(event) => setDifficulty(event.target.value as "基础" | "中等" | "提升")}
-        >
-          <option value="基础">基础</option>
-          <option value="中等">中等</option>
-          <option value="提升">提升</option>
-        </select>
+          <label className="form-field">
+            <span>难度</span>
+            <select
+              value={difficulty}
+              onChange={(event) =>
+                setDifficulty(event.target.value as "基础" | "中等" | "提升")
+              }
+            >
+              <option value="基础">基础</option>
+              <option value="中等">中等</option>
+              <option value="提升">提升</option>
+            </select>
+          </label>
 
-        <label>班级薄弱点（可选）</label>
-        <textarea
-          rows={3}
-          value={classWeakness}
-          onChange={(event) => setClassWeakness(event.target.value)}
-        />
+          <label className="form-field form-field-wide">
+            <span>班级薄弱点（可选）</span>
+            <textarea
+              rows={3}
+              value={classWeakness}
+              onChange={(event) => setClassWeakness(event.target.value)}
+            />
+          </label>
+        </div>
       </div>
-      <div id="teacher_template_panel" className="card-item anchor-target">
-        <strong>薄弱点模板（当前：{templateSubject}）</strong>
-        <p className="muted">自动根据学科匹配，可点击“刷新模板”手动重载。</p>
+      <div id="teacher_template_panel" className="card-item teacher-template-panel anchor-target">
+        <div className="section-head">
+          <strong>薄弱点模板（当前：{templateSubject}）</strong>
+          <span>自动根据学科匹配，可点击“刷新模板”手动重载</span>
+        </div>
         <button type="button" onClick={() => void loadTemplates(subject)} disabled={templateLoading}>
           {templateLoading ? "模板加载中..." : "刷新模板"}
         </button>
@@ -222,20 +242,22 @@ export function TeacherPlanDemo() {
           ))}
         </div>
       </div>
-      <div>
+      <div className="teacher-meta-tags">
         <span className="tag">导出附带元数据</span>
         <span className="tag">学科模板可扩展</span>
       </div>
 
-      <button type="button" onClick={generate} disabled={loading}>
-        生成备课草案
-      </button>
-      <button type="button" onClick={exportMarkdown} disabled={loading || !result}>
-        导出 Markdown 教案
-      </button>
+      <div className="action-row">
+        <button type="button" onClick={generate} disabled={loading}>
+          生成备课草案
+        </button>
+        <button type="button" onClick={exportMarkdown} disabled={loading || !result}>
+          导出 Markdown 教案
+        </button>
+      </div>
 
       {result ? (
-        <div id="teacher_result_panel" className="card-list anchor-target">
+        <div id="teacher_result_panel" className="card-list teacher-result-panel anchor-target">
           <div className="result-box">
             <strong>{result.title}</strong>
             {"\n"}

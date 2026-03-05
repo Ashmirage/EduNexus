@@ -4227,6 +4227,58 @@ html[data-theme="aurora"] .tag {
   gap: 10px;
 }
 
+.feature-page-panel {
+  background:
+    radial-gradient(circle at 92% 10%, rgba(97, 199, 255, 0.13), transparent 34%),
+    linear-gradient(168deg, rgba(10, 16, 27, 0.84), rgba(8, 13, 22, 0.92));
+  border-color: rgba(97, 132, 178, 0.42);
+}
+
+.panel-surface {
+  border: 1px solid rgba(97, 132, 178, 0.34);
+  border-radius: 12px;
+  padding: 12px;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(97, 199, 255, 0.08), transparent 38%),
+    rgba(8, 13, 22, 0.48);
+}
+
+.section-head {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.section-head strong {
+  font-size: 13px;
+  color: #d9efff;
+}
+
+.section-head span {
+  font-size: 11px;
+  color: #9ec5e6;
+}
+
+.form-field {
+  display: grid;
+  gap: 5px;
+}
+
+.form-field > span {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.form-field-wide {
+  grid-column: 1 / -1;
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .panel-grid-tight {
   margin-top: 0;
 }
@@ -4270,6 +4322,29 @@ html[data-theme="aurora"] .demo-form select {
   background: rgba(255, 255, 255, 0.86);
 }
 
+html[data-theme="aurora"] .feature-page-panel {
+  border-color: rgba(118, 154, 216, 0.44);
+  background:
+    radial-gradient(circle at 92% 10%, rgba(122, 187, 255, 0.16), transparent 36%),
+    rgba(255, 255, 255, 0.82);
+}
+
+html[data-theme="aurora"] .panel-surface {
+  border-color: rgba(118, 154, 216, 0.38);
+  background:
+    radial-gradient(circle at 88% 12%, rgba(122, 187, 255, 0.14), transparent 40%),
+    rgba(255, 255, 255, 0.74);
+}
+
+html[data-theme="aurora"] .section-head strong {
+  color: #38608e;
+}
+
+html[data-theme="aurora"] .section-head span,
+html[data-theme="aurora"] .form-field > span {
+  color: #678bb6;
+}
+
 .demo-form textarea:focus,
 .demo-form input:focus,
 .demo-form select:focus {
@@ -4300,6 +4375,69 @@ html[data-theme="aurora"] .demo-form select {
 .demo-form button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.demo-form-path {
+  gap: 12px;
+}
+
+.path-goal-panel .action-row {
+  margin-top: 8px;
+}
+
+.path-plan-panel {
+  margin-top: 2px;
+}
+
+.demo-form-kb {
+  gap: 12px;
+}
+
+.kb-search-panel .action-row {
+  margin-top: 2px;
+}
+
+.kb-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.kb-candidate-list .card-item {
+  border-style: dashed;
+}
+
+.kb-doc-panel .obsidian-board {
+  margin-top: 2px;
+}
+
+.kb-graph-panel .result-box,
+.kb-index-panel .result-box {
+  margin-top: 0;
+}
+
+.demo-form-teacher {
+  gap: 12px;
+}
+
+.teacher-input-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.teacher-template-panel {
+  border-style: dashed;
+}
+
+.teacher-meta-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.teacher-result-panel .card-item {
+  border-color: rgba(97, 132, 178, 0.38);
 }
 
 .config-toolbar {
@@ -10162,6 +10300,11 @@ html[data-theme="aurora"] .stream-guidance {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .kb-filter-grid,
+  .teacher-input-grid {
+    grid-template-columns: 1fr;
+  }
+
   .workspace-learn-grid {
     grid-template-columns: 1fr;
   }
@@ -10249,6 +10392,10 @@ html[data-theme="aurora"] .stream-guidance {
   }
 
   .settings-focus-tools {
+    width: 100%;
+  }
+
+  .action-row {
     width: 100%;
   }
 

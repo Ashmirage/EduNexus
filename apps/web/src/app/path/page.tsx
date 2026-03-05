@@ -23,7 +23,7 @@ export default function PathPage() {
       </div>
 
       <div className="panel-grid">
-        <article className="panel wide">
+        <article className="panel wide feature-page-panel path-page-main">
           <h3>路径规划与执行</h3>
           <Suspense fallback={<p className="muted">正在加载路径模块...</p>}>
             <PathDemo />

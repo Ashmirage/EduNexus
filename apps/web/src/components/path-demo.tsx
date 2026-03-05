@@ -971,11 +971,14 @@ export function PathDemo() {
   }
 
   return (
-    <div className="demo-form">
+    <div className="demo-form demo-form-path">
       {focusHint ? <div className="result-box info">{focusHint}</div> : null}
       {focusSummary ? (
-        <div id="path_focus_panel" className="path-focus-summary anchor-target">
-          <strong>图谱联动焦点</strong>
+        <div id="path_focus_panel" className="path-focus-summary panel-surface anchor-target">
+          <div className="section-head">
+            <strong>图谱联动焦点</strong>
+            <span>关系链来源、批次队列与桥接执行清单</span>
+          </div>
           <p>
             节点：{focusPayload?.nodeLabel} · 域：{focusPayload?.domain} · 风险：
             {focusSummary.riskText} · 掌握度：{focusSummary.masteryText}
@@ -1191,19 +1194,27 @@ export function PathDemo() {
           ) : null}
         </div>
       ) : null}
-      <div id="path_goal_panel" className="anchor-target">
-        <label>学习目标</label>
-        <input value={goal} onChange={(event) => setGoal(event.target.value)} />
-        <button type="button" onClick={generatePath} disabled={loading}>
-          {focusPayload ? "生成 7 日定向计划" : "生成 7 日计划"}
-        </button>
-        <button type="button" onClick={replan} disabled={loading || !data}>
-          依据新情况重排计划
-        </button>
+      <div id="path_goal_panel" className="path-goal-panel panel-surface anchor-target">
+        <div className="section-head">
+          <strong>目标设定与计划生成</strong>
+          <span>先定义学习目标，再生成或重排路径</span>
+        </div>
+        <label className="form-field">
+          <span>学习目标</span>
+          <input value={goal} onChange={(event) => setGoal(event.target.value)} />
+        </label>
+        <div className="action-row">
+          <button type="button" onClick={generatePath} disabled={loading}>
+            {focusPayload ? "生成 7 日定向计划" : "生成 7 日计划"}
+          </button>
+          <button type="button" onClick={replan} disabled={loading || !data}>
+            依据新情况重排计划
+          </button>
+        </div>
       </div>
 
       {data ? (
-        <div id="path_plan_panel" className="card-list anchor-target">
+        <div id="path_plan_panel" className="card-list path-plan-panel anchor-target">
           <div className="result-box">
             <strong>计划 ID：</strong> {data.planId}
             {"\n"}

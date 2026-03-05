@@ -22,7 +22,7 @@ export default function TeacherPage() {
       </div>
 
       <div className="panel-grid">
-        <article className="panel wide">
+        <article className="panel wide feature-page-panel teacher-page-main">
           <h3>教学方案生成</h3>
           <TeacherPlanDemo />
         </article>
