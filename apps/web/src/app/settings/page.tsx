@@ -116,6 +116,7 @@ const CONFIG_PROFILE_LIMIT = 12;
 const IMPORT_AUDIT_STORAGE_KEY = "edunexus_config_import_audit";
 const IMPORT_AUDIT_LIMIT = 12;
 const SETTINGS_NOVICE_MODE_STORAGE_KEY = "edunexus_settings_novice_mode";
+const SETTINGS_COMPACT_MODE_STORAGE_KEY = "edunexus_settings_compact_mode";
 const {
   normalizeConfigBundleMeta,
   buildDefaultBundle,
@@ -306,6 +307,7 @@ export default function SettingsPage() {
   const [settingsViewMode, setSettingsViewMode] =
     useState<SettingsViewMode>("basic");
   const [noviceMode, setNoviceMode] = useState(true);
+  const [settingsCompactMode, setSettingsCompactMode] = useState(false);
   const [settingsSearchKeyword, setSettingsSearchKeyword] = useState("");
   const [activeAnchorId, setActiveAnchorId] = useState("");
   const [activeAnchorCursor, setActiveAnchorCursor] = useState(-1);
@@ -378,6 +380,8 @@ export default function SettingsPage() {
       } else if (rawNovice === "1") {
         setNoviceMode(true);
       }
+      const rawCompact = window.localStorage.getItem(SETTINGS_COMPACT_MODE_STORAGE_KEY);
+      setSettingsCompactMode(rawCompact === "1");
     } catch {
       // ignore novice mode read failures
     }
@@ -431,6 +435,20 @@ export default function SettingsPage() {
       // ignore novice mode persistence failures
     }
   }, [hasMounted, noviceMode]);
+
+  useEffect(() => {
+    if (!hasMounted) {
+      return;
+    }
+    try {
+      window.localStorage.setItem(
+        SETTINGS_COMPACT_MODE_STORAGE_KEY,
+        settingsCompactMode ? "1" : "0"
+      );
+    } catch {
+      // ignore compact mode persistence failures
+    }
+  }, [hasMounted, settingsCompactMode]);
 
   const formattedBundleUpdatedAt = useMemo(
     () => formatTime(bundle.updatedAt),
@@ -953,27 +971,33 @@ export default function SettingsPage() {
         <PageQuickNav title="配置中心快速导航" items={[...SETTINGS_QUICK_NAV_ITEMS]} />
       </div>
 
-      <div className="panel-grid settings-layout" data-view={settingsViewMode}>
-        <GalaxyHero
-          badge="配置中心 · 本地持久化"
-          title="一处配置，三处联动"
-          description="配置写入本地并实时广播到各子系统，支持配置迁移、画像管理和快照回滚。"
-          quote="“把策略参数从代码里拿出来，放进可视化配置中心。”"
-          chips={["看板预警策略", "工作区回放策略", "知识库章节策略", "JSON 配置快照"]}
-          metrics={[
-            {
-              label: "配置版本",
-              value: `v${bundle.version}`,
-              hint: `配置 schema 版本 v${CONFIG_SCHEMA_VERSION}`
-            },
-            { label: "最后更新时间", value: formattedBundleUpdatedAt, hint: "本地时间" },
-            {
-              label: "策略画像",
-              value: bundle.meta.profileLabel,
-              hint: `${bundle.meta.profileId} · ${formatAestheticModeLabel(bundle.meta.aestheticMode)}`
-            }
-          ]}
-        />
+      <div
+        className="panel-grid settings-layout"
+        data-view={settingsViewMode}
+        data-compact={settingsCompactMode ? "true" : "false"}
+      >
+        <div className="settings-compact-hero">
+          <GalaxyHero
+            badge="配置中心 · 本地持久化"
+            title="一处配置，三处联动"
+            description="配置写入本地并实时广播到各子系统，支持配置迁移、画像管理和快照回滚。"
+            quote="“把策略参数从代码里拿出来，放进可视化配置中心。”"
+            chips={["看板预警策略", "工作区回放策略", "知识库章节策略", "JSON 配置快照"]}
+            metrics={[
+              {
+                label: "配置版本",
+                value: `v${bundle.version}`,
+                hint: `配置 schema 版本 v${CONFIG_SCHEMA_VERSION}`
+              },
+              { label: "最后更新时间", value: formattedBundleUpdatedAt, hint: "本地时间" },
+              {
+                label: "策略画像",
+                value: bundle.meta.profileLabel,
+                hint: `${bundle.meta.profileId} · ${formatAestheticModeLabel(bundle.meta.aestheticMode)}`
+              }
+            ]}
+          />
+        </div>
 
         <article className="panel wide settings-view-switcher">
           <header>
@@ -1016,6 +1040,20 @@ export default function SettingsPage() {
               新手模式（默认开启）：隐藏高级阈值和细粒度参数，先保证流程可用
             </span>
           </label>
+          <div className="settings-focus-tools">
+            <button
+              type="button"
+              className={`settings-compact-toggle${settingsCompactMode ? " active" : ""}`}
+              onClick={() => setSettingsCompactMode((prev) => !prev)}
+            >
+              {settingsCompactMode ? "紧凑模式已开启" : "紧凑模式已关闭"}
+              <em>
+                {settingsCompactMode
+                  ? "已折叠首屏介绍并压缩表单间距。"
+                  : "开启后会隐藏首屏介绍并降低页面密度，减少滚动。"}
+              </em>
+            </button>
+          </div>
           <div className="settings-search-tools">
             <label className="settings-search-input">
               <span>参数搜索</span>

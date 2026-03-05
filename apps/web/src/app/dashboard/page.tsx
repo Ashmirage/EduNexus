@@ -1615,22 +1615,24 @@ export default function DashboardPage() {
         data-view={dashboardViewMode}
         data-compact={dashboardCompactMode ? "true" : "false"}
       >
-        <GalaxyHero
-          badge="生态指标 · 实时快照"
-          title="用指标追踪“学会了多少”，而不只是“做了多少题”"
-          description="看板围绕学习增益、独立完成率、提示依赖率和来源引用覆盖率构建，帮助运营与教学团队快速识别收益和风险点。"
-          quote="“指标不是汇报材料，而是下一轮教学决策的导航盘。”"
-          chips={["学习增益", "独立完成率", "提示依赖率", "来源引用覆盖"]}
-          metrics={[
-            {
-              label: "数据口径",
-              value: period === "7d" ? "7 日滚动" : period === "14d" ? "14 日滚动" : "30 日滚动",
-              hint: "统一口径对比"
-            },
-            { label: "风险追踪", value: "班级 / 节点", hint: "可定位可干预" },
-            { label: "联动深度", value: "图谱 / 路径 / 工作区", hint: "闭环追踪" }
-          ]}
-        />
+        <div className="dashboard-compact-hero">
+          <GalaxyHero
+            badge="生态指标 · 实时快照"
+            title="用指标追踪“学会了多少”，而不只是“做了多少题”"
+            description="看板围绕学习增益、独立完成率、提示依赖率和来源引用覆盖率构建，帮助运营与教学团队快速识别收益和风险点。"
+            quote="“指标不是汇报材料，而是下一轮教学决策的导航盘。”"
+            chips={["学习增益", "独立完成率", "提示依赖率", "来源引用覆盖"]}
+            metrics={[
+              {
+                label: "数据口径",
+                value: period === "7d" ? "7 日滚动" : period === "14d" ? "14 日滚动" : "30 日滚动",
+                hint: "统一口径对比"
+              },
+              { label: "风险追踪", value: "班级 / 节点", hint: "可定位可干预" },
+              { label: "联动深度", value: "图谱 / 路径 / 工作区", hint: "闭环追踪" }
+            ]}
+          />
+        </div>
 
         <article
           id="dashboard_view_switcher"
