@@ -1044,6 +1044,17 @@ export function PathDemo() {
           </button>
         </div>
       </div>
+      <div className="demo-context-links">
+        <button type="button" className="demo-link-chip" onClick={() => router.push("/graph?from=path")}>
+          查看图谱总览
+        </button>
+        <button type="button" className="demo-link-chip" onClick={() => router.push("/workspace?from=path")}>
+          进入学习工作区
+        </button>
+        <button type="button" className="demo-link-chip" onClick={() => router.push("/kb?from=path")}>
+          打开知识库检索
+        </button>
+      </div>
       <SectionAnchorNav
         title="路径分区导航"
         storageKey="path_demo"

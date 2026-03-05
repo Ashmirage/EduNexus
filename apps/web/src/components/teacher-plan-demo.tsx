@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { formatErrorMessage, requestJson } from "@/lib/client/api";
 import { CollapsiblePanel } from "@/components/collapsible-panel";
 import { SectionAnchorNav } from "@/components/section-anchor-nav";
@@ -61,6 +62,7 @@ const FALLBACK_TEMPLATES: WeaknessTemplate[] = [
 ];
 
 export function TeacherPlanDemo() {
+  const router = useRouter();
   const [subject, setSubject] = useState("高中数学");
   const [topic, setTopic] = useState("等差数列求和");
   const [grade, setGrade] = useState("高一");
@@ -251,6 +253,17 @@ export function TeacherPlanDemo() {
             重置分区
           </button>
         </div>
+      </div>
+      <div className="demo-context-links">
+        <button type="button" className="demo-link-chip" onClick={() => router.push("/graph?from=teacher")}>
+          查看图谱总览
+        </button>
+        <button type="button" className="demo-link-chip" onClick={() => router.push("/workspace?from=teacher")}>
+          进入学习工作区
+        </button>
+        <button type="button" className="demo-link-chip" onClick={() => router.push("/kb?from=teacher")}>
+          打开知识库检索
+        </button>
       </div>
       <SectionAnchorNav
         title="备课分区导航"

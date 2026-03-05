@@ -305,6 +305,7 @@ export function KbDemo() {
   const [compactMode, setCompactMode] = useState(false);
   const [miniMapDeepMode, setMiniMapDeepMode] = useState(false);
   const [miniMapAnalysisMode, setMiniMapAnalysisMode] = useState(false);
+  const [relationWorkbenchReady, setRelationWorkbenchReady] = useState(false);
   const externalContextAppliedRef = useRef("");
   const presetQuery = useMemo(
     () => searchParams.get("q")?.trim() ?? "",
@@ -386,6 +387,12 @@ export function KbDemo() {
       setMiniMapAnalysisMode(false);
     }
   }, [miniMapAnalysisMode, miniMapDeepMode]);
+
+  useEffect(() => {
+    if (!miniMapDeepMode) {
+      setRelationWorkbenchReady(false);
+    }
+  }, [miniMapDeepMode]);
 
   function resetKbLayout() {
     try {
@@ -632,13 +639,13 @@ export function KbDemo() {
   }, [query, tagFilter, citationFocus, selectedDoc]);
 
   const miniGraphEdges = useMemo(() => {
-    if (!miniMapDeepMode || !selectedDoc || !graph) {
+    if (!miniMapDeepMode || !relationWorkbenchReady || !selectedDoc || !graph) {
       return [];
     }
     return graph.edges
       .filter((edge) => edge.source === selectedDoc.id || edge.target === selectedDoc.id)
       .slice(0, 12);
-  }, [miniMapDeepMode, selectedDoc, graph]);
+  }, [graph, miniMapDeepMode, relationWorkbenchReady, selectedDoc]);
 
   const miniGraphNodeList = useMemo(() => {
     if (!selectedDoc) {
@@ -1368,6 +1375,17 @@ export function KbDemo() {
           </button>
         </div>
       </div>
+      <div className="demo-context-links">
+        <button type="button" className="demo-link-chip" onClick={() => router.push("/graph?from=kb")}>
+          查看图谱总览
+        </button>
+        <button type="button" className="demo-link-chip" onClick={() => router.push("/workspace?from=kb")}>
+          进入学习工作区
+        </button>
+        <button type="button" className="demo-link-chip" onClick={() => router.push("/path?from=kb")}>
+          进入学习路径
+        </button>
+      </div>
       <SectionAnchorNav
         title="知识库分区导航"
         storageKey="kb_demo"
@@ -1508,49 +1526,57 @@ export function KbDemo() {
             </button>
           </div>
           <p className="muted">
-            关系图深度模式：{miniMapDeepMode ? "已开启" : "已关闭"} · 细节分析：{miniMapAnalysisMode ? "已开启" : "已关闭"}
+            关系图深度模式：{miniMapDeepMode ? "已开启" : "已关闭"} · 细节分析：{miniMapAnalysisMode ? "已开启" : "已关闭"} · 分析区：{relationWorkbenchReady ? "已加载" : "未加载"}
           </p>
         </div>
-        <label>反链图节点上限（10-300）</label>
-        <input
-          type="number"
-          min={10}
-          max={300}
-          step={10}
-          value={graphLimit}
-          onChange={(event) => {
-            const value = Number(event.target.value);
-            if (Number.isFinite(value)) {
-              setGraphLimit(Math.min(300, Math.max(10, value)));
-            }
-          }}
-        />
+        <CollapsiblePanel
+          title="高级过滤与索引设置"
+          subtitle="展开后可调整图谱规模与标签过滤"
+          storageKey="kb_search_advanced_panel"
+          className="kb-search-advanced"
+          defaultExpanded={false}
+        >
+          <label>反链图节点上限（10-300）</label>
+          <input
+            type="number"
+            min={10}
+            max={300}
+            step={10}
+            value={graphLimit}
+            onChange={(event) => {
+              const value = Number(event.target.value);
+              if (Number.isFinite(value)) {
+                setGraphLimit(Math.min(300, Math.max(10, value)));
+              }
+            }}
+          />
 
-        {tags.length > 0 ? (
-          <div className="card-item">
-            <strong>标签聚合（点击可快速过滤）</strong>
-            <div className="btn-row btn-row-top">
-              {tags.slice(0, 20).map((item) => (
-                <button
-                  type="button"
-                  key={item.tag}
-                  onClick={() => applyTag(item.tag)}
-                  disabled={loading}
-                  className="note-chip"
-                >
-                  {item.tag} ({item.count})
-                </button>
-              ))}
+          {tags.length > 0 ? (
+            <div className="card-item">
+              <strong>标签聚合（点击可快速过滤）</strong>
+              <div className="btn-row btn-row-top">
+                {tags.slice(0, 20).map((item) => (
+                  <button
+                    type="button"
+                    key={item.tag}
+                    onClick={() => applyTag(item.tag)}
+                    disabled={loading}
+                    className="note-chip"
+                  >
+                    {item.tag} ({item.count})
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        <div className="card-item">
-          <strong>当前过滤器</strong>
-          <p>
-            {`q=${query || "无"} · type=${typeFilter || "无"} · domain=${domainFilter || "无"} · tag=${tagFilter || "无"}`}
-          </p>
-        </div>
+          <div className="card-item">
+            <strong>当前过滤器</strong>
+            <p>
+              {`q=${query || "无"} · type=${typeFilter || "无"} · domain=${domainFilter || "无"} · tag=${tagFilter || "无"}`}
+            </p>
+          </div>
+        </CollapsiblePanel>
       </div>
 
       {candidates.length > 0 ? (
@@ -1677,6 +1703,17 @@ export function KbDemo() {
                   <p className="muted">当前已关闭关系图深度模式，以减少长页面渲染负担。</p>
                   <button type="button" className="demo-btn-primary" onClick={() => setMiniMapDeepMode(true)}>
                     开启关系图深度模式
+                  </button>
+                </div>
+              ) : !relationWorkbenchReady ? (
+                <div className="mini-map-lite">
+                  <p className="muted">关系分析区默认按需加载，点击后再渲染详细关系模块。</p>
+                  <button
+                    type="button"
+                    className="demo-btn-primary"
+                    onClick={() => setRelationWorkbenchReady(true)}
+                  >
+                    加载关系分析区
                   </button>
                 </div>
               ) : miniGraphEdges.length === 0 ? (

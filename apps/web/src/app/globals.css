@@ -4331,6 +4331,27 @@ html[data-theme="aurora"] .tag {
   gap: 6px;
 }
 
+.demo-context-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.demo-link-chip {
+  border: 1px solid rgba(97, 132, 178, 0.4);
+  border-radius: 999px;
+  background: rgba(10, 17, 28, 0.62);
+  color: #b6d8f6;
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.demo-link-chip:hover {
+  border-color: rgba(96, 199, 255, 0.66);
+  color: #e1f4ff;
+}
+
 .demo-anchor-nav {
   border: 1px solid rgba(97, 132, 178, 0.34);
   border-radius: 10px;
@@ -4711,6 +4732,17 @@ html[data-theme="aurora"] .demo-toolbar span {
   color: #5e81ad;
 }
 
+html[data-theme="aurora"] .demo-link-chip {
+  border-color: rgba(118, 154, 216, 0.44);
+  background: rgba(255, 255, 255, 0.86);
+  color: #5277a4;
+}
+
+html[data-theme="aurora"] .demo-link-chip:hover {
+  border-color: rgba(73, 163, 255, 0.54);
+  color: #356290;
+}
+
 html[data-theme="aurora"] .demo-reset-toggle {
   border-color: rgba(205, 166, 105, 0.44);
   color: #8a6a39;
@@ -4898,6 +4930,14 @@ html[data-theme="aurora"] .collapsible-panel-toggle-indicator {
 
 .kb-search-panel .action-row {
   margin-top: 2px;
+}
+
+.kb-search-advanced {
+  margin-top: 4px;
+}
+
+.kb-search-advanced .card-item {
+  margin-top: 8px;
 }
 
 .kb-filter-grid {
@@ -10865,6 +10905,16 @@ html[data-theme="aurora"] .stream-guidance {
   .demo-toolbar-actions button {
     flex: 1;
     min-width: 0;
+  }
+
+  .demo-context-links {
+    width: 100%;
+  }
+
+  .demo-link-chip {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
   }
 
   .demo-anchor-tools {
