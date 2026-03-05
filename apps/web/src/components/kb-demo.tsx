@@ -303,6 +303,7 @@ export function KbDemo() {
   const [error, setError] = useState("");
   const [externalContextHint, setExternalContextHint] = useState("");
   const [compactMode, setCompactMode] = useState(false);
+  const [miniMapDeepMode, setMiniMapDeepMode] = useState(false);
   const externalContextAppliedRef = useRef("");
   const presetQuery = useMemo(
     () => searchParams.get("q")?.trim() ?? "",
@@ -345,14 +346,53 @@ export function KbDemo() {
     }
   }, [compactMode]);
 
+  useEffect(() => {
+    try {
+      setMiniMapDeepMode(window.localStorage.getItem("edunexus_kb_minimap_deep_mode") === "1");
+    } catch {
+      setMiniMapDeepMode(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        "edunexus_kb_minimap_deep_mode",
+        miniMapDeepMode ? "1" : "0"
+      );
+    } catch {
+      // ignore persistence failures
+    }
+  }, [miniMapDeepMode]);
+
   function resetKbLayout() {
     try {
       window.localStorage.removeItem("edunexus_kb_compact_ui");
+      window.localStorage.removeItem("edunexus_kb_minimap_deep_mode");
       window.localStorage.removeItem("edunexus_anchor_nav_kb_demo");
       window.localStorage.removeItem("edunexus_collapsible_kb_candidates_panel");
       window.localStorage.removeItem("edunexus_collapsible_kb_doc_panel");
       window.localStorage.removeItem("edunexus_collapsible_kb_graph_panel");
       window.localStorage.removeItem("edunexus_collapsible_kb_index_panel");
+    } catch {
+      // ignore persistence failures
+    }
+    window.location.reload();
+  }
+
+  function applyKbPanelPreset(preset: "expand" | "focus") {
+    try {
+      if (preset === "expand") {
+        window.localStorage.setItem("edunexus_collapsible_kb_candidates_panel", "1");
+        window.localStorage.setItem("edunexus_collapsible_kb_doc_panel", "1");
+        window.localStorage.setItem("edunexus_collapsible_kb_graph_panel", "1");
+        window.localStorage.setItem("edunexus_collapsible_kb_index_panel", "1");
+      } else {
+        window.localStorage.setItem("edunexus_collapsible_kb_candidates_panel", "0");
+        window.localStorage.setItem("edunexus_collapsible_kb_doc_panel", "1");
+        window.localStorage.setItem("edunexus_collapsible_kb_graph_panel", "0");
+        window.localStorage.setItem("edunexus_collapsible_kb_index_panel", "0");
+      }
     } catch {
       // ignore persistence failures
     }
@@ -569,13 +609,13 @@ export function KbDemo() {
   }, [query, tagFilter, citationFocus, selectedDoc]);
 
   const miniGraphEdges = useMemo(() => {
-    if (!selectedDoc || !graph) {
+    if (!miniMapDeepMode || !selectedDoc || !graph) {
       return [];
     }
     return graph.edges
       .filter((edge) => edge.source === selectedDoc.id || edge.target === selectedDoc.id)
       .slice(0, 12);
-  }, [selectedDoc, graph]);
+  }, [miniMapDeepMode, selectedDoc, graph]);
 
   const miniGraphNodeList = useMemo(() => {
     if (!selectedDoc) {
@@ -1246,6 +1286,19 @@ export function KbDemo() {
           >
             {compactMode ? "紧凑模式" : "舒展模式"}
           </button>
+          <button type="button" className="demo-panel-toggle" onClick={() => applyKbPanelPreset("expand")}>
+            展开分区
+          </button>
+          <button type="button" className="demo-panel-toggle" onClick={() => applyKbPanelPreset("focus")}>
+            专注阅读
+          </button>
+          <button
+            type="button"
+            className={`demo-panel-toggle${miniMapDeepMode ? " active" : ""}`}
+            onClick={() => setMiniMapDeepMode((prev) => !prev)}
+          >
+            {miniMapDeepMode ? "关系图深度开" : "关系图深度关"}
+          </button>
           <button type="button" className="demo-reset-toggle" onClick={resetKbLayout}>
             重置分区
           </button>
@@ -1275,7 +1328,7 @@ export function KbDemo() {
         <div className="demo-metric-chip">
           <span>图谱规模</span>
           <strong>
-            {kbGraphNodeCount}/{kbGraphEdgeCount}
+            {miniMapDeepMode ? `${kbGraphNodeCount}/${kbGraphEdgeCount}` : "深度模式关闭"}
           </strong>
         </div>
         <div className="demo-metric-chip">
@@ -1390,6 +1443,9 @@ export function KbDemo() {
               原文视图
             </button>
           </div>
+          <p className="muted">
+            关系图深度模式：{miniMapDeepMode ? "已开启（显示完整关系分析）" : "已关闭（降低页面计算开销）"}
+          </p>
         </div>
         <label>反链图节点上限（10-300）</label>
         <input
@@ -1552,7 +1608,14 @@ export function KbDemo() {
             </MiniFoldCard>
 
             <MiniFoldCard title="关系小地图" subtitle="章节锚点与关系链路联动分析" defaultOpen={false}>
-              {miniGraphEdges.length === 0 ? (
+              {!miniMapDeepMode ? (
+                <div className="mini-map-disabled">
+                  <p className="muted">当前已关闭关系图深度模式，以减少长页面渲染负担。</p>
+                  <button type="button" onClick={() => setMiniMapDeepMode(true)}>
+                    开启关系图深度模式
+                  </button>
+                </div>
+              ) : miniGraphEdges.length === 0 ? (
                 <p className="muted">当前焦点节点附近暂无关系边。</p>
               ) : (
                 <div className="mini-map-wrap">

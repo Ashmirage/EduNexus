@@ -102,6 +102,21 @@ export function TeacherPlanDemo() {
     window.location.reload();
   }
 
+  function applyTeacherPanelPreset(preset: "expand" | "focus") {
+    try {
+      if (preset === "expand") {
+        window.localStorage.setItem("edunexus_collapsible_teacher_template_panel", "1");
+        window.localStorage.setItem("edunexus_collapsible_teacher_result_panel", "1");
+      } else {
+        window.localStorage.setItem("edunexus_collapsible_teacher_template_panel", "0");
+        window.localStorage.setItem("edunexus_collapsible_teacher_result_panel", "1");
+      }
+    } catch {
+      // ignore persistence failures
+    }
+    window.location.reload();
+  }
+
   async function loadTemplates(targetSubject = subject) {
     setTemplateLoading(true);
     try {
@@ -217,6 +232,20 @@ export function TeacherPlanDemo() {
             onClick={() => setCompactMode((prev) => !prev)}
           >
             {compactMode ? "紧凑模式" : "舒展模式"}
+          </button>
+          <button
+            type="button"
+            className="demo-panel-toggle"
+            onClick={() => applyTeacherPanelPreset("expand")}
+          >
+            展开分区
+          </button>
+          <button
+            type="button"
+            className="demo-panel-toggle"
+            onClick={() => applyTeacherPanelPreset("focus")}
+          >
+            专注生成
           </button>
           <button type="button" className="demo-reset-toggle" onClick={resetTeacherLayout}>
             重置分区

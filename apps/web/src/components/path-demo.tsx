@@ -301,6 +301,21 @@ export function PathDemo() {
     window.location.reload();
   }
 
+  function applyPathPanelPreset(preset: "expand" | "focus") {
+    try {
+      if (preset === "expand") {
+        window.localStorage.setItem("edunexus_collapsible_path_focus_panel", "1");
+        window.localStorage.setItem("edunexus_collapsible_path_plan_panel", "1");
+      } else {
+        window.localStorage.setItem("edunexus_collapsible_path_focus_panel", "0");
+        window.localStorage.setItem("edunexus_collapsible_path_plan_panel", "1");
+      }
+    } catch {
+      // ignore persistence failures
+    }
+    window.location.reload();
+  }
+
   useEffect(() => {
     if (prefilledRef.current) {
       return;
@@ -1017,6 +1032,12 @@ export function PathDemo() {
             onClick={() => setCompactMode((prev) => !prev)}
           >
             {compactMode ? "紧凑模式" : "舒展模式"}
+          </button>
+          <button type="button" className="demo-panel-toggle" onClick={() => applyPathPanelPreset("expand")}>
+            展开分区
+          </button>
+          <button type="button" className="demo-panel-toggle" onClick={() => applyPathPanelPreset("focus")}>
+            专注执行
           </button>
           <button type="button" className="demo-reset-toggle" onClick={resetPathLayout}>
             重置分区
