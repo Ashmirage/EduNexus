@@ -228,26 +228,26 @@ export function TeacherPlanDemo() {
         <div className="demo-toolbar-actions">
           <button
             type="button"
-            className={`demo-compact-toggle${compactMode ? " active" : ""}`}
+            className={`demo-compact-toggle demo-btn-primary${compactMode ? " active" : ""}`}
             onClick={() => setCompactMode((prev) => !prev)}
           >
             {compactMode ? "紧凑模式" : "舒展模式"}
           </button>
           <button
             type="button"
-            className="demo-panel-toggle"
+            className="demo-panel-toggle demo-btn-secondary"
             onClick={() => applyTeacherPanelPreset("expand")}
           >
             展开分区
           </button>
           <button
             type="button"
-            className="demo-panel-toggle"
+            className="demo-panel-toggle demo-btn-secondary"
             onClick={() => applyTeacherPanelPreset("focus")}
           >
             专注生成
           </button>
-          <button type="button" className="demo-reset-toggle" onClick={resetTeacherLayout}>
+          <button type="button" className="demo-reset-toggle demo-btn-neutral" onClick={resetTeacherLayout}>
             重置分区
           </button>
         </div>
@@ -357,10 +357,10 @@ export function TeacherPlanDemo() {
       </div>
 
       <div className="action-row">
-        <button type="button" onClick={generate} disabled={loading}>
+        <button type="button" className="demo-btn-primary" onClick={generate} disabled={loading}>
           生成备课草案
         </button>
-        <button type="button" onClick={exportMarkdown} disabled={loading || !result}>
+        <button type="button" className="demo-btn-secondary" onClick={exportMarkdown} disabled={loading || !result}>
           导出 Markdown 教案
         </button>
       </div>

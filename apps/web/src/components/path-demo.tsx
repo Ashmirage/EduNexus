@@ -1028,18 +1028,18 @@ export function PathDemo() {
         <div className="demo-toolbar-actions">
           <button
             type="button"
-            className={`demo-compact-toggle${compactMode ? " active" : ""}`}
+            className={`demo-compact-toggle demo-btn-primary${compactMode ? " active" : ""}`}
             onClick={() => setCompactMode((prev) => !prev)}
           >
             {compactMode ? "紧凑模式" : "舒展模式"}
           </button>
-          <button type="button" className="demo-panel-toggle" onClick={() => applyPathPanelPreset("expand")}>
+          <button type="button" className="demo-panel-toggle demo-btn-secondary" onClick={() => applyPathPanelPreset("expand")}>
             展开分区
           </button>
-          <button type="button" className="demo-panel-toggle" onClick={() => applyPathPanelPreset("focus")}>
+          <button type="button" className="demo-panel-toggle demo-btn-secondary" onClick={() => applyPathPanelPreset("focus")}>
             专注执行
           </button>
-          <button type="button" className="demo-reset-toggle" onClick={resetPathLayout}>
+          <button type="button" className="demo-reset-toggle demo-btn-neutral" onClick={resetPathLayout}>
             重置分区
           </button>
         </div>
@@ -1309,10 +1309,10 @@ export function PathDemo() {
           <input value={goal} onChange={(event) => setGoal(event.target.value)} />
         </label>
         <div className="action-row">
-          <button type="button" onClick={generatePath} disabled={loading}>
+          <button type="button" className="demo-btn-primary" onClick={generatePath} disabled={loading}>
             {focusPayload ? "生成 7 日定向计划" : "生成 7 日计划"}
           </button>
-          <button type="button" onClick={replan} disabled={loading || !data}>
+          <button type="button" className="demo-btn-secondary" onClick={replan} disabled={loading || !data}>
             依据新情况重排计划
           </button>
         </div>

@@ -304,6 +304,7 @@ export function KbDemo() {
   const [externalContextHint, setExternalContextHint] = useState("");
   const [compactMode, setCompactMode] = useState(false);
   const [miniMapDeepMode, setMiniMapDeepMode] = useState(false);
+  const [miniMapAnalysisMode, setMiniMapAnalysisMode] = useState(false);
   const externalContextAppliedRef = useRef("");
   const presetQuery = useMemo(
     () => searchParams.get("q")?.trim() ?? "",
@@ -349,8 +350,12 @@ export function KbDemo() {
   useEffect(() => {
     try {
       setMiniMapDeepMode(window.localStorage.getItem("edunexus_kb_minimap_deep_mode") === "1");
+      setMiniMapAnalysisMode(
+        window.localStorage.getItem("edunexus_kb_minimap_analysis_mode") === "1"
+      );
     } catch {
       setMiniMapDeepMode(false);
+      setMiniMapAnalysisMode(false);
     }
   }, []);
 
@@ -365,10 +370,28 @@ export function KbDemo() {
     }
   }, [miniMapDeepMode]);
 
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        "edunexus_kb_minimap_analysis_mode",
+        miniMapAnalysisMode ? "1" : "0"
+      );
+    } catch {
+      // ignore persistence failures
+    }
+  }, [miniMapAnalysisMode]);
+
+  useEffect(() => {
+    if (!miniMapDeepMode && miniMapAnalysisMode) {
+      setMiniMapAnalysisMode(false);
+    }
+  }, [miniMapAnalysisMode, miniMapDeepMode]);
+
   function resetKbLayout() {
     try {
       window.localStorage.removeItem("edunexus_kb_compact_ui");
       window.localStorage.removeItem("edunexus_kb_minimap_deep_mode");
+      window.localStorage.removeItem("edunexus_kb_minimap_analysis_mode");
       window.localStorage.removeItem("edunexus_anchor_nav_kb_demo");
       window.localStorage.removeItem("edunexus_collapsible_kb_candidates_panel");
       window.localStorage.removeItem("edunexus_collapsible_kb_doc_panel");
@@ -689,6 +712,9 @@ export function KbDemo() {
   ]);
 
   const chapterTreeGroups = useMemo<ChapterTreeGroup[]>(() => {
+    if (!miniMapAnalysisMode) {
+      return [];
+    }
     const anchorNode = relationFocusNode || selectedDoc?.id || "";
     if (!anchorNode) {
       return [];
@@ -763,7 +789,7 @@ export function KbDemo() {
         }
         return a.key.localeCompare(b.key, "zh-CN");
       });
-  }, [focusedMiniGraphEdges, miniGraphNodeMetaMap, relationFocusNode, selectedDoc]);
+  }, [focusedMiniGraphEdges, miniGraphNodeMetaMap, miniMapAnalysisMode, relationFocusNode, selectedDoc]);
 
   const selectedChapterNodeSet = useMemo(() => {
     if (!selectedChapterKey) {
@@ -774,6 +800,9 @@ export function KbDemo() {
   }, [chapterTreeGroups, selectedChapterKey]);
 
   const activeMiniGraphEdges = useMemo(() => {
+    if (!miniMapAnalysisMode) {
+      return focusedMiniGraphEdges.slice(0, 6);
+    }
     if (selectedChapterNodeSet.size === 0 || chapterSubgraphMode === "highlight") {
       return focusedMiniGraphEdges;
     }
@@ -781,9 +810,12 @@ export function KbDemo() {
       (edge) =>
         selectedChapterNodeSet.has(edge.source) || selectedChapterNodeSet.has(edge.target)
     );
-  }, [chapterSubgraphMode, focusedMiniGraphEdges, selectedChapterNodeSet]);
+  }, [chapterSubgraphMode, focusedMiniGraphEdges, miniMapAnalysisMode, selectedChapterNodeSet]);
 
   const selectedChapterStats = useMemo<ChapterSubgraphStats | null>(() => {
+    if (!miniMapAnalysisMode) {
+      return null;
+    }
     if (!selectedChapterKey || selectedChapterNodeSet.size === 0) {
       return null;
     }
@@ -837,11 +869,15 @@ export function KbDemo() {
   }, [
     chapterPanelConfig.topNodesLimit,
     focusedMiniGraphEdges,
+    miniMapAnalysisMode,
     selectedChapterKey,
     selectedChapterNodeSet
   ]);
 
   const chapterTrendRows = useMemo<ChapterTrendRow[]>(() => {
+    if (!miniMapAnalysisMode) {
+      return [];
+    }
     if (chapterTreeGroups.length === 0) {
       return [];
     }
@@ -867,11 +903,27 @@ export function KbDemo() {
         return b.latest - a.latest || a.label.localeCompare(b.label, "zh-CN");
       })
       .slice(0, chapterPanelConfig.trendRowsLimit);
-  }, [chapterPanelConfig.trendRowsLimit, chapterTreeGroups, chapterTrendSpan, selectedChapterKey]);
+  }, [
+    chapterPanelConfig.trendRowsLimit,
+    chapterTreeGroups,
+    chapterTrendSpan,
+    miniMapAnalysisMode,
+    selectedChapterKey
+  ]);
 
   const groupedMiniGraphEdges = useMemo(() => {
     if (activeMiniGraphEdges.length === 0) {
       return [];
+    }
+
+    if (!miniMapAnalysisMode) {
+      return [
+        {
+          key: "all",
+          label: "关键关系",
+          edges: activeMiniGraphEdges.slice(0, 6)
+        }
+      ];
     }
 
     if (relationGroupBy === "none") {
@@ -909,9 +961,12 @@ export function KbDemo() {
     return Array.from(groups.entries())
       .map(([key, edges]) => ({ key, label: key, edges }))
       .sort((a, b) => b.edges.length - a.edges.length || a.label.localeCompare(b.label));
-  }, [activeMiniGraphEdges, miniGraphNodeMetaMap, relationGroupBy]);
+  }, [activeMiniGraphEdges, miniGraphNodeMetaMap, miniMapAnalysisMode, relationGroupBy]);
 
   const miniFlowLayout = useMemo<MiniFlowLayout | null>(() => {
+    if (!miniMapAnalysisMode) {
+      return null;
+    }
     const anchorNode = relationFocusNode || selectedDoc?.id || "";
     if (!anchorNode || activeMiniGraphEdges.length === 0) {
       return null;
@@ -1081,6 +1136,7 @@ export function KbDemo() {
     };
   }, [
     activeMiniGraphEdges,
+    miniMapAnalysisMode,
     miniGraphNodeMetaMap,
     relationFocusNode,
     relationLayoutMode,
@@ -1281,25 +1337,33 @@ export function KbDemo() {
         <div className="demo-toolbar-actions">
           <button
             type="button"
-            className={`demo-compact-toggle${compactMode ? " active" : ""}`}
+            className={`demo-compact-toggle demo-btn-primary${compactMode ? " active" : ""}`}
             onClick={() => setCompactMode((prev) => !prev)}
           >
             {compactMode ? "紧凑模式" : "舒展模式"}
           </button>
-          <button type="button" className="demo-panel-toggle" onClick={() => applyKbPanelPreset("expand")}>
+          <button type="button" className="demo-panel-toggle demo-btn-secondary" onClick={() => applyKbPanelPreset("expand")}>
             展开分区
           </button>
-          <button type="button" className="demo-panel-toggle" onClick={() => applyKbPanelPreset("focus")}>
+          <button type="button" className="demo-panel-toggle demo-btn-secondary" onClick={() => applyKbPanelPreset("focus")}>
             专注阅读
           </button>
           <button
             type="button"
-            className={`demo-panel-toggle${miniMapDeepMode ? " active" : ""}`}
+            className={`demo-panel-toggle demo-btn-secondary${miniMapDeepMode ? " active" : ""}`}
             onClick={() => setMiniMapDeepMode((prev) => !prev)}
           >
             {miniMapDeepMode ? "关系图深度开" : "关系图深度关"}
           </button>
-          <button type="button" className="demo-reset-toggle" onClick={resetKbLayout}>
+          <button
+            type="button"
+            className={`demo-panel-toggle demo-btn-secondary${miniMapAnalysisMode ? " active" : ""}`}
+            onClick={() => setMiniMapAnalysisMode((prev) => !prev)}
+            disabled={!miniMapDeepMode}
+          >
+            {miniMapAnalysisMode ? "细节分析开" : "细节分析关"}
+          </button>
+          <button type="button" className="demo-reset-toggle demo-btn-neutral" onClick={resetKbLayout}>
             重置分区
           </button>
         </div>
@@ -1376,10 +1440,10 @@ export function KbDemo() {
           </label>
         </div>
         <div className="action-row">
-          <button type="button" onClick={() => void search()} disabled={loading}>
+          <button type="button" className="demo-btn-primary" onClick={() => void search()} disabled={loading}>
             搜索知识库
           </button>
-          <button type="button" onClick={rebuildIndex} disabled={loading}>
+          <button type="button" className="demo-btn-secondary" onClick={rebuildIndex} disabled={loading}>
             重建索引摘要
           </button>
         </div>
@@ -1444,7 +1508,7 @@ export function KbDemo() {
             </button>
           </div>
           <p className="muted">
-            关系图深度模式：{miniMapDeepMode ? "已开启（显示完整关系分析）" : "已关闭（降低页面计算开销）"}
+            关系图深度模式：{miniMapDeepMode ? "已开启" : "已关闭"} · 细节分析：{miniMapAnalysisMode ? "已开启" : "已关闭"}
           </p>
         </div>
         <label>反链图节点上限（10-300）</label>
@@ -1611,7 +1675,7 @@ export function KbDemo() {
               {!miniMapDeepMode ? (
                 <div className="mini-map-disabled">
                   <p className="muted">当前已关闭关系图深度模式，以减少长页面渲染负担。</p>
-                  <button type="button" onClick={() => setMiniMapDeepMode(true)}>
+                  <button type="button" className="demo-btn-primary" onClick={() => setMiniMapDeepMode(true)}>
                     开启关系图深度模式
                   </button>
                 </div>
@@ -1650,151 +1714,166 @@ export function KbDemo() {
                     </button>
                   </div>
 
-                  <div className="mini-chapter-panel">
-                    <div className="mini-chapter-head">
-                      <strong>章节树侧栏</strong>
-                      <span>{chapterTreeGroups.length} 个章节锚点</span>
-                    </div>
-                    {chapterTreeGroups.length === 0 ? (
-                      <p className="mini-chapter-empty">当前无可用章节锚点。</p>
-                    ) : (
-                      <div className="mini-chapter-list">
-                        {chapterTreeGroups.map((chapter) => (
-                          <button
-                            type="button"
-                            key={`chapter_${chapter.key}`}
-                            className={`mini-chapter-chip ${
-                              selectedChapterKey === chapter.key ? "active" : ""
-                            }`}
-                            onClick={() => setSelectedChapterKey(chapter.key)}
-                          >
-                            <span>{chapter.label}</span>
-                            <em>
-                              {chapter.nodes.length} 节点 · {chapter.edgeCount} 边
-                            </em>
-                          </button>
-                        ))}
+                  {miniMapAnalysisMode ? (
+                    <div className="mini-chapter-panel">
+                      <div className="mini-chapter-head">
+                        <strong>章节树侧栏</strong>
+                        <span>{chapterTreeGroups.length} 个章节锚点</span>
                       </div>
-                    )}
-                    <button
-                      type="button"
-                      className="mini-chapter-clear"
-                      onClick={() => {
-                        setSelectedChapterKey("");
-                        setChapterSubgraphMode(chapterPanelConfig.defaultSubgraphMode);
-                      }}
-                      disabled={!selectedChapterKey}
-                    >
-                      清除章节高亮
-                    </button>
+                      {chapterTreeGroups.length === 0 ? (
+                        <p className="mini-chapter-empty">当前无可用章节锚点。</p>
+                      ) : (
+                        <div className="mini-chapter-list">
+                          {chapterTreeGroups.map((chapter) => (
+                            <button
+                              type="button"
+                              key={`chapter_${chapter.key}`}
+                              className={`mini-chapter-chip ${
+                                selectedChapterKey === chapter.key ? "active" : ""
+                              }`}
+                              onClick={() => setSelectedChapterKey(chapter.key)}
+                            >
+                              <span>{chapter.label}</span>
+                              <em>
+                                {chapter.nodes.length} 节点 · {chapter.edgeCount} 边
+                              </em>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        className="mini-chapter-clear"
+                        onClick={() => {
+                          setSelectedChapterKey("");
+                          setChapterSubgraphMode(chapterPanelConfig.defaultSubgraphMode);
+                        }}
+                        disabled={!selectedChapterKey}
+                      >
+                        清除章节高亮
+                      </button>
 
-                    <div className="mini-chapter-config-panel">
-                      <div className="mini-chapter-config-head">
-                        <strong>章节参数面板</strong>
-                        <span>模板：{formatChapterPanelPresetLabel(chapterPanelPreset)}</span>
-                      </div>
-                      <div className="mini-chapter-config-presets">
-                        {(
-                          [
-                            { key: "insight", label: "深度洞察" },
-                            { key: "balanced", label: "平衡默认" },
-                            { key: "light", label: "轻量概览" }
-                          ] as Array<{
-                            key: Exclude<ChapterPanelPreset, "custom">;
-                            label: string;
-                          }>
-                        ).map((item) => (
-                          <button
-                            type="button"
-                            key={`chapter_preset_${item.key}`}
-                            className={`mini-chapter-mode-chip ${
-                              chapterPanelPreset === item.key ? "active" : ""
-                            }`}
-                            onClick={() => applyChapterPanelPreset(item.key)}
-                          >
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="mini-chapter-config-grid">
-                        <label>
-                          关键节点上限：{chapterPanelConfig.topNodesLimit}
-                          <input
-                            type="range"
-                            min={2}
-                            max={8}
-                            step={1}
-                            value={chapterPanelConfig.topNodesLimit}
-                            onChange={(event) => {
-                              setChapterPanelPreset("custom");
-                              setChapterPanelConfig((prev) =>
-                                normalizeChapterPanelConfig({
+                      <div className="mini-chapter-config-panel">
+                        <div className="mini-chapter-config-head">
+                          <strong>章节参数面板</strong>
+                          <span>模板：{formatChapterPanelPresetLabel(chapterPanelPreset)}</span>
+                        </div>
+                        <div className="mini-chapter-config-presets">
+                          {(
+                            [
+                              { key: "insight", label: "深度洞察" },
+                              { key: "balanced", label: "平衡默认" },
+                              { key: "light", label: "轻量概览" }
+                            ] as Array<{
+                              key: Exclude<ChapterPanelPreset, "custom">;
+                              label: string;
+                            }>
+                          ).map((item) => (
+                            <button
+                              type="button"
+                              key={`chapter_preset_${item.key}`}
+                              className={`mini-chapter-mode-chip ${
+                                chapterPanelPreset === item.key ? "active" : ""
+                              }`}
+                              onClick={() => applyChapterPanelPreset(item.key)}
+                            >
+                              {item.label}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="mini-chapter-config-grid">
+                          <label>
+                            关键节点上限：{chapterPanelConfig.topNodesLimit}
+                            <input
+                              type="range"
+                              min={2}
+                              max={8}
+                              step={1}
+                              value={chapterPanelConfig.topNodesLimit}
+                              onChange={(event) => {
+                                setChapterPanelPreset("custom");
+                                setChapterPanelConfig((prev) =>
+                                  normalizeChapterPanelConfig({
+                                    ...prev,
+                                    topNodesLimit: Number(event.target.value)
+                                  })
+                                );
+                              }}
+                            />
+                          </label>
+                          <label>
+                            趋势行上限：{chapterPanelConfig.trendRowsLimit}
+                            <input
+                              type="range"
+                              min={3}
+                              max={8}
+                              step={1}
+                              value={chapterPanelConfig.trendRowsLimit}
+                              onChange={(event) => {
+                                setChapterPanelPreset("custom");
+                                setChapterPanelConfig((prev) =>
+                                  normalizeChapterPanelConfig({
+                                    ...prev,
+                                    trendRowsLimit: Number(event.target.value)
+                                  })
+                                );
+                              }}
+                            />
+                          </label>
+                          <label>
+                            默认子图模式
+                            <select
+                              value={chapterPanelConfig.defaultSubgraphMode}
+                              onChange={(event) => {
+                                const nextMode = event.target.value as ChapterSubgraphMode;
+                                setChapterPanelPreset("custom");
+                                setChapterPanelConfig((prev) => ({
                                   ...prev,
-                                  topNodesLimit: Number(event.target.value)
-                                })
-                              );
-                            }}
-                          />
-                        </label>
-                        <label>
-                          趋势行上限：{chapterPanelConfig.trendRowsLimit}
-                          <input
-                            type="range"
-                            min={3}
-                            max={8}
-                            step={1}
-                            value={chapterPanelConfig.trendRowsLimit}
-                            onChange={(event) => {
-                              setChapterPanelPreset("custom");
-                              setChapterPanelConfig((prev) =>
-                                normalizeChapterPanelConfig({
+                                  defaultSubgraphMode: nextMode
+                                }));
+                                setChapterSubgraphMode(nextMode);
+                              }}
+                            >
+                              <option value="highlight">高亮模式</option>
+                              <option value="focus">仅本章子图</option>
+                            </select>
+                          </label>
+                          <label>
+                            默认趋势窗口
+                            <select
+                              value={chapterPanelConfig.defaultTrendSpan}
+                              onChange={(event) => {
+                                const nextSpan = Number(event.target.value) === 14 ? 14 : 7;
+                                setChapterPanelPreset("custom");
+                                setChapterPanelConfig((prev) => ({
                                   ...prev,
-                                  trendRowsLimit: Number(event.target.value)
-                                })
-                              );
-                            }}
-                          />
-                        </label>
-                        <label>
-                          默认子图模式
-                          <select
-                            value={chapterPanelConfig.defaultSubgraphMode}
-                            onChange={(event) => {
-                              const nextMode = event.target.value as ChapterSubgraphMode;
-                              setChapterPanelPreset("custom");
-                              setChapterPanelConfig((prev) => ({
-                                ...prev,
-                                defaultSubgraphMode: nextMode
-                              }));
-                              setChapterSubgraphMode(nextMode);
-                            }}
-                          >
-                            <option value="highlight">高亮模式</option>
-                            <option value="focus">仅本章子图</option>
-                          </select>
-                        </label>
-                        <label>
-                          默认趋势窗口
-                          <select
-                            value={chapterPanelConfig.defaultTrendSpan}
-                            onChange={(event) => {
-                              const nextSpan = Number(event.target.value) === 14 ? 14 : 7;
-                              setChapterPanelPreset("custom");
-                              setChapterPanelConfig((prev) => ({
-                                ...prev,
-                                defaultTrendSpan: nextSpan
-                              }));
-                              setChapterTrendSpan(nextSpan);
-                            }}
-                          >
-                            <option value={7}>7 次</option>
-                            <option value={14}>14 次</option>
-                          </select>
-                        </label>
+                                  defaultTrendSpan: nextSpan
+                                }));
+                                setChapterTrendSpan(nextSpan);
+                              }}
+                            >
+                              <option value={7}>7 次</option>
+                              <option value={14}>14 次</option>
+                            </select>
+                          </label>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="mini-map-lite">
+                      <p className="muted">细节分析已关闭，仅保留关键关系预览。</p>
+                      <button
+                        type="button"
+                        className="demo-btn-secondary"
+                        onClick={() => setMiniMapAnalysisMode(true)}
+                      >
+                        开启细节分析
+                      </button>
+                    </div>
+                  )}
 
+                  {miniMapAnalysisMode ? (
+                    <>
                   <div className="mini-chapter-mode-row">
                     {(
                       [
@@ -1993,6 +2072,8 @@ export function KbDemo() {
                       disabled={miniEdgeTopNMax <= 1}
                     />
                   </div>
+                    </>
+                  ) : null}
 
                   <div className="mini-edge-list">
                     {focusedMiniGraphEdges.length === 0 ? (
@@ -2059,27 +2140,31 @@ export function KbDemo() {
                       ))
                     )}
                   </div>
-                  <div className="mini-map-footnote">
-                    {relationGroupBy === "none"
-                      ? "当前按边权重排序展示。"
-                      : relationGroupBy === "domain"
-                        ? "已按 source -> target 的主题域分组。"
-                        : "已按 source -> target 的文档类型分组。"}
-                    {" · "}
-                    {relationLayoutMode === "chapter"
-                      ? "当前启用章节锚点布局。"
-                      : "当前启用自由图布局。"}
-                    {selectedChapterKey
-                      ? ` · 当前高亮章节：${selectedChapterKey}`
-                      : " · 当前显示全量子图。"}
-                    {selectedChapterKey
-                      ? chapterSubgraphMode === "focus"
-                        ? "（仅显示本章关系）"
-                        : "（保留全图并高亮本章）"
-                      : ""}
-                  </div>
+                  {miniMapAnalysisMode ? (
+                    <div className="mini-map-footnote">
+                      {relationGroupBy === "none"
+                        ? "当前按边权重排序展示。"
+                        : relationGroupBy === "domain"
+                          ? "已按 source -> target 的主题域分组。"
+                          : "已按 source -> target 的文档类型分组。"}
+                      {" · "}
+                      {relationLayoutMode === "chapter"
+                        ? "当前启用章节锚点布局。"
+                        : "当前启用自由图布局。"}
+                      {selectedChapterKey
+                        ? ` · 当前高亮章节：${selectedChapterKey}`
+                        : " · 当前显示全量子图。"}
+                      {selectedChapterKey
+                        ? chapterSubgraphMode === "focus"
+                          ? "（仅显示本章关系）"
+                          : "（保留全图并高亮本章）"
+                        : ""}
+                    </div>
+                  ) : (
+                    <div className="mini-map-footnote">当前为轻量模式，仅显示关键关系预览。</div>
+                  )}
 
-                  {miniFlowLayout ? (
+                  {miniMapAnalysisMode && miniFlowLayout ? (
                     <div className="mini-flow-map">
                       <strong>章节路径自动布局</strong>
                       <span className="mini-flow-highlight-state">
