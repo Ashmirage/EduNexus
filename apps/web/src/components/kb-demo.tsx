@@ -2392,7 +2392,7 @@ export function KbDemo() {
               )}
             </MiniFoldCard>
 
-            {relatedCards.length > 0 ? (
+            {railPreset !== "compact" && relatedCards.length > 0 ? (
               <MiniFoldCard
                 title="关联卡片建议"
                 subtitle="按关联强度给出跳转建议"

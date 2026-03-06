@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatErrorMessage, requestJson } from "@/lib/client/api";
+import { SectionAnchorNav } from "@/components/section-anchor-nav";
 import {
   clearGraphActivityFocusIdFromStorage,
   GRAPH_ACTIVITY_STORAGE_KEY,
@@ -2734,6 +2735,20 @@ export function GraphDemo() {
       : graphWorkbenchView === "bridge"
         ? "关系回放"
         : "历史审计";
+  const graphAnchorItems = useMemo(() => {
+    const insightItem =
+      graphWorkbenchView === "overview"
+        ? { id: "graph_overview_panel", label: "总览洞察" }
+        : graphWorkbenchView === "bridge"
+          ? { id: "graph_bridge_panel", label: "关系链洞察" }
+          : { id: "graph_history_panel", label: "历史审计" };
+    return [
+      { id: "graph_controls", label: "筛选控制" },
+      { id: "graph_view_switcher", label: "视图切换" },
+      { id: "graph_canvas_panel", label: "图谱画布" },
+      insightItem
+    ];
+  }, [graphWorkbenchView]);
 
   return (
     <div className="graph-workbench" data-view={graphWorkbenchView}>
@@ -2870,6 +2885,11 @@ export function GraphDemo() {
           打开知识库检索
         </button>
       </div>
+      <SectionAnchorNav
+        title="图谱分区导航"
+        storageKey="graph_demo"
+        items={graphAnchorItems}
+      />
       <div className="demo-metric-strip graph-metric-strip">
         <div className="demo-metric-chip">
           <span>总节点/边</span>
@@ -4117,10 +4137,33 @@ export function GraphDemo() {
                       </span>
                     </div>
                   ) : (
-                    <p className="muted">
-                      历史精简模式已开启，仅展示关键指标和最近 5 条批次（当前{" "}
-                      {renderReplayPushHistory.length}/{filteredReplayPushHistory.length} 条）。关闭后可使用完整筛选与对比。
-                    </p>
+                    <div className="graph-history-compact-note">
+                      <p className="muted">
+                        历史精简模式已开启，仅展示关键指标和最近 5 条批次（当前{" "}
+                        {renderReplayPushHistory.length}/{filteredReplayPushHistory.length} 条）。
+                      </p>
+                      <div className="graph-history-compact-actions">
+                        <button
+                          type="button"
+                          className="demo-btn-secondary"
+                          onClick={() => setHistoryCompactMode(false)}
+                        >
+                          查看完整筛选
+                        </button>
+                        <button
+                          type="button"
+                          className="demo-btn-secondary"
+                          onClick={() => {
+                            const target = document.getElementById("graph_timeline_panel");
+                            if (target) {
+                              target.scrollIntoView({ behavior: "smooth", block: "start" });
+                            }
+                          }}
+                        >
+                          跳到图谱演化
+                        </button>
+                      </div>
+                    </div>
                   )}
                   {!historyCompactMode && replayCompareCandidates.length > 1 ? (
                     <div className="graph-replay-compare">
@@ -4254,6 +4297,7 @@ export function GraphDemo() {
             </div>
 
             <div
+              id="graph_timeline_panel"
               className={`graph-insight-card graph-section-history${
                 collapsedInsightSectionSet.has("graph_timeline") ? " collapsed" : ""
               }`}

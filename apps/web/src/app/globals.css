@@ -6694,6 +6694,10 @@ html[data-theme="aurora"] .config-diff-values em {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+  position: sticky;
+  top: 64px;
+  z-index: 4;
+  backdrop-filter: blur(6px);
 }
 
 .graph-insight-toggle-bar span {
@@ -6715,6 +6719,21 @@ html[data-theme="aurora"] .config-diff-values em {
 .graph-insight-toggle-bar button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.graph-history-compact-note {
+  border: 1px dashed rgba(97, 132, 178, 0.42);
+  border-radius: 10px;
+  background: rgba(10, 16, 27, 0.46);
+  padding: 8px 10px;
+  display: grid;
+  gap: 7px;
+}
+
+.graph-history-compact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .graph-insight-card-head {
@@ -9015,6 +9034,11 @@ html[data-theme="aurora"] .graph-insight-toggle-bar span {
   color: #5c7fad;
 }
 
+html[data-theme="aurora"] .graph-history-compact-note {
+  border-color: rgba(118, 154, 216, 0.48);
+  background: rgba(255, 255, 255, 0.8);
+}
+
 html[data-theme="aurora"] .graph-insight-toggle-bar button,
 html[data-theme="aurora"] .graph-insight-card-head button {
   border-color: rgba(118, 154, 216, 0.46);
@@ -10983,6 +11007,8 @@ html[data-theme="aurora"] .stream-guidance {
 
   .graph-insight-toggle-bar {
     align-items: flex-start;
+    position: static;
+    backdrop-filter: none;
   }
 
   .graph-workbench-grid {
