@@ -7265,6 +7265,14 @@ html[data-theme="aurora"] .config-diff-values em {
   display: none;
 }
 
+.graph-insight-panel.compact .graph-bridge-item p {
+  display: none;
+}
+
+.graph-insight-panel.compact .graph-bridge-node-stats {
+  display: none;
+}
+
 .graph-domain-cluster-list {
   margin-top: 8px;
   display: grid;
@@ -7406,6 +7414,95 @@ html[data-theme="aurora"] .config-diff-values em {
     radial-gradient(circle at 18% 12%, rgba(97, 199, 255, 0.14), transparent 55%),
     rgba(159, 255, 210, 0.14);
   color: #dcfff2;
+}
+
+.graph-bridge-summary-row {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.graph-bridge-summary-row span {
+  border: 1px solid rgba(97, 132, 178, 0.38);
+  border-radius: 999px;
+  background: rgba(10, 16, 27, 0.56);
+  color: #9fc7ee;
+  font-size: 11px;
+  padding: 4px 9px;
+}
+
+.graph-bridge-batch-toolbar {
+  margin-top: 6px;
+  border: 1px dashed rgba(97, 132, 178, 0.34);
+  border-radius: 10px;
+  background: rgba(8, 13, 22, 0.34);
+  padding: 7px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.graph-bridge-batch-toolbar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #9fc7ee;
+}
+
+.graph-bridge-batch-toolbar select {
+  border: 1px solid rgba(97, 132, 178, 0.42);
+  border-radius: 999px;
+  background: rgba(10, 16, 27, 0.56);
+  color: #d8efff;
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 8px;
+}
+
+.graph-bridge-batch-toolbar span {
+  font-size: 11px;
+  color: #9fc7ee;
+}
+
+.graph-bridge-batch-toolbar button {
+  border: 1px solid rgba(97, 132, 178, 0.42);
+  border-radius: 999px;
+  background: rgba(10, 16, 27, 0.56);
+  color: #d8efff;
+  font: inherit;
+  font-size: 11px;
+  padding: 4px 9px;
+  cursor: pointer;
+}
+
+.graph-bridge-batch-toolbar button:nth-of-type(1) {
+  border-color: rgba(97, 199, 255, 0.52);
+  background: rgba(97, 199, 255, 0.18);
+}
+
+.graph-bridge-batch-toolbar button:nth-of-type(2) {
+  border-color: rgba(159, 255, 210, 0.54);
+  background: rgba(159, 255, 210, 0.16);
+}
+
+.graph-bridge-batch-toolbar button:nth-of-type(3) {
+  border-color: rgba(255, 201, 126, 0.54);
+  background: rgba(255, 201, 126, 0.16);
+  color: #ffe0b0;
+}
+
+.graph-bridge-batch-toolbar button:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
+.graph-bridge-compact-hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #9fc7ee;
 }
 
 .graph-bridge-list {
@@ -9434,6 +9531,46 @@ html[data-theme="aurora"] .graph-workspace-cta {
   color: #235c4a;
 }
 
+html[data-theme="aurora"] .graph-bridge-summary-row span {
+  border-color: rgba(118, 154, 216, 0.46);
+  background: rgba(255, 255, 255, 0.86);
+  color: #5c7fad;
+}
+
+html[data-theme="aurora"] .graph-bridge-batch-toolbar {
+  border-color: rgba(118, 154, 216, 0.38);
+  background: rgba(255, 255, 255, 0.74);
+}
+
+html[data-theme="aurora"] .graph-bridge-batch-toolbar label,
+html[data-theme="aurora"] .graph-bridge-batch-toolbar span,
+html[data-theme="aurora"] .graph-bridge-compact-hint {
+  color: #5c7fad;
+}
+
+html[data-theme="aurora"] .graph-bridge-batch-toolbar select,
+html[data-theme="aurora"] .graph-bridge-batch-toolbar button {
+  border-color: rgba(118, 154, 216, 0.46);
+  background: rgba(255, 255, 255, 0.88);
+  color: #4f719f;
+}
+
+html[data-theme="aurora"] .graph-bridge-batch-toolbar button:nth-of-type(1) {
+  border-color: rgba(84, 155, 255, 0.52);
+  background: rgba(122, 187, 255, 0.24);
+}
+
+html[data-theme="aurora"] .graph-bridge-batch-toolbar button:nth-of-type(2) {
+  border-color: rgba(64, 174, 138, 0.46);
+  background: rgba(103, 210, 174, 0.2);
+}
+
+html[data-theme="aurora"] .graph-bridge-batch-toolbar button:nth-of-type(3) {
+  border-color: rgba(231, 176, 97, 0.5);
+  background: rgba(255, 226, 186, 0.46);
+  color: #8a5a2a;
+}
+
 html[data-theme="aurora"] .graph-bridge-item {
   border-color: rgba(118, 154, 216, 0.38);
   background: rgba(255, 255, 255, 0.84);
@@ -11453,6 +11590,16 @@ html[data-theme="aurora"] .stream-guidance {
   .graph-bridge-item header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .graph-bridge-summary-row,
+  .graph-bridge-batch-toolbar {
+    width: 100%;
+  }
+
+  .graph-bridge-batch-toolbar button {
+    flex: 1;
+    min-width: 0;
   }
 
   .dashboard-bridge-filter,

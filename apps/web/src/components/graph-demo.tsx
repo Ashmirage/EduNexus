@@ -68,6 +68,7 @@ const GRAPH_INSIGHT_COLLAPSE_STORAGE_KEY = "edunexus_graph_insight_collapsed_sec
 const GRAPH_HISTORY_COMPACT_STORAGE_KEY = "edunexus_graph_history_compact_mode";
 const GRAPH_SYNC_LAYOUT_STORAGE_KEY = "edunexus_graph_sync_layout_mode";
 const GRAPH_INSIGHT_COMPACT_STORAGE_KEY = "edunexus_graph_insight_compact_mode";
+const GRAPH_BRIDGE_BATCH_LIMIT_STORAGE_KEY = "edunexus_graph_bridge_batch_limit";
 const GRAPH_BRIDGE_HISTORY_LIMIT = 14;
 const BRIDGE_REPLAY_INTERVAL_MS: Record<BridgeReplaySpeed, number> = {
   "1x": 1300,
@@ -462,6 +463,7 @@ export function GraphDemo() {
   const [historyCompactMode, setHistoryCompactMode] = useState(true);
   const [syncLayoutMode, setSyncLayoutMode] = useState(true);
   const [insightCompactMode, setInsightCompactMode] = useState(true);
+  const [bridgeSuggestionBatchLimit, setBridgeSuggestionBatchLimit] = useState(3);
   const [replayHistoryPreset, setReplayHistoryPreset] =
     useState<ReplayHistoryPresetKey>("all");
   const [replayCompareLeftId, setReplayCompareLeftId] = useState("");
@@ -1054,6 +1056,15 @@ export function GraphDemo() {
       } else if (rawInsightCompact === "1") {
         setInsightCompactMode(true);
       }
+      const rawBridgeBatchLimit = window.localStorage.getItem(
+        GRAPH_BRIDGE_BATCH_LIMIT_STORAGE_KEY
+      );
+      if (rawBridgeBatchLimit) {
+        const parsed = Number(rawBridgeBatchLimit);
+        if ([2, 3, 5, 8].includes(parsed)) {
+          setBridgeSuggestionBatchLimit(parsed);
+        }
+      }
     } catch {
       // ignore storage read errors
     }
@@ -1085,10 +1096,15 @@ export function GraphDemo() {
         GRAPH_INSIGHT_COMPACT_STORAGE_KEY,
         insightCompactMode ? "1" : "0"
       );
+      window.localStorage.setItem(
+        GRAPH_BRIDGE_BATCH_LIMIT_STORAGE_KEY,
+        String(bridgeSuggestionBatchLimit)
+      );
     } catch {
       // ignore storage write errors
     }
   }, [
+    bridgeSuggestionBatchLimit,
     canvasZoomPercent,
     enableEdgeHeatmap,
     historyCompactMode,
@@ -1508,6 +1524,37 @@ export function GraphDemo() {
       .sort((a, b) => b.risk - a.risk || b.weight - a.weight)
       .slice(0, 6);
   }, [filteredEdges, placementMap]);
+  const renderRiskBridgeSuggestions = useMemo(
+    () =>
+      insightCompactMode ? riskBridgeSuggestions.slice(0, 4) : riskBridgeSuggestions,
+    [insightCompactMode, riskBridgeSuggestions]
+  );
+  const bridgeSuggestionSummary = useMemo(() => {
+    if (riskBridgeSuggestions.length === 0) {
+      return {
+        total: 0,
+        crossDomainCount: 0,
+        highRiskCount: 0,
+        averageRisk: 0
+      };
+    }
+    const crossDomainCount = riskBridgeSuggestions.filter(
+      (item) => item.source.domain !== item.target.domain
+    ).length;
+    const highRiskCount = riskBridgeSuggestions.filter((item) => item.risk >= 0.65).length;
+    const averageRisk = Number(
+      (
+        riskBridgeSuggestions.reduce((sum, item) => sum + item.risk, 0) /
+        riskBridgeSuggestions.length
+      ).toFixed(2)
+    );
+    return {
+      total: riskBridgeSuggestions.length,
+      crossDomainCount,
+      highRiskCount,
+      averageRisk
+    };
+  }, [riskBridgeSuggestions]);
 
   useEffect(() => {
     if (!selectedBridgeId) {
@@ -2343,6 +2390,113 @@ export function GraphDemo() {
     }),
     [resolveRelatedNodeLabelsForFocus]
   );
+  const bridgeSuggestionBatchQueue = useMemo<PathFocusPayload[]>(() => {
+    if (riskBridgeSuggestions.length === 0) {
+      return [];
+    }
+    const limit = Math.min(
+      riskBridgeSuggestions.length,
+      Math.max(1, bridgeSuggestionBatchLimit)
+    );
+    return riskBridgeSuggestions.slice(0, limit).map((bridge) => buildBridgeFocusPayload(bridge));
+  }, [bridgeSuggestionBatchLimit, buildBridgeFocusPayload, riskBridgeSuggestions]);
+
+  const handlePushBridgeSuggestionBatchToPath = useCallback(() => {
+    if (bridgeSuggestionBatchQueue.length === 0) {
+      setError("当前没有可批量推送的关系链建议。");
+      return;
+    }
+    const batchId = `bridge_suggest_batch_${Date.now().toString(36)}`;
+    const queue = bridgeSuggestionBatchQueue.map((item, index) => ({
+      ...item,
+      replayBatchId: batchId,
+      replayBatchIndex: index + 1,
+      replayBatchTotal: bridgeSuggestionBatchQueue.length,
+      replayFrameAt: item.at
+    }));
+    const primary = queue[0]!;
+    writePathFocusBatchToStorage(queue, (key, value) =>
+      window.localStorage.setItem(key, value)
+    );
+    writePathFocusToStorage(primary, (key, value) =>
+      window.localStorage.setItem(key, value)
+    );
+    const params = new URLSearchParams({
+      from: "graph_bridge",
+      focusNode: primary.nodeId,
+      focusLabel: primary.nodeLabel,
+      batchCount: String(queue.length),
+      replayBatchId: batchId
+    });
+    if (primary.bridgePartnerLabel?.trim()) {
+      params.set("bridgePartner", primary.bridgePartnerLabel.trim());
+    }
+    router.push(`/path?${params.toString()}`);
+    setPathPushHint(
+      `已批量推送关系链建议到路径：${queue.length} 条（批次 ${batchId}，首条 ${primary.nodeLabel} ↔ ${
+        primary.bridgePartnerLabel ?? "关联节点"
+      }）。`
+    );
+    appendReplayPushHistory({
+      id: `replay_push_${Date.now().toString(36)}_${Math.random()
+        .toString(36)
+        .slice(2, 5)}`,
+      batchId,
+      target: "path",
+      source: "batch_queue",
+      at: new Date().toISOString(),
+      count: queue.length,
+      primaryNodeLabel: primary.nodeLabel,
+      bridgePartnerLabel: primary.bridgePartnerLabel,
+      queue
+    });
+  }, [appendReplayPushHistory, bridgeSuggestionBatchQueue, router]);
+
+  const handlePushBridgeSuggestionBatchToWorkspace = useCallback(() => {
+    if (bridgeSuggestionBatchQueue.length === 0) {
+      setError("当前没有可批量推送的关系链建议。");
+      return;
+    }
+    const batchId = `bridge_suggest_batch_${Date.now().toString(36)}`;
+    const queue = bridgeSuggestionBatchQueue.map((item, index) => ({
+      ...item,
+      replayBatchId: batchId,
+      replayBatchIndex: index + 1,
+      replayBatchTotal: bridgeSuggestionBatchQueue.length,
+      replayFrameAt: item.at
+    }));
+    const primary = queue[0]!;
+    writeWorkspaceFocusBatchToStorage(queue, (key, value) =>
+      window.localStorage.setItem(key, value)
+    );
+    writeWorkspaceFocusToStorage(primary, (key, value) =>
+      window.localStorage.setItem(key, value)
+    );
+    const params = new URLSearchParams({
+      from: "graph",
+      batchCount: String(queue.length),
+      replayBatchId: batchId
+    });
+    router.push(`/workspace?${params.toString()}`);
+    setPathPushHint(
+      `已批量推送关系链建议到工作区：${queue.length} 条（批次 ${batchId}，首条 ${primary.nodeLabel} ↔ ${
+        primary.bridgePartnerLabel ?? "关联节点"
+      }）。`
+    );
+    appendReplayPushHistory({
+      id: `replay_push_${Date.now().toString(36)}_${Math.random()
+        .toString(36)
+        .slice(2, 5)}`,
+      batchId,
+      target: "workspace",
+      source: "batch_queue",
+      at: new Date().toISOString(),
+      count: queue.length,
+      primaryNodeLabel: primary.nodeLabel,
+      bridgePartnerLabel: primary.bridgePartnerLabel,
+      queue
+    });
+  }, [appendReplayPushHistory, bridgeSuggestionBatchQueue, router]);
 
   const handlePushBridgeToPath = useCallback(
     (bridge: RiskBridgeSuggestion, replayMeta?: ReplayPushMeta) => {
@@ -3648,44 +3802,103 @@ export function GraphDemo() {
                     优先修复这些关系链，可显著降低“会做单点、不会迁移”的风险。
                   </p>
                   {riskBridgeSuggestions.length > 0 ? (
-                    <div className="graph-bridge-list">
-                      {riskBridgeSuggestions.map((bridge) => (
-                        <article
-                          key={`bridge_${bridge.id}`}
-                          className={`graph-bridge-item risk-${resolveRiskTone(bridge.risk)}${
-                            selectedBridgeId === bridge.id ? " active" : ""
-                          }`}
+                    <>
+                      <div className="graph-bridge-summary-row">
+                        <span>建议总数 {bridgeSuggestionSummary.total}</span>
+                        <span>跨域链 {bridgeSuggestionSummary.crossDomainCount}</span>
+                        <span>高风险链 {bridgeSuggestionSummary.highRiskCount}</span>
+                        <span>平均风险 {toPercent(bridgeSuggestionSummary.averageRisk)}</span>
+                      </div>
+                      <div className="graph-bridge-batch-toolbar">
+                        <label>
+                          批量上限
+                          <select
+                            value={bridgeSuggestionBatchLimit}
+                            onChange={(event) =>
+                              setBridgeSuggestionBatchLimit(Number(event.target.value))
+                            }
+                          >
+                            {[2, 3, 5, 8].map((count) => (
+                              <option key={`bridge_batch_limit_${count}`} value={count}>
+                                Top {count}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <span>当前可推送 {bridgeSuggestionBatchQueue.length} 条</span>
+                        <button
+                          type="button"
+                          onClick={handlePushBridgeSuggestionBatchToPath}
+                          disabled={bridgeSuggestionBatchQueue.length === 0}
                         >
-                          <header>
-                            <strong>
-                              {bridge.source.label} ↔ {bridge.target.label}
-                            </strong>
-                            <span>风险 {toPercent(bridge.risk)}</span>
-                          </header>
-                          <p>{bridge.summary}</p>
-                          <div className="graph-bridge-tools">
-                            <button
-                              type="button"
-                              onClick={() => handleFocusBridge(bridge)}
-                            >
-                              聚焦主节点
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handlePushBridgeToPath(bridge)}
-                            >
-                              推送路径建议
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handlePushBridgeToWorkspace(bridge)}
-                            >
-                              推送工作区
-                            </button>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
+                          批量推送到路径
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handlePushBridgeSuggestionBatchToWorkspace}
+                          disabled={bridgeSuggestionBatchQueue.length === 0}
+                        >
+                          批量推送到工作区
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const top = riskBridgeSuggestions[0];
+                            if (top) {
+                              handleFocusBridge(top);
+                            }
+                          }}
+                          disabled={riskBridgeSuggestions.length === 0}
+                        >
+                          聚焦最高风险链
+                        </button>
+                      </div>
+                      {insightCompactMode &&
+                      riskBridgeSuggestions.length > renderRiskBridgeSuggestions.length ? (
+                        <p className="graph-bridge-compact-hint">
+                          侧栏紧凑模式仅展示前 {renderRiskBridgeSuggestions.length}/
+                          {riskBridgeSuggestions.length} 条建议。
+                        </p>
+                      ) : null}
+                      <div className="graph-bridge-list">
+                        {renderRiskBridgeSuggestions.map((bridge) => (
+                          <article
+                            key={`bridge_${bridge.id}`}
+                            className={`graph-bridge-item risk-${resolveRiskTone(bridge.risk)}${
+                              selectedBridgeId === bridge.id ? " active" : ""
+                            }`}
+                          >
+                            <header>
+                              <strong>
+                                {bridge.source.label} ↔ {bridge.target.label}
+                              </strong>
+                              <span>风险 {toPercent(bridge.risk)}</span>
+                            </header>
+                            <p>{bridge.summary}</p>
+                            <div className="graph-bridge-tools">
+                              <button
+                                type="button"
+                                onClick={() => handleFocusBridge(bridge)}
+                              >
+                                聚焦主节点
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handlePushBridgeToPath(bridge)}
+                              >
+                                推送路径建议
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handlePushBridgeToWorkspace(bridge)}
+                              >
+                                推送工作区
+                              </button>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    </>
                   ) : (
                     <p className="muted">当前筛选下暂无高风险关系链。</p>
                   )}
