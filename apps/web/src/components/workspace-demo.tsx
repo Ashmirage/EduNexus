@@ -217,6 +217,9 @@ const REPLAY_PANEL_PRESETS: Record<
 const WORKSPACE_AUTO_APPLY_FOCUS_PROMPT_STORAGE_KEY =
   "edunexus_workspace_auto_apply_focus_prompt";
 const WORKSPACE_STREAM_COMPACT_STORAGE_KEY = "edunexus_workspace_stream_compact_mode";
+const WORKSPACE_SESSION_LIST_COMPACT_STORAGE_KEY =
+  "edunexus_workspace_session_list_compact_mode";
+const WORKSPACE_CONTROL_COMPACT_STORAGE_KEY = "edunexus_workspace_control_compact_mode";
 const MESSAGE_VIRTUAL_ITEM_HEIGHT = 132;
 const MESSAGE_VIRTUAL_OVERSCAN = 5;
 
@@ -558,6 +561,8 @@ export function WorkspaceDemo() {
   const [workspaceViewMode, setWorkspaceViewMode] =
     useState<WorkspaceViewMode>("learn");
   const [streamCompactMode, setStreamCompactMode] = useState(true);
+  const [sessionListCompactMode, setSessionListCompactMode] = useState(true);
+  const [controlCompactMode, setControlCompactMode] = useState(true);
   const [graphFocus, setGraphFocus] = useState<PathFocusPayload | null>(null);
   const [graphFocusQueue, setGraphFocusQueue] = useState<PathFocusPayload[]>([]);
   const [activeGraphFocusQueueKey, setActiveGraphFocusQueueKey] = useState("");
@@ -660,6 +665,12 @@ export function WorkspaceDemo() {
         return right.item.lastLevel - left.item.lastLevel;
       });
   }, [normalizedSessionQuery, sessions]);
+  const renderSessions = useMemo(() => {
+    if (!sessionListCompactMode || normalizedSessionQuery) {
+      return rankedSessions;
+    }
+    return rankedSessions.slice(0, 8);
+  }, [normalizedSessionQuery, rankedSessions, sessionListCompactMode]);
 
   const canUnlock = useMemo(() => nextData?.canUnlockFinal ?? false, [nextData]);
   const learningChecklist = useMemo(
@@ -971,6 +982,54 @@ export function WorkspaceDemo() {
       // ignore preference write errors
     }
   }, [streamCompactMode]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(WORKSPACE_SESSION_LIST_COMPACT_STORAGE_KEY);
+      if (raw === "0") {
+        setSessionListCompactMode(false);
+      } else if (raw === "1") {
+        setSessionListCompactMode(true);
+      }
+    } catch {
+      // ignore preference read errors
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        WORKSPACE_SESSION_LIST_COMPACT_STORAGE_KEY,
+        sessionListCompactMode ? "1" : "0"
+      );
+    } catch {
+      // ignore preference write errors
+    }
+  }, [sessionListCompactMode]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(WORKSPACE_CONTROL_COMPACT_STORAGE_KEY);
+      if (raw === "0") {
+        setControlCompactMode(false);
+      } else if (raw === "1") {
+        setControlCompactMode(true);
+      }
+    } catch {
+      // ignore preference read errors
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        WORKSPACE_CONTROL_COMPACT_STORAGE_KEY,
+        controlCompactMode ? "1" : "0"
+      );
+    } catch {
+      // ignore preference write errors
+    }
+  }, [controlCompactMode]);
 
   useEffect(() => {
     loadReplayPushHistory();
@@ -2403,7 +2462,19 @@ export function WorkspaceDemo() {
         id="workspace_sessions"
         className="panel wide workspace-section workspace-section-sessions anchor-target"
       >
-        <h3>会话历史与恢复</h3>
+        <div className="workspace-session-head">
+          <h3>会话历史与恢复</h3>
+          <button
+            type="button"
+            className={`workspace-session-compact-toggle${
+              sessionListCompactMode ? " active" : ""
+            }`}
+            onClick={() => setSessionListCompactMode((prev) => !prev)}
+            disabled={Boolean(normalizedSessionQuery)}
+          >
+            {sessionListCompactMode ? "列表紧凑开" : "列表紧凑关"}
+          </button>
+        </div>
         <div className="demo-form">
           <label>历史搜索</label>
           <input
@@ -2431,12 +2502,16 @@ export function WorkspaceDemo() {
           <p className="workspace-session-hint">
             已按关键词“{sessionQuery.trim()}”进行匹配度排序。
           </p>
+        ) : rankedSessions.length > renderSessions.length ? (
+          <p className="workspace-session-hint">
+            当前仅展示最近 {renderSessions.length}/{rankedSessions.length} 个会话，可关闭紧凑模式查看全部。
+          </p>
         ) : null}
         <div className="card-list card-list-top">
-          {rankedSessions.length === 0 ? (
+          {renderSessions.length === 0 ? (
             <div className="card-item muted">当前没有匹配会话，请先创建或调整搜索条件。</div>
           ) : (
-            rankedSessions.map(({ item, score }) => (
+            renderSessions.map(({ item, score }) => (
               <div className="card-item" key={item.id}>
                 <strong>{renderKeywordMarkedText(item.title, normalizedSessionQuery)}</strong>
                 <p>
@@ -2465,7 +2540,16 @@ export function WorkspaceDemo() {
         id="workspace_input_control"
         className="panel half workspace-section workspace-section-learn workspace-section-replay anchor-target"
       >
-        <h3>输入与控制</h3>
+        <div className="workspace-control-head">
+          <h3>输入与控制</h3>
+          <button
+            type="button"
+            className={`workspace-control-compact-toggle${controlCompactMode ? " active" : ""}`}
+            onClick={() => setControlCompactMode((prev) => !prev)}
+          >
+            {controlCompactMode ? "操作紧凑开" : "操作紧凑关"}
+          </button>
+        </div>
         <div className="workspace-learn-grid">
           <aside className="workspace-task-card">
             <header>
@@ -2628,7 +2712,11 @@ export function WorkspaceDemo() {
                 </button>
               </div>
             ) : null}
-            <div className="demo-form">
+            <div
+              className={`demo-form workspace-main-form${
+                controlCompactMode ? " is-compact" : ""
+              }`}
+            >
               <label>当前会话 ID</label>
               <input value={sessionId} readOnly placeholder="请先创建或恢复会话" />
 
@@ -2650,9 +2738,17 @@ export function WorkspaceDemo() {
                 onChange={(event) => setUserInput(event.target.value)}
               />
 
-              <button type="button" onClick={requestNext} disabled={loading || !sessionId}>
-                请求下一层引导（当前 Level {currentLevel}）
-              </button>
+              <div className="workspace-core-actions">
+                <button type="button" onClick={requestNext} disabled={loading || !sessionId}>
+                  请求下一层引导（当前 Level {currentLevel}）
+                </button>
+                <button type="button" onClick={runLangGraphAgentStream} disabled={loading || !sessionId}>
+                  流式运行 LangGraph
+                </button>
+                <button type="button" onClick={saveNote} disabled={loading || messages.length === 0}>
+                  沉淀为本地笔记
+                </button>
+              </div>
 
               <label>反思内容（用于最终答案门控）</label>
               <textarea
@@ -2662,21 +2758,17 @@ export function WorkspaceDemo() {
                 onChange={(event) => setReflection(event.target.value)}
               />
 
-              <button type="button" onClick={unlockFinal} disabled={loading || !canUnlock || !sessionId}>
-                尝试解锁最终答案
-              </button>
-              <button type="button" onClick={runLangGraphAgent} disabled={loading || !sessionId}>
-                运行 LangGraph 学习工作流
-              </button>
-              <button type="button" onClick={runLangGraphAgentStream} disabled={loading || !sessionId}>
-                流式运行 LangGraph
-              </button>
-              <button type="button" onClick={startStream} disabled={loading || !sessionId}>
-                触发流式引导输出
-              </button>
-              <button type="button" onClick={saveNote} disabled={loading || messages.length === 0}>
-                沉淀为本地笔记
-              </button>
+              <div className="workspace-advanced-actions">
+                <button type="button" onClick={unlockFinal} disabled={loading || !canUnlock || !sessionId}>
+                  尝试解锁最终答案
+                </button>
+                <button type="button" onClick={runLangGraphAgent} disabled={loading || !sessionId}>
+                  运行 LangGraph 学习工作流
+                </button>
+                <button type="button" onClick={startStream} disabled={loading || !sessionId}>
+                  触发流式引导输出
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2691,6 +2783,37 @@ export function WorkspaceDemo() {
           <span>
             共 {messages.length} 条 · 当前渲染 {virtualMessageItems.length} 条
           </span>
+          <div className="workspace-message-list-actions">
+            <button
+              type="button"
+              onClick={() => {
+                const container = messageListRef.current;
+                if (!container) {
+                  return;
+                }
+                container.scrollTo({ top: 0, behavior: "smooth" });
+                setMessageScrollTop(0);
+              }}
+              disabled={messages.length === 0}
+            >
+              回到顶部
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const container = messageListRef.current;
+                if (!container) {
+                  return;
+                }
+                const nextTop = Math.max(0, container.scrollHeight - container.clientHeight);
+                container.scrollTo({ top: nextTop, behavior: "smooth" });
+                setMessageScrollTop(nextTop);
+              }}
+              disabled={messages.length === 0}
+            >
+              回到最新
+            </button>
+          </div>
         </div>
         <div
           className="card-list workspace-message-list"
@@ -2758,9 +2881,24 @@ export function WorkspaceDemo() {
                 </div>
               </div>
               {streamCompactMode ? (
-                <p className="stream-compact-note">
-                  已隐藏高级参数、书签编辑和时间线，优先保留回放控制与实时引导文本。
-                </p>
+                <>
+                  <p className="stream-compact-note">
+                    已隐藏高级参数、书签编辑和时间线，优先保留回放控制与实时引导文本。
+                  </p>
+                  <div className="stream-compact-kpis">
+                    <span>当前步 {replayProgress.current}/{replayProgress.total || 0}</span>
+                    <span>轨迹帧 {agentStreamTimeline.length}</span>
+                    <span>书签 {replayBookmarks.length}</span>
+                    <span>
+                      阶段完成{" "}
+                      {
+                        STREAM_STAGE_META.filter((item) => agentStreamStage[item.key] === "done")
+                          .length
+                      }
+                      /{STREAM_STAGE_META.length}
+                    </span>
+                  </div>
+                </>
               ) : null}
 
               <div className="stream-tools">

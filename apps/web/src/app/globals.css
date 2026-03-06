@@ -1397,6 +1397,11 @@ html[data-theme="aurora"] .page-head-cta a:first-child {
 .workspace-message-list-meta {
   margin-top: 4px;
   margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .workspace-message-list-meta span {
@@ -1408,6 +1413,28 @@ html[data-theme="aurora"] .page-head-cta a:first-child {
   font-size: 11px;
   color: #9fc7ee;
   background: rgba(10, 16, 27, 0.52);
+}
+
+.workspace-message-list-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-message-list-actions button {
+  border: 1px solid rgba(97, 132, 178, 0.42);
+  border-radius: 999px;
+  background: rgba(10, 16, 27, 0.6);
+  color: #cfe8ff;
+  font: inherit;
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.workspace-message-list-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .workspace-message-list {
@@ -1468,6 +1495,12 @@ html[data-theme="aurora"] .workspace-message-list-meta span {
   border-color: rgba(118, 154, 216, 0.44);
   background: rgba(255, 255, 255, 0.84);
   color: #678cb7;
+}
+
+html[data-theme="aurora"] .workspace-message-list-actions button {
+  border-color: rgba(118, 154, 216, 0.46);
+  background: rgba(255, 255, 255, 0.88);
+  color: #4f719f;
 }
 
 html[data-theme="aurora"] .hero-metric-card {
@@ -8570,6 +8603,39 @@ html[data-theme="aurora"] .config-diff-values em {
   color: #9fc7ee;
 }
 
+.workspace-session-head,
+.workspace-control-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.workspace-session-compact-toggle,
+.workspace-control-compact-toggle {
+  border: 1px solid rgba(97, 132, 178, 0.42);
+  border-radius: 999px;
+  background: rgba(10, 16, 27, 0.58);
+  color: #cde8ff;
+  font: inherit;
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.workspace-session-compact-toggle.active,
+.workspace-control-compact-toggle.active {
+  border-color: rgba(159, 255, 210, 0.58);
+  background: rgba(159, 255, 210, 0.14);
+  color: #dbfff0;
+}
+
+.workspace-session-compact-toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .workspace-session-score {
   margin-left: 8px;
   display: inline-flex;
@@ -8778,6 +8844,21 @@ html[data-theme="aurora"] .config-diff-values em {
 .workspace-control-stack {
   display: grid;
   gap: 10px;
+}
+
+.workspace-main-form {
+  display: grid;
+  gap: 8px;
+}
+
+.workspace-core-actions,
+.workspace-advanced-actions {
+  display: grid;
+  gap: 7px;
+}
+
+.workspace-main-form.is-compact .workspace-advanced-actions {
+  display: none;
 }
 
 .workspace-focus-card {
@@ -9883,6 +9964,20 @@ html[data-theme="aurora"] .workspace-session-hint {
   color: #5c7fad;
 }
 
+html[data-theme="aurora"] .workspace-session-compact-toggle,
+html[data-theme="aurora"] .workspace-control-compact-toggle {
+  border-color: rgba(118, 154, 216, 0.46);
+  background: rgba(255, 255, 255, 0.88);
+  color: #4f719f;
+}
+
+html[data-theme="aurora"] .workspace-session-compact-toggle.active,
+html[data-theme="aurora"] .workspace-control-compact-toggle.active {
+  border-color: rgba(64, 174, 138, 0.46);
+  background: rgba(103, 210, 174, 0.2);
+  color: #245c4a;
+}
+
 html[data-theme="aurora"] .workspace-session-score {
   border-color: rgba(118, 154, 216, 0.46);
   background: rgba(255, 255, 255, 0.86);
@@ -10138,6 +10233,21 @@ html[data-theme="aurora"] .workspace-replay-history-actions button:last-child {
   color: #a9cdef;
   font-size: 12px;
   padding: 7px 9px;
+}
+
+.stream-compact-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stream-compact-kpis span {
+  border: 1px solid rgba(97, 132, 178, 0.36);
+  border-radius: 999px;
+  background: rgba(10, 16, 27, 0.54);
+  color: #b9d9f7;
+  font-size: 11px;
+  padding: 3px 9px;
 }
 
 .stream-tools {
@@ -10727,6 +10837,12 @@ html[data-theme="aurora"] .stream-compact-note {
   color: #5d82ae;
 }
 
+html[data-theme="aurora"] .stream-compact-kpis span {
+  border-color: rgba(118, 154, 216, 0.44);
+  background: rgba(255, 255, 255, 0.84);
+  color: #557aa7;
+}
+
 html[data-theme="aurora"] .stream-speed-switch {
   border-color: rgba(118, 154, 216, 0.46);
   background: rgba(255, 255, 255, 0.76);
@@ -11025,6 +11141,15 @@ html[data-theme="aurora"] .stream-guidance {
     justify-content: flex-start;
   }
 
+  .workspace-session-head,
+  .workspace-control-head {
+    align-items: flex-start;
+  }
+
+  .workspace-message-list-meta {
+    align-items: flex-start;
+  }
+
   .settings-search-input {
     min-width: 0;
   }
@@ -11218,6 +11343,19 @@ html[data-theme="aurora"] .stream-guidance {
 
   .workspace-compact-toggle {
     width: 100%;
+  }
+
+  .workspace-session-compact-toggle,
+  .workspace-control-compact-toggle {
+    width: 100%;
+  }
+
+  .workspace-message-list-actions {
+    width: 100%;
+  }
+
+  .workspace-message-list-actions button {
+    flex: 1;
   }
 
   .dashboard-focus-tools {
