@@ -121,6 +121,8 @@ type MiniFoldCardProps = {
   title: string;
   subtitle?: string;
   defaultOpen?: boolean;
+  presetOpen?: boolean;
+  presetVersion?: number;
   children: ReactNode;
 };
 
@@ -247,9 +249,18 @@ function MiniFoldCard({
   title,
   subtitle,
   defaultOpen = true,
+  presetOpen,
+  presetVersion,
   children
 }: MiniFoldCardProps) {
   const [open, setOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    if (typeof presetOpen !== "boolean") {
+      return;
+    }
+    setOpen(presetOpen);
+  }, [presetOpen, presetVersion]);
 
   return (
     <section className={`obsidian-mini-card mini-fold-card ${open ? "open" : "closed"}`}>
@@ -303,6 +314,8 @@ export function KbDemo() {
   const [error, setError] = useState("");
   const [externalContextHint, setExternalContextHint] = useState("");
   const [compactMode, setCompactMode] = useState(false);
+  const [railPreset, setRailPreset] = useState<"compact" | "balanced">("compact");
+  const [railPresetVersion, setRailPresetVersion] = useState(0);
   const [miniMapDeepMode, setMiniMapDeepMode] = useState(false);
   const [miniMapAnalysisMode, setMiniMapAnalysisMode] = useState(false);
   const [relationWorkbenchReady, setRelationWorkbenchReady] = useState(false);
@@ -335,18 +348,22 @@ export function KbDemo() {
   useEffect(() => {
     try {
       setCompactMode(window.localStorage.getItem("edunexus_kb_compact_ui") === "1");
+      const rawRailPreset = window.localStorage.getItem("edunexus_kb_rail_preset");
+      setRailPreset(rawRailPreset === "balanced" ? "balanced" : "compact");
     } catch {
       setCompactMode(false);
+      setRailPreset("compact");
     }
   }, []);
 
   useEffect(() => {
     try {
       window.localStorage.setItem("edunexus_kb_compact_ui", compactMode ? "1" : "0");
+      window.localStorage.setItem("edunexus_kb_rail_preset", railPreset);
     } catch {
       // ignore persistence failures
     }
-  }, [compactMode]);
+  }, [compactMode, railPreset]);
 
   useEffect(() => {
     try {
@@ -397,6 +414,7 @@ export function KbDemo() {
   function resetKbLayout() {
     try {
       window.localStorage.removeItem("edunexus_kb_compact_ui");
+      window.localStorage.removeItem("edunexus_kb_rail_preset");
       window.localStorage.removeItem("edunexus_kb_minimap_deep_mode");
       window.localStorage.removeItem("edunexus_kb_minimap_analysis_mode");
       window.localStorage.removeItem("edunexus_anchor_nav_kb_demo");
@@ -408,6 +426,11 @@ export function KbDemo() {
       // ignore persistence failures
     }
     window.location.reload();
+  }
+
+  function applyKbRailPreset(nextPreset: "compact" | "balanced") {
+    setRailPreset(nextPreset);
+    setRailPresetVersion((prev) => prev + 1);
   }
 
   function applyKbPanelPreset(preset: "expand" | "focus") {
@@ -1525,6 +1548,24 @@ export function KbDemo() {
               原文视图
             </button>
           </div>
+          <div className="btn-row btn-row-top">
+            <button
+              type="button"
+              className={`demo-btn-secondary${railPreset === "compact" ? " active" : ""}`}
+              onClick={() => applyKbRailPreset("compact")}
+              disabled={loading}
+            >
+              右栏紧凑
+            </button>
+            <button
+              type="button"
+              className={`demo-btn-secondary${railPreset === "balanced" ? " active" : ""}`}
+              onClick={() => applyKbRailPreset("balanced")}
+              disabled={loading}
+            >
+              右栏平衡
+            </button>
+          </div>
           <p className="muted">
             关系图深度模式：{miniMapDeepMode ? "已开启" : "已关闭"} · 细节分析：{miniMapAnalysisMode ? "已开启" : "已关闭"} · 分析区：{relationWorkbenchReady ? "已加载" : "未加载"}
           </p>
@@ -1635,7 +1676,13 @@ export function KbDemo() {
           </article>
 
           <aside className="obsidian-rail">
-            <MiniFoldCard title="知识脉络时间轴" subtitle="按更新时间与关联关系快速回看" defaultOpen>
+            <MiniFoldCard
+              title="知识脉络时间轴"
+              subtitle="按更新时间与关联关系快速回看"
+              defaultOpen
+              presetOpen={railPreset === "balanced"}
+              presetVersion={railPresetVersion}
+            >
               <div className="timeline-list">
                 {timelineEntries.map((item) => (
                   <div className="timeline-item" key={item.id}>
@@ -1646,7 +1693,13 @@ export function KbDemo() {
               </div>
             </MiniFoldCard>
 
-            <MiniFoldCard title="双链引用" subtitle="从引用文档直接回看上下文" defaultOpen>
+            <MiniFoldCard
+              title="双链引用"
+              subtitle="从引用文档直接回看上下文"
+              defaultOpen
+              presetOpen={railPreset === "balanced"}
+              presetVersion={railPresetVersion}
+            >
               <p>{selectedDoc.backlinks.length} 篇文档引用了当前卡片</p>
               <div>
                 {selectedDoc.backlinks.slice(0, 8).map((docId) => (
@@ -1662,7 +1715,13 @@ export function KbDemo() {
               </div>
             </MiniFoldCard>
 
-            <MiniFoldCard title="NotebookLM 摘录" subtitle="自动提炼高价值原文段落" defaultOpen={false}>
+            <MiniFoldCard
+              title="NotebookLM 摘录"
+              subtitle="自动提炼高价值原文段落"
+              defaultOpen={false}
+              presetOpen={false}
+              presetVersion={railPresetVersion}
+            >
               {notebookQuotes.length === 0 ? (
                 <p className="muted">暂无可提炼段落。</p>
               ) : (
@@ -1672,7 +1731,13 @@ export function KbDemo() {
               )}
             </MiniFoldCard>
 
-            <MiniFoldCard title="引用高亮跳转" subtitle="按 sourceRef 快速定位原文证据" defaultOpen={false}>
+            <MiniFoldCard
+              title="引用高亮跳转"
+              subtitle="按 sourceRef 快速定位原文证据"
+              defaultOpen={false}
+              presetOpen={railPreset === "balanced"}
+              presetVersion={railPresetVersion}
+            >
               <p className="muted">点击 sourceRef 后，下方片段会按关键词高亮显示。</p>
               <div className="btn-row btn-row-bottom">
                 {selectedDoc.sourceRefs.length === 0 ? (
@@ -1697,7 +1762,13 @@ export function KbDemo() {
               ))}
             </MiniFoldCard>
 
-            <MiniFoldCard title="关系小地图" subtitle="章节锚点与关系链路联动分析" defaultOpen={false}>
+            <MiniFoldCard
+              title="关系小地图"
+              subtitle="章节锚点与关系链路联动分析"
+              defaultOpen={false}
+              presetOpen={railPreset === "balanced"}
+              presetVersion={railPresetVersion}
+            >
               {!miniMapDeepMode ? (
                 <div className="mini-map-disabled">
                   <p className="muted">当前已关闭关系图深度模式，以减少长页面渲染负担。</p>
@@ -2294,7 +2365,13 @@ export function KbDemo() {
             </MiniFoldCard>
 
             {relatedCards.length > 0 ? (
-              <MiniFoldCard title="关联卡片建议" subtitle="按关联强度给出跳转建议" defaultOpen={false}>
+              <MiniFoldCard
+                title="关联卡片建议"
+                subtitle="按关联强度给出跳转建议"
+                defaultOpen={false}
+                presetOpen={railPreset === "balanced"}
+                presetVersion={railPresetVersion}
+              >
                 {relatedCards.map((item) => (
                   <button
                     type="button"

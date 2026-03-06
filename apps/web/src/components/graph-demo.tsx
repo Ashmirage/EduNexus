@@ -209,6 +209,15 @@ const GRAPH_INSIGHT_SECTION_VIEW_MAP: Record<GraphInsightSectionKey, GraphWorkbe
   graph_timeline: "history"
 };
 
+const DEFAULT_GRAPH_INSIGHT_COLLAPSE_BY_VIEW: Record<
+  GraphWorkbenchView,
+  GraphInsightSectionKey[]
+> = {
+  overview: ["domain_cluster", "risk_top"],
+  bridge: ["bridge_timeline"],
+  history: ["graph_timeline"]
+};
+
 function resolveRiskTone(risk: number) {
   if (risk >= 0.65) {
     return "high";
@@ -423,11 +432,7 @@ export function GraphDemo() {
     useState<GraphWorkbenchView>("overview");
   const [collapsedInsightSectionsByView, setCollapsedInsightSectionsByView] = useState<
     Record<GraphWorkbenchView, GraphInsightSectionKey[]>
-  >({
-    overview: [],
-    bridge: [],
-    history: []
-  });
+  >(DEFAULT_GRAPH_INSIGHT_COLLAPSE_BY_VIEW);
   const [bridgeLensCrossDomainOnly, setBridgeLensCrossDomainOnly] = useState(false);
   const [savingHoverSuggestion, setSavingHoverSuggestion] = useState(false);
   const [hoverSaveMode, setHoverSaveMode] = useState<HoverSaveMode>("create_new");
@@ -611,6 +616,7 @@ export function GraphDemo() {
     try {
       const raw = window.localStorage.getItem(GRAPH_INSIGHT_COLLAPSE_STORAGE_KEY);
       if (!raw) {
+        setCollapsedInsightSectionsByView(DEFAULT_GRAPH_INSIGHT_COLLAPSE_BY_VIEW);
         return;
       }
       const parsed = JSON.parse(raw) as unknown;
@@ -637,7 +643,20 @@ export function GraphDemo() {
           )
           .slice(0, 6);
       });
-      setCollapsedInsightSectionsByView(next);
+      setCollapsedInsightSectionsByView({
+        overview:
+          next.overview.length > 0
+            ? next.overview
+            : DEFAULT_GRAPH_INSIGHT_COLLAPSE_BY_VIEW.overview,
+        bridge:
+          next.bridge.length > 0
+            ? next.bridge
+            : DEFAULT_GRAPH_INSIGHT_COLLAPSE_BY_VIEW.bridge,
+        history:
+          next.history.length > 0
+            ? next.history
+            : DEFAULT_GRAPH_INSIGHT_COLLAPSE_BY_VIEW.history
+      });
     } catch {
       // ignore collapsed section parse errors
     }
@@ -1118,6 +1137,32 @@ export function GraphDemo() {
     (updater: (prev: GraphInsightSectionKey[]) => GraphInsightSectionKey[]) =>
       updateCollapsedInsightsForView(graphWorkbenchView, updater),
     [graphWorkbenchView, updateCollapsedInsightsForView]
+  );
+  const applyCurrentViewInsightPreset = useCallback(
+    (preset: "lean" | "expand") => {
+      if (preset === "expand") {
+        updateCurrentViewCollapsedInsights((prev) => {
+          const next = new Set(prev);
+          visibleInsightSections.forEach((item) => {
+            next.delete(item.key);
+          });
+          return Array.from(next);
+        });
+        return;
+      }
+      const keepByView: Record<GraphWorkbenchView, GraphInsightSectionKey[]> = {
+        overview: ["active_focus"],
+        bridge: ["bridge_suggestions"],
+        history: ["replay_history"]
+      };
+      const keepSet = new Set(keepByView[graphWorkbenchView]);
+      updateCurrentViewCollapsedInsights(() =>
+        visibleInsightSections
+          .map((item) => item.key)
+          .filter((key) => !keepSet.has(key))
+      );
+    },
+    [graphWorkbenchView, updateCurrentViewCollapsedInsights, visibleInsightSections]
   );
 
   useEffect(() => {
@@ -3202,6 +3247,26 @@ export function GraphDemo() {
               <span>
                 侧栏分组：已折叠 {visibleCollapsedInsightCount}/{visibleInsightSections.length}
               </span>
+              <button
+                type="button"
+                className="demo-btn-secondary"
+                onClick={() => applyCurrentViewInsightPreset("lean")}
+                disabled={
+                  visibleInsightSections.length === 0 ||
+                  visibleCollapsedInsightCount >=
+                    Math.max(0, visibleInsightSections.length - 1)
+                }
+              >
+                首屏精简
+              </button>
+              <button
+                type="button"
+                className="demo-btn-secondary"
+                onClick={() => applyCurrentViewInsightPreset("expand")}
+                disabled={visibleCollapsedInsightCount === 0}
+              >
+                全部展开
+              </button>
               <button
                 type="button"
                 onClick={() =>
