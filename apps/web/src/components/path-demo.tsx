@@ -23,6 +23,36 @@ import {
   sortReplayPushHistory,
   type ReplayPushHistoryEntry
 } from "@/lib/client/replay-push-history";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import {
+  Target,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle2,
+  Download,
+  Save,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Sparkles,
+  Link2,
+  X
+} from "lucide-react";
 
 type LearningTask = {
   taskId: string;
@@ -564,9 +594,10 @@ export function PathDemo() {
   );
   const taskDayMap = useMemo(() => {
     const map = new Map<string, number>();
-    for (const [index, task] of (data?.tasks ?? []).entries()) {
+    const tasks = data?.tasks ?? [];
+    tasks.forEach((task, index) => {
       map.set(task.taskId, index + 1);
-    }
+    });
     return map;
   }, [data?.tasks]);
   const regularTasks = useMemo(
@@ -1102,56 +1133,95 @@ export function PathDemo() {
   }
 
   return (
-    <div className={`demo-form demo-form-path${compactMode ? " is-compact" : ""}`}>
-      <div className="demo-toolbar">
-        <span>路径执行工作台</span>
-        <div className="demo-toolbar-actions">
-          <button
-            type="button"
-            className={`demo-compact-toggle demo-btn-primary${compactMode ? " active" : ""}`}
-            onClick={() => setCompactMode((prev) => !prev)}
-          >
-            {compactMode ? "紧凑模式" : "舒展模式"}
-          </button>
-          <button type="button" className="demo-panel-toggle demo-btn-secondary" onClick={() => applyPathPanelPreset("expand")}>
-            展开分区
-          </button>
-          <button type="button" className="demo-panel-toggle demo-btn-secondary" onClick={() => applyPathPanelPreset("focus")}>
-            专注执行
-          </button>
-          <button type="button" className="demo-reset-toggle demo-btn-neutral" onClick={resetPathLayout}>
-            重置分区
-          </button>
-        </div>
-      </div>
-      <div className="demo-context-links">
-        <button type="button" className="demo-link-chip" onClick={() => router.push("/graph?from=path")}>
-          查看图谱总览
-        </button>
-        <button type="button" className="demo-link-chip" onClick={() => router.push("/workspace?from=path")}>
-          进入学习工作区
-        </button>
-        <button type="button" className="demo-link-chip" onClick={() => router.push("/kb?from=path")}>
-          打开知识库检索
-        </button>
-      </div>
-      <div className="path-quick-actions">
-        <button type="button" onClick={() => scrollToPathSection("path_focus_panel")}>
+    <div className={`space-y-6 ${compactMode ? "max-w-5xl" : "max-w-7xl"} mx-auto p-4`}>
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl">路径执行工作台</CardTitle>
+              <CardDescription>定向学习计划生成与图谱反馈闭环</CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant={compactMode ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCompactMode((prev) => !prev)}
+              >
+                {compactMode ? "紧凑模式" : "舒展模式"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => applyPathPanelPreset("expand")}
+              >
+                展开分区
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => applyPathPanelPreset("focus")}
+              >
+                专注执行
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetPathLayout}
+              >
+                <RotateCcw className="h-4 w-4 mr-1" />
+                重置分区
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/graph?from=path")}
+            >
+              <Link2 className="h-4 w-4 mr-1" />
+              查看图谱总览
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/workspace?from=path")}
+            >
+              <Link2 className="h-4 w-4 mr-1" />
+              进入学习工作区
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/kb?from=path")}
+            >
+              <Link2 className="h-4 w-4 mr-1" />
+              打开知识库检索
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex flex-wrap gap-2">
+        <Button variant="ghost" size="sm" onClick={() => scrollToPathSection("path_focus_panel")}>
           聚焦焦点联动
-        </button>
-        <button type="button" onClick={() => scrollToPathSection("path_goal_panel")}>
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => scrollToPathSection("path_goal_panel")}>
           目标与生成
-        </button>
-        <button type="button" onClick={() => scrollToPathSection("path_plan_panel")}>
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => scrollToPathSection("path_plan_panel")}>
           计划与回写
-        </button>
-        <button type="button" onClick={() => scrollToPathSection("path_error_panel")}>
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => scrollToPathSection("path_error_panel")}>
           状态反馈
-        </button>
-        <button type="button" onClick={() => scrollToPathSection("top")}>
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => scrollToPathSection("top")}>
           回到顶部
-        </button>
+        </Button>
       </div>
+
       <SectionAnchorNav
         title="路径分区导航"
         storageKey="path_demo"
@@ -1162,336 +1232,512 @@ export function PathDemo() {
           { id: "path_error_panel", label: "状态反馈" }
         ]}
       />
-      <div className="demo-metric-strip">
-        <div className="demo-metric-chip">
-          <span>焦点队列</span>
-          <strong>{pathQueueSize}</strong>
-        </div>
-        <div className="demo-metric-chip">
-          <span>计划任务</span>
-          <strong>{pathTaskCount}</strong>
-        </div>
-        <div className="demo-metric-chip">
-          <span>焦点回写</span>
-          <strong>
-            {pathFocusDone}/{pathFocusTotal}
-          </strong>
-        </div>
-        <div className="demo-metric-chip">
-          <span>当前状态</span>
-          <strong>{loading ? "执行中" : "就绪"}</strong>
-        </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">焦点队列</p>
+              <p className="text-3xl font-bold">{pathQueueSize}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">计划任务</p>
+              <p className="text-3xl font-bold">{pathTaskCount}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">焦点回写</p>
+              <p className="text-3xl font-bold">
+                {pathFocusDone}/{pathFocusTotal}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">当前状态</p>
+              <p className="text-3xl font-bold">{loading ? "执行中" : "就绪"}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-      {focusHint ? <div className="result-box info">{focusHint}</div> : null}
-      {focusSummary ? (
+
+      {focusHint && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{focusHint}</AlertDescription>
+        </Alert>
+      )}
+
+      {focusSummary && (
         <CollapsiblePanel
           id="path_focus_panel"
           title="图谱联动焦点"
           subtitle="关系链来源、批次队列与桥接执行清单"
           storageKey="path_focus_panel"
-          className="path-focus-summary panel-surface anchor-target"
+          className="anchor-target"
           defaultExpanded
         >
-          <p>
-            节点：{focusPayload?.nodeLabel} · 域：{focusPayload?.domain} · 风险：
-            {focusSummary.riskText} · 掌握度：{focusSummary.masteryText}
-          </p>
-          <p>
-            来源：{focusSummary.sourceText}
-            {focusSummary.bridgeText ? ` · 桥接节点：${focusSummary.bridgeText}` : ""}
-            {focusSummary.replayBatchId
-              ? ` · 回放批次：${focusSummary.replayBatchId}${
-                  focusSummary.replaySlot ? `（${focusSummary.replaySlot}）` : ""
-                }${focusSummary.replayMode ? ` · 模式 ${focusSummary.replayMode}` : ""}`
-              : ""}
-          </p>
-          {focusQueue.length > 1 ? (
-            <div className="path-focus-queue">
-              <div className="path-focus-queue-head">
-                <strong>批量关系链队列（{focusQueue.length}）</strong>
-                <div className="path-focus-queue-nav">
-                  <button type="button" onClick={() => stepFocusQueue(-1)}>
-                    上一条
-                  </button>
-                  <span>
-                    {Math.max(1, activeFocusQueueIndex + 1)}/{focusQueue.length}
-                  </span>
-                  <button type="button" onClick={() => stepFocusQueue(1)}>
-                    下一条
-                  </button>
+          <div className="space-y-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="space-y-2 text-sm">
+                  <p>
+                    <span className="font-medium">节点：</span>{focusPayload?.nodeLabel} · 
+                    <span className="font-medium">域：</span>{focusPayload?.domain} · 
+                    <span className="font-medium">风险：</span>
+                    <Badge variant={focusPayload && focusPayload.risk > 0.6 ? "destructive" : "secondary"}>
+                      {focusSummary.riskText}
+                    </Badge> · 
+                    <span className="font-medium">掌握度：</span>
+                    <Badge variant="outline">{focusSummary.masteryText}</Badge>
+                  </p>
+                  <p>
+                    <span className="font-medium">来源：</span>{focusSummary.sourceText}
+                    {focusSummary.bridgeText && ` · 桥接节点：${focusSummary.bridgeText}`}
+                    {focusSummary.replayBatchId &&
+                      ` · 回放批次：${focusSummary.replayBatchId}${
+                        focusSummary.replaySlot ? `（${focusSummary.replaySlot}）` : ""
+                      }${focusSummary.replayMode ? ` · 模式 ${focusSummary.replayMode}` : ""}`}
+                  </p>
                 </div>
-              </div>
-              <div className="path-focus-queue-list">
-                {focusQueue.map((item, index) => {
-                  const queueKey = buildFocusQueueKey(item);
-                  const active =
-                    activeFocusQueueKey === queueKey ||
-                    (focusPayload ? buildFocusQueueKey(focusPayload) === queueKey : false);
-                  return (
-                    <button
-                      type="button"
-                      key={`focus_queue_${queueKey}_${index}`}
-                      className={active ? "active" : ""}
-                      onClick={() => selectFocusFromQueue(item)}
-                    >
-                      <span>
-                        {index + 1}. {item.nodeLabel}
-                        {item.bridgePartnerLabel ? ` ↔ ${item.bridgePartnerLabel}` : ""}
+              </CardContent>
+            </Card>
+
+            {focusQueue.length > 1 && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">批量关系链队列（{focusQueue.length}）</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => stepFocusQueue(-1)}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        上一条
+                      </Button>
+                      <span className="text-sm">
+                        {Math.max(1, activeFocusQueueIndex + 1)}/{focusQueue.length}
                       </span>
-                      <em>风险 {Math.round(item.risk * 100)}%</em>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
-          <div className="path-replay-history">
-            <header>
-              <strong>回放批次历史入口</strong>
-              <span>支持一键载入为当前路径焦点队列</span>
-            </header>
-            <div className="path-replay-history-filter">
-              <label className="path-replay-history-search">
-                <span>关键词筛选</span>
-                <input
-                  value={replayHistoryKeyword}
-                  onChange={(event) => setReplayHistoryKeyword(event.target.value)}
-                  placeholder="批次 / 节点 / 来源 / 模式"
-                  aria-label="筛选路径回放批次"
-                />
-              </label>
-              <label>
-                <span>目标</span>
-                <select
-                  value={replayHistoryTargetFilter}
-                  onChange={(event) =>
-                    setReplayHistoryTargetFilter(
-                      event.target.value as "all" | "path" | "workspace"
-                    )
-                  }
-                >
-                  <option value="all">全部目标</option>
-                  <option value="path">路径</option>
-                  <option value="workspace">工作区</option>
-                </select>
-              </label>
-              <label>
-                <span>来源</span>
-                <select
-                  value={replayHistorySourceFilter}
-                  onChange={(event) =>
-                    setReplayHistorySourceFilter(
-                      event.target.value as
-                        | "all"
-                        | "single_frame"
-                        | "batch_queue"
-                        | "history_repush"
-                    )
-                  }
-                >
-                  <option value="all">全部来源</option>
-                  <option value="single_frame">当前帧推送</option>
-                  <option value="batch_queue">批量队列推送</option>
-                  <option value="history_repush">历史复推</option>
-                </select>
-              </label>
-              <label className="path-replay-history-risk-toggle">
-                <input
-                  type="checkbox"
-                  checked={replayHistoryRiskOnly}
-                  onChange={(event) => setReplayHistoryRiskOnly(event.target.checked)}
-                />
-                <span>仅高风险批次</span>
-              </label>
-              <span>
-                命中 {filteredReplayPushHistory.length}/{sortedReplayPushHistory.length} · 高风险{" "}
-                {replayHistoryHighRiskCount}
-              </span>
-              <button type="button" onClick={resetReplayHistoryFilters}>
-                清空筛选
-              </button>
-            </div>
-            {replayPushHistoryPreview.length > 0 ? (
-              <div className="path-replay-history-list">
-                {replayPushHistoryPreview.map((entry) => (
-                  <article key={entry.id} className="path-replay-history-item">
-                    <p>
-                      <strong>{entry.batchId}</strong> · {entry.count} 条 · 原目标{" "}
-                      {resolveReplayPushTargetLabel(entry.target)}
-                    </p>
-                    <span>
-                      {resolveReplayPushSourceLabel(entry.source)}
-                      {entry.mode ? ` · 模式 ${entry.mode}` : ""}
-                    </span>
-                    <div className="path-replay-history-actions">
-                      <button type="button" onClick={() => applyReplayHistoryToPath(entry)}>
-                        载入到路径
-                      </button>
-                      <button type="button" onClick={() => openReplayBatchInGraph(entry)}>
-                        回图谱定位
-                      </button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => stepFocusQueue(1)}
+                      >
+                        下一条
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
                     </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <p className="muted">
-                {sortedReplayPushHistory.length > 0
-                  ? "当前筛选下没有可用批次，建议放宽筛选条件。"
-                  : "暂无回放批次历史，可先在图谱页执行批量推送。"}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-2">
+                    {focusQueue.map((item, index) => {
+                      const queueKey = buildFocusQueueKey(item);
+                      const active =
+                        activeFocusQueueKey === queueKey ||
+                        (focusPayload ? buildFocusQueueKey(focusPayload) === queueKey : false);
+                      return (
+                        <Button
+                          key={`focus_queue_${queueKey}_${index}`}
+                          variant={active ? "default" : "outline"}
+                          className="justify-between h-auto py-3"
+                          onClick={() => selectFocusFromQueue(item)}
+                        >
+                          <span className="text-left">
+                            {index + 1}. {item.nodeLabel}
+                            {item.bridgePartnerLabel && ` ↔ ${item.bridgePartnerLabel}`}
+                          </span>
+                          <Badge variant={item.risk > 0.6 ? "destructive" : "secondary"}>
+                            风险 {Math.round(item.risk * 100)}%
+                          </Badge>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">回放批次历史入口</CardTitle>
+                <CardDescription>支持一键载入为当前路径焦点队列</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="replay-keyword">关键词筛选</Label>
+                    <Input
+                      id="replay-keyword"
+                      value={replayHistoryKeyword}
+                      onChange={(e) => setReplayHistoryKeyword(e.target.value)}
+                      placeholder="批次 / 节点 / 来源 / 模式"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="replay-target">目标</Label>
+                    <Select
+                      value={replayHistoryTargetFilter}
+                      onValueChange={(value) =>
+                        setReplayHistoryTargetFilter(value as "all" | "path" | "workspace")
+                      }
+                    >
+                      <SelectTrigger id="replay-target">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">全部目标</SelectItem>
+                        <SelectItem value="path">路径</SelectItem>
+                        <SelectItem value="workspace">工作区</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="replay-source">来源</Label>
+                    <Select
+                      value={replayHistorySourceFilter}
+                      onValueChange={(value) =>
+                        setReplayHistorySourceFilter(
+                          value as "all" | "single_frame" | "batch_queue" | "history_repush"
+                        )
+                      }
+                    >
+                      <SelectTrigger id="replay-source">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">全部来源</SelectItem>
+                        <SelectItem value="single_frame">当前帧推送</SelectItem>
+                        <SelectItem value="batch_queue">批量队列推送</SelectItem>
+                        <SelectItem value="history_repush">历史复推</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Checkbox
+                        checked={replayHistoryRiskOnly}
+                        onCheckedChange={(checked) => setReplayHistoryRiskOnly(checked === true)}
+                      />
+                      仅高风险批次
+                    </Label>
+                    <div className="text-sm text-muted-foreground">
+                      命中 {filteredReplayPushHistory.length}/{sortedReplayPushHistory.length} · 高风险{" "}
+                      {replayHistoryHighRiskCount}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={resetReplayHistoryFilters}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      清空筛选
+                    </Button>
+                  </div>
+                </div>
+
+                {replayPushHistoryPreview.length > 0 ? (
+                  <div className="grid gap-3">
+                    {replayPushHistoryPreview.map((entry) => (
+                      <Card key={entry.id}>
+                        <CardContent className="pt-6">
+                          <div className="space-y-2">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <p className="font-medium">{entry.batchId}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {entry.count} 条 · 原目标 {resolveReplayPushTargetLabel(entry.target)}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {resolveReplayPushSourceLabel(entry.source)}
+                                  {entry.mode && ` · 模式 ${entry.mode}`}
+                                </p>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => applyReplayHistoryToPath(entry)}
+                                >
+                                  载入到路径
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openReplayBatchInGraph(entry)}
+                                >
+                                  回图谱定位
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    {sortedReplayPushHistory.length > 0
+                      ? "当前筛选下没有可用批次，建议放宽筛选条件。"
+                      : "暂无回放批次历史，可先在图谱页执行批量推送。"}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="space-y-2">
+              <p className="text-sm">
+                <span className="font-medium">关联节点：</span>{focusSummary.relatedText}
               </p>
+            </div>
+
+            {focusSummary.bridgeTaskTemplate && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">桥接任务模板</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm">{focusSummary.bridgeTaskTemplate}</p>
+                  <Button onClick={applyBridgeTemplateGoal}>
+                    <Sparkles className="h-4 w-4 mr-1" />
+                    一键应用到目标
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {focusFeedbackStats && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">
+                      回写统计：{focusFeedbackStats.done}/{focusFeedbackStats.total}
+                    </span>
+                    <Badge>完成率 {focusFeedbackStats.completionRate}%</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {bridgeChecklist.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">桥接执行检查清单</CardTitle>
+                    <Badge variant="outline">
+                      {bridgeChecklistProgress.done}/{bridgeChecklistProgress.total} · {bridgeChecklistProgress.rate}%
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    {bridgeChecklist.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-start gap-3 p-3 rounded-lg border"
+                      >
+                        <Checkbox
+                          checked={item.done}
+                          onCheckedChange={() => toggleBridgeChecklistItem(item.id)}
+                        />
+                        <label className={`text-sm flex-1 cursor-pointer ${item.done ? "line-through text-muted-foreground" : ""}`}>
+                          {item.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="bridge-save-mode">会话沉淀方式</Label>
+                      <Select
+                        value={bridgeSaveMode}
+                        onValueChange={(value) => setBridgeSaveMode(value as BridgeSaveMode)}
+                      >
+                        <SelectTrigger id="bridge-save-mode">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="create_new">新建会话并沉淀</SelectItem>
+                          <SelectItem value="append_existing">追加到已有会话</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {bridgeSaveMode === "append_existing" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="bridge-target-session">目标会话</Label>
+                        <Select
+                          value={bridgeTargetSessionId}
+                          onValueChange={(value) => setBridgeTargetSessionId(value)}
+                        >
+                          <SelectTrigger id="bridge-target-session">
+                            <SelectValue placeholder="请选择会话" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {workspaceSessions.map((session) => {
+                              const recommended = recommendedWorkspaceSessions.some(
+                                (item) => item.id === session.id
+                              );
+                              return (
+                                <SelectItem key={`bridge_session_${session.id}`} value={session.id}>
+                                  {recommended && "推荐 · "}
+                                  {session.title}（{session.id}）
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                        {recommendedWorkspaceSessions[0] ? (
+                          <p className="text-xs text-muted-foreground">
+                            推荐会话：{recommendedWorkspaceSessions[0].title}（匹配度{" "}
+                            {recommendedWorkspaceSessions[0].recommendScore.toFixed(2)}）
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            暂无可推荐会话，可先在工作区创建会话。
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {bridgeSaveMode === "append_existing" &&
+                    recommendedWorkspaceSessions.length > 1 && (
+                      <div className="grid gap-2">
+                        {recommendedWorkspaceSessions.slice(0, 3).map((session) => (
+                          <Button
+                            key={`bridge_recommend_${session.id}`}
+                            variant={bridgeTargetSessionId === session.id ? "default" : "outline"}
+                            className="justify-between"
+                            onClick={() => setBridgeTargetSessionId(session.id)}
+                          >
+                            <span>{session.title}</span>
+                            <Badge variant="secondary">
+                              匹配度 {session.recommendScore.toFixed(2)}
+                            </Badge>
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+
+                  <div className="flex flex-wrap gap-2">
+                    {bridgeChecklistProgress.done < bridgeChecklistProgress.total && (
+                      <Button
+                        variant="outline"
+                        onClick={markAllBridgeChecklistDone}
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                        标记清单已完成
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      onClick={exportBridgeChecklistMarkdown}
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      导出 Markdown
+                    </Button>
+                    <Button
+                      onClick={() => void saveBridgeChecklistToWorkspaceSession()}
+                      disabled={
+                        savingBridgeNote ||
+                        (bridgeSaveMode === "append_existing" && !bridgeTargetSessionId)
+                      }
+                    >
+                      {savingBridgeNote ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          写入中...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-1" />
+                          写入会话沉淀
+                        </>
+                      )}
+                    </Button>
+                    {bridgeWorkspaceSessionId && (
+                      <Button
+                        variant="outline"
+                        onClick={jumpToWorkspaceFromBridgeChecklist}
+                      >
+                        <Link2 className="h-4 w-4 mr-1" />
+                        进入工作区继续
+                      </Button>
+                    )}
+                  </div>
+
+                  {bridgeExportHint && (
+                    <Alert>
+                      <CheckCircle2 className="h-4 w-4" />
+                      <AlertDescription>{bridgeExportHint}</AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
             )}
           </div>
-          <p>关联节点：{focusSummary.relatedText}</p>
-          {focusSummary.bridgeTaskTemplate ? (
-            <div className="path-bridge-template">
-              <strong>桥接任务模板</strong>
-              <p>{focusSummary.bridgeTaskTemplate}</p>
-              <button type="button" onClick={applyBridgeTemplateGoal}>
-                一键应用到目标
-              </button>
-            </div>
-          ) : null}
-          {focusFeedbackStats ? (
-            <div className="path-focus-feedback-stats">
-              <span>
-                回写统计：{focusFeedbackStats.done}/{focusFeedbackStats.total}
-              </span>
-              <em>完成率 {focusFeedbackStats.completionRate}%</em>
-            </div>
-          ) : null}
-          {bridgeChecklist.length > 0 ? (
-            <div className="path-bridge-checklist">
-              <header>
-                <strong>桥接执行检查清单</strong>
-                <span>
-                  {bridgeChecklistProgress.done}/{bridgeChecklistProgress.total} ·{" "}
-                  {bridgeChecklistProgress.rate}%
-                </span>
-              </header>
-              {bridgeChecklist.map((item) => (
-                <label
-                  key={item.id}
-                  className={`path-bridge-checklist-item${item.done ? " done" : ""}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={item.done}
-                    onChange={() => toggleBridgeChecklistItem(item.id)}
-                  />
-                  {item.label}
-                </label>
-              ))}
-              <div className="path-bridge-save-mode">
-                <label>
-                  会话沉淀方式
-                  <select
-                    value={bridgeSaveMode}
-                    onChange={(event) => setBridgeSaveMode(event.target.value as BridgeSaveMode)}
-                  >
-                    <option value="create_new">新建会话并沉淀</option>
-                    <option value="append_existing">追加到已有会话</option>
-                  </select>
-                </label>
-                {bridgeSaveMode === "append_existing" ? (
-                  <label>
-                    目标会话
-                    <select
-                      value={bridgeTargetSessionId}
-                      onChange={(event) => setBridgeTargetSessionId(event.target.value)}
-                    >
-                      <option value="">请选择会话</option>
-                      {workspaceSessions.map((session) => {
-                        const recommended = recommendedWorkspaceSessions.some(
-                          (item) => item.id === session.id
-                        );
-                        return (
-                          <option key={`bridge_session_${session.id}`} value={session.id}>
-                            {recommended ? "推荐 · " : ""}
-                            {session.title}（{session.id}）
-                          </option>
-                        );
-                      })}
-                    </select>
-                    {recommendedWorkspaceSessions[0] ? (
-                      <small>
-                        推荐会话：{recommendedWorkspaceSessions[0].title}（匹配度{" "}
-                        {recommendedWorkspaceSessions[0].recommendScore.toFixed(2)}）
-                      </small>
-                    ) : (
-                      <small>暂无可推荐会话，可先在工作区创建会话。</small>
-                    )}
-                  </label>
-                ) : null}
-              </div>
-              {bridgeSaveMode === "append_existing" &&
-              recommendedWorkspaceSessions.length > 1 ? (
-                <div className="path-bridge-recommend-list">
-                  {recommendedWorkspaceSessions.slice(0, 3).map((session) => (
-                    <button
-                      type="button"
-                      key={`bridge_recommend_${session.id}`}
-                      className={bridgeTargetSessionId === session.id ? "active" : ""}
-                      onClick={() => setBridgeTargetSessionId(session.id)}
-                    >
-                      {session.title}
-                      <em>匹配度 {session.recommendScore.toFixed(2)}</em>
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-              <div className="path-bridge-checklist-actions">
-                {bridgeChecklistProgress.done < bridgeChecklistProgress.total ? (
-                  <button type="button" onClick={markAllBridgeChecklistDone}>
-                    标记清单已完成
-                  </button>
-                ) : null}
-                <button type="button" onClick={exportBridgeChecklistMarkdown}>
-                  导出 Markdown
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void saveBridgeChecklistToWorkspaceSession()}
-                  disabled={
-                    savingBridgeNote ||
-                    (bridgeSaveMode === "append_existing" && !bridgeTargetSessionId)
-                  }
-                >
-                  {savingBridgeNote ? "写入中..." : "写入会话沉淀"}
-                </button>
-                {bridgeWorkspaceSessionId ? (
-                  <button type="button" onClick={jumpToWorkspaceFromBridgeChecklist}>
-                    进入工作区继续
-                  </button>
-                ) : null}
-              </div>
-              {bridgeExportHint ? (
-                <span className="path-bridge-checklist-hint">{bridgeExportHint}</span>
-              ) : null}
-            </div>
-          ) : null}
         </CollapsiblePanel>
-      ) : null}
-      <div id="path_goal_panel" className="path-goal-panel panel-surface anchor-target">
-        <div className="section-head">
-          <strong>目标设定与计划生成</strong>
-          <span>先定义学习目标，再生成或重排路径</span>
-        </div>
-        <label className="form-field">
-          <span>学习目标</span>
-          <input value={goal} onChange={(event) => setGoal(event.target.value)} />
-        </label>
-        <div className="action-row">
-          <button type="button" className="demo-btn-primary" onClick={generatePath} disabled={loading}>
-            {focusPayload ? "生成 7 日定向计划" : "生成 7 日计划"}
-          </button>
-          <button type="button" className="demo-btn-secondary" onClick={replan} disabled={loading || !data}>
-            依据新情况重排计划
-          </button>
-        </div>
-      </div>
+      )}
 
-      {data ? (
+      <Card id="path_goal_panel" className="anchor-target">
+        <CardHeader>
+          <CardTitle>目标设定与计划生成</CardTitle>
+          <CardDescription>先定义学习目标，再生成或重排路径</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="goal-input">学习目标</Label>
+            <Input
+              id="goal-input"
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={generatePath}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  生成中...
+                </>
+              ) : (
+                <>
+                  <Target className="h-4 w-4 mr-1" />
+                  {focusPayload ? "生成 7 日定向计划" : "生成 7 日计划"}
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={replan}
+              disabled={loading || !data}
+            >
+              <RotateCcw className="h-4 w-4 mr-1" />
+              依据新情况重排计划
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {data && (
         <CollapsiblePanel
           id="path_plan_panel"
           title="计划任务与执行回写"
@@ -1500,71 +1746,107 @@ export function PathDemo() {
           className="anchor-target"
           defaultExpanded
         >
-          <div className="card-list path-plan-panel">
-            <div className="result-box">
-              <strong>计划 ID：</strong> {data.planId}
-              {"\n"}
-              任务数：{data.tasks.length}
-              {"\n"}
-              最高优先级：{Math.max(...data.tasks.map((item) => item.priority))}
-            </div>
-            {focusTasks.length > 0 ? (
-              <div className="path-focus-task-group">
-                <header>
-                  <strong>图谱焦点任务</strong>
-                  <span>
-                    已完成 {completedFocusTaskIds.length}/{focusTasks.length}
-                  </span>
-                </header>
-                {focusTasks.map((task, index) => {
-                  const isDone = completedFocusTaskIds.includes(task.taskId);
-                  const day = taskDayMap.get(task.taskId) ?? index + 1;
-                  return (
-                    <div className={`path-focus-task-row${isDone ? " done" : ""}`} key={task.taskId}>
-                      <div>
-                        <strong>
-                          Day {day} · {task.title}
-                        </strong>
-                        <p>优先级：{task.priority} · 建议日期：{formatDueDate(task.dueDate)}</p>
-                        <p>{task.reason ? `安排原因：${task.reason}` : "该任务暂无具体原因说明。"}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => markFocusTaskDone(task)}
-                        disabled={isDone || submittingTaskId === task.taskId}
-                      >
-                        {isDone
-                          ? "已反馈"
-                          : submittingTaskId === task.taskId
-                            ? "写入中..."
-                            : "完成并回写掌握度"}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : null}
+          <div className="space-y-4">
+            <Alert>
+              <TrendingUp className="h-4 w-4" />
+              <AlertDescription>
+                <strong>计划 ID：</strong> {data.planId}
+                {"\n"}
+                任务数：{data.tasks.length}
+                {"\n"}
+                最高优先级：{Math.max(...data.tasks.map((item) => item.priority))}
+              </AlertDescription>
+            </Alert>
+
+            {focusTasks.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">图谱焦点任务</CardTitle>
+                    <Badge>
+                      已完成 {completedFocusTaskIds.length}/{focusTasks.length}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {focusTasks.map((task, index) => {
+                    const isDone = completedFocusTaskIds.includes(task.taskId);
+                    const day = taskDayMap.get(task.taskId) ?? index + 1;
+                    return (
+                      <Card key={task.taskId} className={isDone ? "opacity-60" : ""}>
+                        <CardContent className="pt-6">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline">Day {day}</Badge>
+                                <h4 className="font-medium">{task.title}</h4>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                优先级：{task.priority} · 建议日期：{formatDueDate(task.dueDate)}
+                              </p>
+                              <p className="text-sm">
+                                {task.reason ? `安排原因：${task.reason}` : "该任务暂无具体原因说明。"}
+                              </p>
+                            </div>
+                            <Button
+                              onClick={() => markFocusTaskDone(task)}
+                              disabled={isDone || submittingTaskId === task.taskId}
+                              variant={isDone ? "outline" : "default"}
+                            >
+                              {isDone ? (
+                                <>
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  已反馈
+                                </>
+                              ) : submittingTaskId === task.taskId ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                  写入中...
+                                </>
+                              ) : (
+                                "完成并回写掌握度"
+                              )}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            )}
+
             {regularTasks.map((task, index) => {
               const day = taskDayMap.get(task.taskId) ?? index + 1;
               return (
-                <div className="card-item" key={task.taskId}>
-                  <strong>
-                    Day {day} · {task.title}
-                  </strong>
-                  <p>优先级：{task.priority} · 建议日期：{formatDueDate(task.dueDate)}</p>
-                  <p>{task.reason ? `安排原因：${task.reason}` : "该任务暂无具体原因说明。"}</p>
-                </div>
+                <Card key={task.taskId}>
+                  <CardContent className="pt-6">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">Day {day}</Badge>
+                        <h4 className="font-medium">{task.title}</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        优先级：{task.priority} · 建议日期：{formatDueDate(task.dueDate)}
+                      </p>
+                      <p className="text-sm">
+                        {task.reason ? `安排原因：${task.reason}` : "该任务暂无具体原因说明。"}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
         </CollapsiblePanel>
-      ) : null}
+      )}
 
-      {error ? (
-        <div id="path_error_panel" className="result-box danger anchor-target">
-          {error}
-        </div>
-      ) : null}
+      {error && (
+        <Alert id="path_error_panel" variant="destructive" className="anchor-target">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 }

@@ -1,6 +1,9 @@
 import { GraphDemo } from "@/components/graph-demo";
 import { PageHeader } from "@/components/page-header";
 import { PageQuickNav } from "@/components/page-quick-nav";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Network, Play } from "lucide-react";
 
 const GRAPH_QUICK_NAV_ITEMS = [
   { href: "#graph_controls", label: "图谱控制", hint: "筛选/热力/缩放" },
@@ -13,21 +16,37 @@ const GRAPH_QUICK_NAV_ITEMS = [
 
 export default function GraphPage() {
   return (
-    <section className="graph-page ecosystem-page">
+    <section className="page-container space-y-8 animate-in">
       <PageHeader
         title="知识图谱"
         description="把学习行为和知识关系放进同一画布，实时定位风险链路并一键联动到路径与工作区。"
         tags={["风险热力", "关系链回放", "批次复推", "跨页定位"]}
+        actions={
+          <>
+            <Button size="lg" className="btn-primary" asChild>
+              <Link href="/workspace">
+                <Network className="mr-2 h-4 w-4" />
+                开始分析
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/path">
+                <Play className="mr-2 h-4 w-4" />
+                查看路径
+              </Link>
+            </Button>
+          </>
+        }
       />
+
       <div className="panel-grid">
         <PageQuickNav title="图谱快速导航" items={[...GRAPH_QUICK_NAV_ITEMS]} />
       </div>
 
-      <div className="panel-grid graph-panel-grid">
-        <article className="panel wide graph-main-panel">
-          <h3>图谱工作台</h3>
+      <div className="panel-grid">
+        <div className="col-span-12">
           <GraphDemo />
-        </article>
+        </div>
       </div>
     </section>
   );

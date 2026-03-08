@@ -3,8 +3,28 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatErrorMessage, requestJson } from "@/lib/client/api";
-import { CollapsiblePanel } from "@/components/collapsible-panel";
-import { SectionAnchorNav } from "@/components/section-anchor-nav";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  FileText,
+  Download,
+  Loader2,
+  BookOpen,
+  Network,
+  Database,
+  AlertCircle,
+  CheckCircle2,
+  Sparkles,
+  RefreshCw
+} from "lucide-react";
 
 type LessonPlan = {
   title: string;
@@ -29,11 +49,6 @@ type WeaknessTemplatePayload = {
   subject: string;
   templates: WeaknessTemplate[];
 };
-
-type TeacherWorkbenchView = "input" | "template" | "result";
-
-const TEACHER_WORKBENCH_VIEW_STORAGE_KEY = "edunexus_teacher_workbench_view";
-const TEACHER_FOCUS_ONLY_STORAGE_KEY = "edunexus_teacher_focus_only_mode";
 
 const FALLBACK_TEMPLATES: WeaknessTemplate[] = [
   {
@@ -79,95 +94,7 @@ export function TeacherPlanDemo() {
   const [result, setResult] = useState<LessonPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [compactMode, setCompactMode] = useState(false);
-  const [teacherWorkbenchView, setTeacherWorkbenchView] =
-    useState<TeacherWorkbenchView>("input");
-  const [teacherFocusOnlyMode, setTeacherFocusOnlyMode] = useState(false);
-
-  useEffect(() => {
-    try {
-      setCompactMode(window.localStorage.getItem("edunexus_teacher_compact_ui") === "1");
-      const persistedView = window.localStorage.getItem(
-        TEACHER_WORKBENCH_VIEW_STORAGE_KEY
-      );
-      if (persistedView === "template" || persistedView === "result") {
-        setTeacherWorkbenchView(persistedView);
-      } else {
-        setTeacherWorkbenchView("input");
-      }
-      setTeacherFocusOnlyMode(
-        window.localStorage.getItem(TEACHER_FOCUS_ONLY_STORAGE_KEY) === "1"
-      );
-    } catch {
-      setCompactMode(false);
-      setTeacherWorkbenchView("input");
-      setTeacherFocusOnlyMode(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem("edunexus_teacher_compact_ui", compactMode ? "1" : "0");
-    } catch {
-      // ignore persistence failures
-    }
-  }, [compactMode]);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        TEACHER_WORKBENCH_VIEW_STORAGE_KEY,
-        teacherWorkbenchView
-      );
-    } catch {
-      // ignore persistence failures
-    }
-  }, [teacherWorkbenchView]);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        TEACHER_FOCUS_ONLY_STORAGE_KEY,
-        teacherFocusOnlyMode ? "1" : "0"
-      );
-    } catch {
-      // ignore persistence failures
-    }
-  }, [teacherFocusOnlyMode]);
-
-  useEffect(() => {
-    if (teacherWorkbenchView !== "result" || result) {
-      return;
-    }
-    setTeacherWorkbenchView("input");
-  }, [result, teacherWorkbenchView]);
-
-  function resetTeacherLayout() {
-    try {
-      window.localStorage.removeItem("edunexus_teacher_compact_ui");
-      window.localStorage.removeItem("edunexus_anchor_nav_teacher_demo");
-      window.localStorage.removeItem("edunexus_collapsible_teacher_template_panel");
-      window.localStorage.removeItem("edunexus_collapsible_teacher_result_panel");
-    } catch {
-      // ignore persistence failures
-    }
-    window.location.reload();
-  }
-
-  function applyTeacherPanelPreset(preset: "expand" | "focus") {
-    try {
-      if (preset === "expand") {
-        window.localStorage.setItem("edunexus_collapsible_teacher_template_panel", "1");
-        window.localStorage.setItem("edunexus_collapsible_teacher_result_panel", "1");
-      } else {
-        window.localStorage.setItem("edunexus_collapsible_teacher_template_panel", "0");
-        window.localStorage.setItem("edunexus_collapsible_teacher_result_panel", "1");
-      }
-    } catch {
-      // ignore persistence failures
-    }
-    window.location.reload();
-  }
+  const [activeTab, setActiveTab] = useState("input");
 
   async function loadTemplates(targetSubject = subject) {
     setTemplateLoading(true);
@@ -214,7 +141,7 @@ export function TeacherPlanDemo() {
         })
       });
       setResult(data);
-      setTeacherWorkbenchView("result");
+      setActiveTab("result");
     } catch (err) {
       setError(formatErrorMessage(err, "生成备课草案失败。"));
       console.error(err);
@@ -271,317 +198,331 @@ export function TeacherPlanDemo() {
     URL.revokeObjectURL(url);
   }
 
-  const teacherObjectiveCount = result?.objectives.length ?? 0;
-  const teacherOutlineCount = result?.outline.length ?? 0;
-  const teacherViewMainSectionId =
-    teacherWorkbenchView === "template"
-      ? "teacher_template_panel"
-      : teacherWorkbenchView === "result"
-        ? "teacher_result_panel"
-        : "teacher_input_panel";
-
-  function scrollToTeacherSection(sectionId: string) {
-    const section = document.getElementById(sectionId);
-    section?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (teacherWorkbenchView === "result" && !result) {
-        scrollToTeacherSection("teacher_input_panel");
-        return;
-      }
-      scrollToTeacherSection(teacherViewMainSectionId);
-    }, 80);
-    return () => window.clearTimeout(timer);
-  }, [result, teacherViewMainSectionId, teacherWorkbenchView]);
-
   return (
-    <div
-      className={`demo-form demo-form-teacher teacher-layout${compactMode ? " is-compact" : ""}`}
-      data-view={teacherWorkbenchView}
-      data-focus-only={teacherFocusOnlyMode ? "true" : "false"}
-      data-result-ready={result ? "true" : "false"}
-    >
-      <div className="demo-toolbar">
-        <span>教师备课工作台</span>
-        <div className="demo-toolbar-actions">
-          <button
-            type="button"
-            className={`demo-compact-toggle demo-btn-primary${compactMode ? " active" : ""}`}
-            onClick={() => setCompactMode((prev) => !prev)}
-          >
-            {compactMode ? "紧凑模式" : "舒展模式"}
-          </button>
-          <button
-            type="button"
-            className="demo-panel-toggle demo-btn-secondary"
-            onClick={() => applyTeacherPanelPreset("expand")}
-          >
-            展开分区
-          </button>
-          <button
-            type="button"
-            className="demo-panel-toggle demo-btn-secondary"
-            onClick={() => applyTeacherPanelPreset("focus")}
-          >
-            专注生成
-          </button>
-          <button type="button" className="demo-reset-toggle demo-btn-neutral" onClick={resetTeacherLayout}>
-            重置分区
-          </button>
-        </div>
-      </div>
-      <div className="demo-context-links">
-        <button type="button" className="demo-link-chip" onClick={() => router.push("/graph?from=teacher")}>
+    <div className="space-y-6">
+      {/* 快捷链接 */}
+      <div className="flex gap-2 flex-wrap">
+        <Button variant="outline" size="sm" onClick={() => router.push("/graph?from=teacher")}>
+          <Network className="h-4 w-4 mr-2" />
           查看图谱总览
-        </button>
-        <button type="button" className="demo-link-chip" onClick={() => router.push("/workspace?from=teacher")}>
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => router.push("/workspace?from=teacher")}>
+          <BookOpen className="h-4 w-4 mr-2" />
           进入学习工作区
-        </button>
-        <button type="button" className="demo-link-chip" onClick={() => router.push("/kb?from=teacher")}>
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => router.push("/kb?from=teacher")}>
+          <Database className="h-4 w-4 mr-2" />
           打开知识库检索
-        </button>
+        </Button>
       </div>
-      <div className="teacher-view-tools">
-        <div className="teacher-view-switcher">
-          <button
-            type="button"
-            className={teacherWorkbenchView === "input" ? "active" : ""}
-            onClick={() => setTeacherWorkbenchView("input")}
-          >
+
+      {/* 错误提示 */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* 主要内容 */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="input">
+            <FileText className="h-4 w-4 mr-2" />
             输入配置
-            <em>主题与班级信息</em>
-          </button>
-          <button
-            type="button"
-            className={teacherWorkbenchView === "template" ? "active" : ""}
-            onClick={() => setTeacherWorkbenchView("template")}
-          >
-            模板套用
-            <em>{templates.length} 个模板</em>
-          </button>
-          <button
-            type="button"
-            className={teacherWorkbenchView === "result" ? "active" : ""}
-            onClick={() => setTeacherWorkbenchView("result")}
-            disabled={!result}
-          >
+          </TabsTrigger>
+          <TabsTrigger value="template">
+            <Sparkles className="h-4 w-4 mr-2" />
+            薄弱点模板
+            <Badge variant="secondary" className="ml-2">{templates.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="result" disabled={!result}>
+            <CheckCircle2 className="h-4 w-4 mr-2" />
             教案结果
-            <em>{result ? `${teacherObjectiveCount + teacherOutlineCount} 条内容` : "待生成"}</em>
-          </button>
-          <button
-            type="button"
-            className={`teacher-focus-toggle${teacherFocusOnlyMode ? " active" : ""}`}
-            onClick={() => setTeacherFocusOnlyMode((prev) => !prev)}
-          >
-            <strong>仅看当前视图：{teacherFocusOnlyMode ? "开启" : "关闭"}</strong>
-            <em>
-              {teacherFocusOnlyMode
-                ? "已隐藏其它分区，滚动距离更短。"
-                : "开启后仅保留当前视图对应分区。"}
-            </em>
-          </button>
-        </div>
-        <div className="teacher-quick-actions">
-          <button type="button" className="active" onClick={() => scrollToTeacherSection(teacherViewMainSectionId)}>
-            聚焦当前视图
-          </button>
-          <button type="button" onClick={() => scrollToTeacherSection("teacher_input_panel")}>
-            输入配置
-          </button>
-          <button type="button" onClick={() => scrollToTeacherSection("teacher_template_panel")}>
-            模板套用
-          </button>
-          <button
-            type="button"
-            onClick={() => scrollToTeacherSection("teacher_result_panel")}
-            disabled={!result}
-          >
-            教案结果
-          </button>
-          <button type="button" onClick={() => scrollToTeacherSection("teacher_error_panel")}>
-            状态反馈
-          </button>
-          <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-            回到顶部
-          </button>
-        </div>
-      </div>
-      <SectionAnchorNav
-        title="备课分区导航"
-        storageKey="teacher_demo"
-        items={[
-          { id: "teacher_input_panel", label: "输入配置" },
-          { id: "teacher_template_panel", label: "模板套用" },
-          { id: "teacher_result_panel", label: "教案结果" },
-          { id: "teacher_error_panel", label: "状态反馈" }
-        ]}
-      />
-      <div className="demo-metric-strip">
-        <div className="demo-metric-chip">
-          <span>模板数量</span>
-          <strong>{templates.length}</strong>
-        </div>
-        <div className="demo-metric-chip">
-          <span>教学目标</span>
-          <strong>{teacherObjectiveCount}</strong>
-        </div>
-        <div className="demo-metric-chip">
-          <span>课堂流程</span>
-          <strong>{teacherOutlineCount}</strong>
-        </div>
-        <div className="demo-metric-chip">
-          <span>当前状态</span>
-          <strong>{loading ? "生成中" : result ? "已生成" : "待生成"}</strong>
-        </div>
-      </div>
-      <div id="teacher_input_panel" className="teacher-input-panel panel-surface anchor-target">
-        <div className="section-head">
-          <strong>教学输入配置</strong>
-          <span>学科、主题、年级与难度决定生成策略</span>
-        </div>
-        <div className="teacher-input-grid">
-          <label className="form-field">
-            <span>学科</span>
-            <input value={subject} onChange={(event) => setSubject(event.target.value)} />
-          </label>
+            {result && <Badge variant="secondary" className="ml-2">已生成</Badge>}
+          </TabsTrigger>
+        </TabsList>
 
-          <label className="form-field">
-            <span>主题</span>
-            <input value={topic} onChange={(event) => setTopic(event.target.value)} />
-          </label>
+        {/* 输入配置 */}
+        <TabsContent value="input" className="space-y-6">
+          <Card id="teacher_input_panel">
+            <CardHeader>
+              <CardTitle>基础信息配置</CardTitle>
+              <CardDescription>填写教学主题和班级基本信息</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="subject">科目</Label>
+                  <Input
+                    id="subject"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    placeholder="例如：高中数学"
+                  />
+                </div>
 
-          <label className="form-field">
-            <span>学段/年级</span>
-            <input value={grade} onChange={(event) => setGrade(event.target.value)} />
-          </label>
+                <div className="space-y-2">
+                  <Label htmlFor="grade">年级</Label>
+                  <Select value={grade} onValueChange={setGrade}>
+                    <SelectTrigger id="grade">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="高一">高一</SelectItem>
+                      <SelectItem value="高二">高二</SelectItem>
+                      <SelectItem value="高三">高三</SelectItem>
+                      <SelectItem value="初一">初一</SelectItem>
+                      <SelectItem value="初二">初二</SelectItem>
+                      <SelectItem value="初三">初三</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-          <label className="form-field">
-            <span>难度</span>
-            <select
-              value={difficulty}
-              onChange={(event) =>
-                setDifficulty(event.target.value as "基础" | "中等" | "提升")
-              }
-            >
-              <option value="基础">基础</option>
-              <option value="中等">中等</option>
-              <option value="提升">提升</option>
-            </select>
-          </label>
+                <div className="space-y-2">
+                  <Label htmlFor="topic">教学主题</Label>
+                  <Input
+                    id="topic"
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    placeholder="例如：等差数列求和"
+                  />
+                </div>
 
-          <label className="form-field form-field-wide">
-            <span>班级薄弱点（可选）</span>
-            <textarea
-              rows={3}
-              value={classWeakness}
-              onChange={(event) => setClassWeakness(event.target.value)}
-            />
-          </label>
-        </div>
-      </div>
-      <CollapsiblePanel
-        id="teacher_template_panel"
-        title={`薄弱点模板（当前：${templateSubject}）`}
-        subtitle="自动根据学科匹配，可刷新并一键套用"
-        storageKey="teacher_template_panel"
-        className="card-item teacher-template-panel anchor-target"
-        defaultExpanded={false}
-      >
-        <button type="button" onClick={() => void loadTemplates(subject)} disabled={templateLoading}>
-          {templateLoading ? "模板加载中..." : "刷新模板"}
-        </button>
-        <div className="btn-row btn-row-top">
-          {templates.map((item) => (
-            <button
-              type="button"
-              key={item.id}
-              onClick={() => setClassWeakness(item.content)}
-              disabled={loading || templateLoading}
-              className="note-chip"
-              title={item.description}
-            >
-              使用模板：{item.label}
-            </button>
-          ))}
-        </div>
-      </CollapsiblePanel>
-      <div className="teacher-meta-tags">
-        <span className="tag">导出附带元数据</span>
-        <span className="tag">学科模板可扩展</span>
-      </div>
+                <div className="space-y-2">
+                  <Label htmlFor="difficulty">难度</Label>
+                  <Select value={difficulty} onValueChange={(v) => setDifficulty(v as typeof difficulty)}>
+                    <SelectTrigger id="difficulty">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="基础">基础</SelectItem>
+                      <SelectItem value="中等">中等</SelectItem>
+                      <SelectItem value="提升">提升</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-      <div className="action-row">
-        <button type="button" className="demo-btn-primary" onClick={generate} disabled={loading}>
-          生成备课草案
-        </button>
-        <button type="button" className="demo-btn-secondary" onClick={exportMarkdown} disabled={loading || !result}>
-          导出 Markdown 教案
-        </button>
-      </div>
+              <div className="space-y-2">
+                <Label htmlFor="classWeakness">班级薄弱点描述</Label>
+                <Textarea
+                  id="classWeakness"
+                  value={classWeakness}
+                  onChange={(e) => setClassWeakness(e.target.value)}
+                  placeholder="描述班级在该主题上的薄弱环节..."
+                  rows={4}
+                />
+              </div>
 
-      {result ? (
-        <CollapsiblePanel
-          id="teacher_result_panel"
-          title="教案结果总览"
-          subtitle="教学目标、课堂流程、作业建议与复核清单"
-          storageKey="teacher_result_panel"
-          className="teacher-result-panel anchor-target"
-          defaultExpanded
-        >
-          <div className="card-list">
-            <div className="result-box">
-              <strong>{result.title}</strong>
-              {"\n"}
-              来源：{result.source}
-              {result.modelHint ? `\n模型补充建议：${result.modelHint}` : ""}
-            </div>
-            <div className="card-item">
-              <strong>教学目标</strong>
-              <ul>
-                {result.objectives.map((item, index) => (
-                  <li key={`obj_${index}`}>{item}</li>
+              <Separator />
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={generate}
+                  disabled={loading || !topic.trim()}
+                  className="btn-primary"
+                  size="lg"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      生成中...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      生成教案
+                    </>
+                  )}
+                </Button>
+                {result && (
+                  <Button variant="outline" onClick={() => setActiveTab("result")}>
+                    查看结果
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 薄弱点模板 */}
+        <TabsContent value="template" className="space-y-6">
+          <Card id="teacher_template_panel">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>薄弱点模板库</CardTitle>
+                  <CardDescription>
+                    当前科目：{templateSubject} · {templates.length} 个模板
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadTemplates()}
+                  disabled={templateLoading}
+                >
+                  {templateLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {templates.map((template) => (
+                  <Card
+                    key={template.id}
+                    className="card-hover cursor-pointer"
+                    onClick={() => {
+                      setClassWeakness(template.content);
+                      setActiveTab("input");
+                    }}
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <CardTitle className="text-base">{template.label}</CardTitle>
+                        <Badge variant="outline">{template.scope}</Badge>
+                      </div>
+                      <CardDescription className="text-sm">
+                        {template.description}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground italic">
+                        &ldquo;{template.content}&rdquo;
+                      </p>
+                    </CardContent>
+                  </Card>
                 ))}
-              </ul>
-            </div>
-            <div className="card-item">
-              <strong>课堂流程</strong>
-              <ul>
-                {result.outline.map((item, index) => (
-                  <li key={`outline_${index}`}>{item}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="card-item">
-              <strong>班级调节建议</strong>
-              <p>{result.classAdjustment}</p>
-            </div>
-            <div className="card-item">
-              <strong>作业建议</strong>
-              <ul>
-                {result.homework.map((item, index) => (
-                  <li key={`work_${index}`}>{item}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="card-item">
-              <strong>复核清单</strong>
-              <ul>
-                {result.reviewChecklist.map((item, index) => (
-                  <li key={`check_${index}`}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </CollapsiblePanel>
-      ) : null}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {error ? (
-        <div id="teacher_error_panel" className="result-box danger anchor-target">
-          {error}
-        </div>
-      ) : null}
+        {/* 教案结果 */}
+        <TabsContent value="result" className="space-y-6">
+          {result && (
+            <Card id="teacher_result_panel">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <CardTitle className="text-2xl">{result.title}</CardTitle>
+                    <div className="flex gap-2 flex-wrap">
+                      <Badge>{subject}</Badge>
+                      <Badge variant="outline">{grade}</Badge>
+                      <Badge variant="outline">{difficulty}</Badge>
+                    </div>
+                  </div>
+                  <Button onClick={exportMarkdown} variant="outline">
+                    <Download className="h-4 w-4 mr-2" />
+                    导出 Markdown
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* 教学目标 */}
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                    教学目标
+                  </h3>
+                  <ul className="space-y-2">
+                    {result.objectives.map((obj, idx) => (
+                      <li key={idx} className="flex gap-2">
+                        <span className="text-muted-foreground">{idx + 1}.</span>
+                        <span>{obj}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <Separator />
+
+                {/* 课堂流程 */}
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    课堂流程
+                  </h3>
+                  <ul className="space-y-2">
+                    {result.outline.map((item, idx) => (
+                      <li key={idx} className="flex gap-2">
+                        <span className="text-muted-foreground">{idx + 1}.</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <Separator />
+
+                {/* 班级调节建议 */}
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold">班级调节建议</h3>
+                  <Card className="bg-muted/50">
+                    <CardContent className="pt-6">
+                      <p className="leading-relaxed">{result.classAdjustment}</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Separator />
+
+                {/* 作业建议 */}
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold">作业建议</h3>
+                  <ul className="space-y-2">
+                    {result.homework.map((hw, idx) => (
+                      <li key={idx} className="flex gap-2">
+                        <span className="text-muted-foreground">•</span>
+                        <span>{hw}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <Separator />
+
+                {/* 复核清单 */}
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold">复核清单</h3>
+                  <div className="space-y-2">
+                    {result.reviewChecklist.map((item, idx) => (
+                      <div key={idx} className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-muted-foreground mt-0.5" />
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {result.modelHint && (
+                  <>
+                    <Separator />
+                    <Alert>
+                      <Sparkles className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong className="block mb-2">模型补充建议</strong>
+                        {result.modelHint}
+                      </AlertDescription>
+                    </Alert>
+                  </>
+                )}
+
+                <Separator />
+
+                <p className="text-sm text-muted-foreground">
+                  生成来源：{result.source}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

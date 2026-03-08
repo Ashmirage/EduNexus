@@ -1,3 +1,7 @@
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Copy, X, CheckCircle2, AlertCircle, AlertTriangle, Info } from "lucide-react";
+
 type StatusTone = "info" | "success" | "warning" | "error";
 type StatusCopyState = "idle" | "done" | "failed";
 
@@ -7,6 +11,13 @@ type StatusMessageBoxProps = {
   copyState: StatusCopyState;
   onCopy: () => void;
   onClose: () => void;
+};
+
+const toneConfig = {
+  error: { variant: "destructive" as const, label: "错误", icon: AlertCircle },
+  warning: { variant: "default" as const, label: "注意", icon: AlertTriangle },
+  success: { variant: "default" as const, label: "完成", icon: CheckCircle2 },
+  info: { variant: "default" as const, label: "提示", icon: Info }
 };
 
 export function StatusMessageBox({
@@ -20,34 +31,36 @@ export function StatusMessageBox({
     return null;
   }
 
+  const config = toneConfig[tone];
+  const Icon = config.icon;
+
   return (
-    <div className={`result-box ${tone}`}>
-      <strong>
-        {tone === "error"
-          ? "错误"
-          : tone === "warning"
-            ? "注意"
-            : tone === "success"
-              ? "完成"
-              : "提示"}
-      </strong>
-      <p>{message}</p>
-      <div className="result-box-actions">
-        <button type="button" onClick={onCopy}>
-          复制提示
-        </button>
-        <button type="button" onClick={onClose}>
-          关闭
-        </button>
-      </div>
-      {copyState === "done" ? (
-        <small className="result-box-copy-hint">已复制到剪贴板。</small>
-      ) : null}
-      {copyState === "failed" ? (
-        <small className="result-box-copy-hint error">
-          复制失败，请手动选择文本复制。
-        </small>
-      ) : null}
-    </div>
+    <Alert variant={config.variant} className="relative">
+      <Icon className="h-4 w-4" />
+      <AlertDescription className="flex flex-col gap-3">
+        <div>
+          <strong className="block mb-1">{config.label}</strong>
+          <p className="text-sm">{message}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={onCopy}>
+            <Copy className="mr-2 h-3 w-3" />
+            复制提示
+          </Button>
+          <Button variant="outline" size="sm" onClick={onClose}>
+            <X className="mr-2 h-3 w-3" />
+            关闭
+          </Button>
+        </div>
+        {copyState === "done" && (
+          <small className="text-xs text-muted-foreground">已复制到剪贴板。</small>
+        )}
+        {copyState === "failed" && (
+          <small className="text-xs text-destructive">
+            复制失败，请手动选择文本复制。
+          </small>
+        )}
+      </AlertDescription>
+    </Alert>
   );
 }

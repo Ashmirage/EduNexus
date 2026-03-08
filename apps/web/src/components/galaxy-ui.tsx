@@ -1,4 +1,8 @@
 import type { ReactNode } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Sparkles, TrendingUp } from "lucide-react";
 
 type HeroMetric = {
   label: string;
@@ -26,38 +30,92 @@ export function GalaxyHero({
   actions
 }: GalaxyHeroProps) {
   return (
-    <article className="panel hero galaxy-hero">
-      <div>
-        <span className="headline-badge">{badge}</span>
-        <h3 className="galaxy-hero-title">{title}</h3>
-        <p className="muted">{description}</p>
-        {chips.length > 0 ? (
-          <div className="chip-row">
-            {chips.map((chip) => (
-              <span className="feature-chip" key={chip}>
-                {chip}
-              </span>
-            ))}
-          </div>
-        ) : null}
-        {actions ? <div className="galaxy-hero-actions">{actions}</div> : null}
-      </div>
+    <Card className="galaxy-hero col-span-12 overflow-hidden relative">
+      {/* 装饰性背景 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
+      <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="galaxy-hero-side">
-        <p className="hero-quote">{quote}</p>
-        {metrics.length > 0 ? (
-          <div className="hero-metric-grid">
+      <CardHeader className="relative z-10">
+        <div className="flex items-start justify-between gap-6">
+          <div className="flex-1 space-y-4">
+            <Badge className="badge-primary w-fit">
+              <Sparkles className="w-3 h-3 mr-1" />
+              {badge}
+            </Badge>
+
+            <CardTitle className="text-3xl md:text-4xl font-bold leading-tight">
+              {title}
+            </CardTitle>
+
+            <CardDescription className="text-base md:text-lg leading-relaxed max-w-2xl">
+              {description}
+            </CardDescription>
+
+            {chips.length > 0 && (
+              <div className="chip-row pt-2">
+                {chips.map((chip) => (
+                  <span className="feature-chip" key={chip}>
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {actions && (
+              <div className="flex gap-3 pt-4">
+                {actions}
+              </div>
+            )}
+          </div>
+
+          {/* 右侧指标卡片 */}
+          {metrics.length > 0 && (
+            <div className="hidden lg:flex flex-col gap-3 min-w-[280px]">
+              <div className="glass-card p-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <TrendingUp className="w-4 h-4" />
+                  <span className="font-medium">核心指标</span>
+                </div>
+                <Separator />
+                <div className="space-y-3">
+                  {metrics.map((metric) => (
+                    <div key={metric.label} className="space-y-1">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-xs text-muted-foreground">{metric.label}</span>
+                        <span className="text-2xl font-bold text-primary">{metric.value}</span>
+                      </div>
+                      {metric.hint && (
+                        <p className="text-xs text-muted-foreground">{metric.hint}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </CardHeader>
+
+      <CardContent className="relative z-10">
+        <div className="glass-card p-4 border-l-4 border-l-primary/50">
+          <p className="text-sm md:text-base text-muted-foreground italic leading-relaxed">
+            &ldquo;{quote}&rdquo;
+          </p>
+        </div>
+
+        {/* 移动端指标 */}
+        {metrics.length > 0 && (
+          <div className="lg:hidden grid grid-cols-3 gap-3 mt-6">
             {metrics.map((metric) => (
-              <div className="hero-metric-card" key={metric.label}>
-                <span>{metric.label}</span>
-                <strong>{metric.value}</strong>
-                {metric.hint ? <em>{metric.hint}</em> : null}
+              <div key={metric.label} className="glass-card p-3 text-center space-y-1">
+                <div className="text-2xl font-bold text-primary">{metric.value}</div>
+                <div className="text-xs text-muted-foreground">{metric.label}</div>
               </div>
             ))}
           </div>
-        ) : null}
-      </div>
-    </article>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -65,16 +123,30 @@ type SpotlightProps = {
   title: string;
   description: string;
   status?: string;
+  icon?: ReactNode;
 };
 
-export function GalaxySpotlight({ title, description, status }: SpotlightProps) {
+export function GalaxySpotlight({ title, description, status, icon }: SpotlightProps) {
   return (
-    <div className="galaxy-spotlight">
-      <div>
-        <strong>{title}</strong>
-        <p>{description}</p>
-      </div>
-      {status ? <span className="galaxy-status">{status}</span> : null}
-    </div>
+    <Card className="card-hover h-full">
+      <CardHeader>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2">
+              {icon && <div className="text-primary">{icon}</div>}
+              <CardTitle className="text-xl">{title}</CardTitle>
+            </div>
+            <CardDescription className="leading-relaxed">
+              {description}
+            </CardDescription>
+          </div>
+          {status && (
+            <Badge variant="secondary" className="badge-success flex-shrink-0">
+              {status}
+            </Badge>
+          )}
+        </div>
+      </CardHeader>
+    </Card>
   );
 }

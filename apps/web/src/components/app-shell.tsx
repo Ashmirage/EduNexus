@@ -3,6 +3,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useThemeStore } from "@/lib/stores/theme-store";
+import { useNavigationStore } from "@/lib/stores/navigation-store";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { ArrowUp, Moon, Sun } from "lucide-react";
 
 const navGroups = [
   {
@@ -35,9 +43,9 @@ function isActivePath(pathname: string, href: string) {
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [themeMode, setThemeMode] = useState<"nebula" | "aurora">("nebula");
+  const { mode: themeMode, toggleMode } = useThemeStore();
+  const { quickQuery, setQuickQuery } = useNavigationStore();
   const [showBackTop, setShowBackTop] = useState(false);
-  const [quickQuery, setQuickQuery] = useState("");
   const quickInputRef = useRef<HTMLInputElement | null>(null);
 
   const quickNavItems = useMemo(
@@ -50,11 +58,14 @@ export function AppShell({ children }: { children: ReactNode }) {
       ),
     []
   );
+
   const currentNavItem = useMemo(
     () => quickNavItems.find((item) => isActivePath(pathname, item.href)),
     [pathname, quickNavItems]
   );
+
   const normalizedQuickQuery = useMemo(() => quickQuery.trim().toLowerCase(), [quickQuery]);
+
   const quickMatchedItems = useMemo(() => {
     if (!normalizedQuickQuery) {
       return quickNavItems.slice(0, 8);
@@ -71,32 +82,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     router.push(href);
     setQuickQuery("");
   };
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem("edunexus-theme");
-    if (saved === "nebula" || saved === "aurora") {
-      setThemeMode(saved);
-    }
-  }, []);
-
-  useEffect(() => {
-    const handleThemeUpdated = (event: Event) => {
-      const detail = (event as CustomEvent<{ themeMode?: unknown }>).detail;
-      const nextMode = detail?.themeMode;
-      if (nextMode === "nebula" || nextMode === "aurora") {
-        setThemeMode(nextMode);
-      }
-    };
-    window.addEventListener("edunexus-theme-updated", handleThemeUpdated);
-    return () => {
-      window.removeEventListener("edunexus-theme-updated", handleThemeUpdated);
-    };
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", themeMode);
-    window.localStorage.setItem("edunexus-theme", themeMode);
-  }, [themeMode]);
 
   useEffect(() => {
     const handleScroll = () => setShowBackTop(window.scrollY > 520);
@@ -118,27 +103,42 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div className="shell">
-      <aside className="shell-nav">
-        <div className="brand">
-          <div className="brand-mark" />
+    <div className="grid grid-cols-[280px_1fr] min-h-screen relative">
+      {/* Sidebar */}
+      <aside className={cn(
+        "border-r border-border/30 backdrop-blur-xl",
+        "bg-gradient-to-b from-card/80 to-background/95",
+        "p-6 flex flex-col gap-4 sticky top-0 h-screen overflow-auto scrollbar-thin"
+      )}>
+        {/* Brand */}
+        <div className="flex gap-3 items-center glass-card p-4 rounded-2xl">
+          <div className="relative">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary via-accent to-primary shadow-xl shadow-primary/30" />
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary to-accent opacity-50 blur-md" />
+          </div>
           <div>
-            <h1>EduNexus</h1>
-            <p>学习闭环中枢</p>
+            <h1 className="text-lg font-bold tracking-tight">EduNexus</h1>
+            <p className="text-xs text-muted-foreground">学习闭环中枢</p>
           </div>
         </div>
 
+        {/* Navigation Groups */}
         {navGroups.map((group) => (
-          <div className="nav-group" key={group.title}>
-            <p className="nav-title">{group.title}</p>
-            <nav>
+          <div key={group.title} className="space-y-2">
+            <p className="text-xs font-semibold text-primary/80 tracking-wider uppercase px-2">
+              {group.title}
+            </p>
+            <nav className="space-y-1">
               {group.items.map((item) => {
                 const active = isActivePath(pathname, item.href);
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`nav-link ${active ? "active" : ""}`}
+                    className={cn(
+                      "nav-link block",
+                      active && "active"
+                    )}
                   >
                     {item.label}
                   </Link>
@@ -148,124 +148,209 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         ))}
 
-        <div className="nav-progress">
-          <strong>当前系统状态</strong>
-          <ul className="nav-status-list">
-            <li>引导引擎：在线</li>
-            <li>知识库索引：可用</li>
-            <li>图谱联动：可用</li>
+        <Separator className="my-2" />
+
+        {/* System Status */}
+        <div className="glass-card p-4 rounded-xl space-y-3">
+          <strong className="text-sm font-semibold">系统状态</strong>
+          <ul className="text-xs space-y-2">
+            <li className="flex items-center gap-2">
+              <div className="status-dot online" />
+              <span className="text-muted-foreground">引导引擎：在线</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <div className="status-dot online" />
+              <span className="text-muted-foreground">知识库索引：可用</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <div className="status-dot online" />
+              <span className="text-muted-foreground">图谱联动：可用</span>
+            </li>
           </ul>
         </div>
 
-        <div className="theme-switch">
-          <button
-            type="button"
-            className="theme-toggle"
-            onClick={() =>
-              setThemeMode((prev) => (prev === "nebula" ? "aurora" : "nebula"))
-            }
-          >
-            {themeMode === "nebula" ? "切换到晨曦主题" : "切换到星夜主题"}
-          </button>
-          <p>当前风格：{themeMode === "nebula" ? "星夜银河" : "晨曦玻璃"}</p>
+        {/* Theme Toggle */}
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-2"
+          onClick={toggleMode}
+        >
+          {themeMode === "nebula" ? (
+            <>
+              <Sun className="h-4 w-4" />
+              <span className="flex-1 text-left">切换到晨曦主题</span>
+            </>
+          ) : (
+            <>
+              <Moon className="h-4 w-4" />
+              <span className="flex-1 text-left">切换到星夜主题</span>
+            </>
+          )}
+        </Button>
+
+        <div className="text-xs text-center text-muted-foreground pt-2 space-y-1">
+          <p className="font-medium">当前：{themeMode === "nebula" ? "星夜银河" : "晨曦玻璃"}</p>
         </div>
 
-        <div className="nav-foot">
+        <Separator className="my-2" />
+
+        {/* Footer */}
+        <div className="text-xs text-center text-muted-foreground space-y-1 opacity-60">
           <p>纯 Web · LangGraph · ModelScope</p>
           <p>统一学习、图谱、路径与教学协同</p>
         </div>
       </aside>
 
-      <main className="shell-main">
-        <div className="main-backdrop" />
-        <div className="shell-topbar">
-          <div className="shell-topbar-route">
-            <p>{currentNavItem?.groupTitle ?? "EduNexus"}</p>
-            <strong>{currentNavItem?.label ?? "AI 教育生态平台"}</strong>
-            <span>{currentNavItem?.hint ?? "统一学习引导、图谱分析与本地知识沉淀"}</span>
-          </div>
-          <div className="shell-topbar-search">
-            <label htmlFor="global_nav_search">全局快速跳转</label>
-            <input
-              id="global_nav_search"
-              ref={quickInputRef}
-              value={quickQuery}
-              onChange={(event) => setQuickQuery(event.target.value)}
-              placeholder="输入页面名 / 功能名快速跳转（Ctrl+K）"
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  const target = quickMatchedItems[0];
-                  if (target) {
-                    jumpToQuickItem(target.href);
-                  }
-                }
-                if (event.key === "Escape") {
-                  setQuickQuery("");
-                  (event.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-            {normalizedQuickQuery ? (
-              <div className="shell-topbar-search-results">
-                {quickMatchedItems.length === 0 ? (
-                  <p className="shell-topbar-search-empty">未匹配到页面，请换一个关键词。</p>
-                ) : (
-                  quickMatchedItems.map((item) => (
-                    <button
-                      key={`quick_nav_${item.href}`}
-                      type="button"
-                      onClick={() => jumpToQuickItem(item.href)}
-                      className={isActivePath(pathname, item.href) ? "active" : ""}
-                    >
-                      <span>{item.label}</span>
-                      <em>
-                        {item.groupTitle} · {item.hint}
-                      </em>
-                    </button>
-                  ))
+      {/* Main Content */}
+      <main className="relative min-h-screen">
+        {/* Background Effect */}
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/3 via-transparent to-accent/3" />
+        </div>
+
+        {/* Topbar */}
+        <div className="sticky top-0 z-20 glass backdrop-blur-xl border-b border-border/50">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between gap-6 max-w-7xl mx-auto">
+              {/* Current Route Info */}
+              <div className="flex-1 min-w-0 space-y-1">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-xs">
+                    {currentNavItem?.groupTitle ?? "EduNexus"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">·</span>
+                  <h2 className="text-base font-semibold truncate">
+                    {currentNavItem?.label ?? "AI 教育生态平台"}
+                  </h2>
+                </div>
+                <p className="text-xs text-muted-foreground truncate">
+                  {currentNavItem?.hint ?? "统一学习引导、图谱分析与本地知识沉淀"}
+                </p>
+              </div>
+
+              {/* Quick Search */}
+              <div className="relative w-96 hidden md:block">
+                <Input
+                  ref={quickInputRef}
+                  value={quickQuery}
+                  onChange={(e) => setQuickQuery(e.target.value)}
+                  placeholder="快速跳转（Ctrl+K）"
+                  className="input-enhanced pr-16"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const target = quickMatchedItems[0];
+                      if (target) {
+                        jumpToQuickItem(target.href);
+                      }
+                    }
+                    if (e.key === "Escape") {
+                      setQuickQuery("");
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
+                />
+                <kbd className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none inline-flex h-6 select-none items-center gap-1 rounded bg-muted px-2 font-mono text-[10px] font-medium text-muted-foreground">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+
+                {/* Search Results */}
+                {normalizedQuickQuery && (
+                  <div className="absolute top-full mt-2 w-full glass-card rounded-xl shadow-xl overflow-hidden z-50 animate-in">
+                    {quickMatchedItems.length === 0 ? (
+                      <p className="p-4 text-sm text-muted-foreground text-center">
+                        未匹配到页面，请换一个关键词。
+                      </p>
+                    ) : (
+                      <div className="py-1">
+                        {quickMatchedItems.map((item) => (
+                          <button
+                            key={`quick_nav_${item.href}`}
+                            type="button"
+                            onClick={() => jumpToQuickItem(item.href)}
+                            className={cn(
+                              "w-full px-4 py-3 text-left hover:bg-accent/10 transition-colors border-l-2 border-transparent hover:border-primary",
+                              isActivePath(pathname, item.href) && "bg-accent/10 border-primary"
+                            )}
+                          >
+                            <span className="block text-sm font-medium">{item.label}</span>
+                            <span className="block text-xs text-muted-foreground mt-0.5">
+                              {item.groupTitle} · {item.hint}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Quick Shortcuts */}
+                {!normalizedQuickQuery && typeof window !== 'undefined' && quickInputRef.current === document.activeElement && (
+                  <div className="absolute top-full mt-2 w-full glass-card rounded-xl shadow-xl overflow-hidden z-50 animate-in">
+                    <div className="p-2 border-b border-border/50">
+                      <p className="text-xs text-muted-foreground font-medium">快速访问</p>
+                    </div>
+                    <div className="py-1">
+                      {quickNavItems.slice(0, 4).map((item) => (
+                        <button
+                          key={`shortcut_${item.href}`}
+                          type="button"
+                          onClick={() => jumpToQuickItem(item.href)}
+                          className={cn(
+                            "w-full px-4 py-2 text-left text-sm hover:bg-accent/10 transition-colors",
+                            isActivePath(pathname, item.href) && "bg-accent/10 font-medium text-primary"
+                          )}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
-            ) : (
-              <div className="shell-topbar-shortcuts">
-                {quickNavItems.slice(0, 4).map((item) => (
-                  <button
-                    key={`shortcut_${item.href}`}
-                    type="button"
-                    onClick={() => jumpToQuickItem(item.href)}
-                    className={isActivePath(pathname, item.href) ? "active" : ""}
-                  >
-                    {item.label}
-                  </button>
-                ))}
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="btn-ghost"
+                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="btn-ghost"
+                  onClick={toggleMode}
+                >
+                  {themeMode === "nebula" ? (
+                    <Sun className="h-4 w-4" />
+                  ) : (
+                    <Moon className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
-            )}
-          </div>
-          <div className="shell-topbar-actions">
-            <button
-              type="button"
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            >
-              回到顶部
-            </button>
-            <button
-              type="button"
-              onClick={() => setThemeMode((prev) => (prev === "nebula" ? "aurora" : "nebula"))}
-            >
-              {themeMode === "nebula" ? "晨曦主题" : "星夜主题"}
-            </button>
+            </div>
           </div>
         </div>
-        <div className="main-content">{children}</div>
-        {showBackTop ? (
-          <button
-            type="button"
-            className="back-top-btn"
+
+        {/* Page Content */}
+        <div className="relative z-10">
+          {children}
+        </div>
+
+        {/* Back to Top Button */}
+        {showBackTop && (
+          <Button
+            size="icon"
+            className="fixed bottom-8 right-8 rounded-full shadow-2xl shadow-primary/20 z-50 btn-primary"
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           >
-            回到顶部
-          </button>
-        ) : null}
+            <ArrowUp className="h-4 w-4" />
+          </Button>
+        )}
       </main>
     </div>
   );

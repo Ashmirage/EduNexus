@@ -7,13 +7,17 @@ import {
   TrendingDown,
   AlertTriangle,
   CheckCircle2,
+  XCircle,
   Settings,
+  Filter,
   Search,
   BarChart3,
   Activity,
   Link2,
   Eye,
+  EyeOff,
   ChevronUp,
+  ChevronDown,
   RotateCcw,
   Send,
   Maximize2,
@@ -25,18 +29,6 @@ import { GalaxyHero } from "@/components/galaxy-ui";
 import { PageHeader } from "@/components/page-header";
 import { PageQuickNav } from "@/components/page-quick-nav";
 import { RatioRing, TrendSparkCard } from "@/components/dashboard-mini-charts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import {
   GRAPH_ACTIVITY_STORAGE_KEY,
   normalizeGraphActivityPayload,
@@ -64,11 +56,19 @@ import {
   type BridgeRelationMode,
   type BridgeSortMode
 } from "@/lib/client/bridge-insight";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type PeriodKey = "7d" | "14d" | "30d";
 type CompareMode = "previous" | "periodStart" | "customDate" | "crossPeriod";
@@ -528,7 +528,7 @@ function buildFocusPayloadFromActivity(event: GraphActivityEvent): PathFocusPayl
 }
 
 function buildBridgeTaskTemplate(primaryLabel: string, partnerLabel: string) {
-  return `桥接任务模板：围绕「${primaryLabel}」与「${partnerLabel}」先做条件映射，再完成"同构题 + 反例题 + 迁移题"三段训练。`;
+  return `桥接任务模板：围绕「${primaryLabel}」与「${partnerLabel}」先做条件映射，再完成“同构题 + 反例题 + 迁移题”三段训练。`;
 }
 
 function resolveActivityRiskTone(risk: number): ActivityRiskTone {
@@ -1603,8 +1603,8 @@ export default function DashboardPage() {
 
   const alertSummary = useMemo(() => {
     const baseActions: Record<string, string> = {
-      gain: "建议：下一个教学日优先推送「中档难度+自检步骤」任务包。",
-      independent: "建议：追加「先写条件再推导」的结构化模板训练。",
+      gain: "建议：下一个教学日优先推送“中档难度+自检步骤”任务包。",
+      independent: "建议：追加“先写条件再推导”的结构化模板训练。",
       dependency: "建议：对 Level 3/4 提示启用延迟门控并要求先提交思路草稿。"
     };
 
@@ -1739,9 +1739,9 @@ export default function DashboardPage() {
         <div className="dashboard-compact-hero">
           <GalaxyHero
             badge="生态指标 · 实时快照"
-            title="用指标追踪「学会了多少」，而不只是「做了多少题」"
+            title="用指标追踪“学会了多少”，而不只是“做了多少题”"
             description="看板围绕学习增益、独立完成率、提示依赖率和来源引用覆盖率构建，帮助运营与教学团队快速识别收益和风险点。"
-            quote="「指标不是汇报材料，而是下一轮教学决策的导航盘。」"
+            quote="“指标不是汇报材料，而是下一轮教学决策的导航盘。”"
             chips={["学习增益", "独立完成率", "提示依赖率", "来源引用覆盖"]}
             metrics={[
               {
@@ -2689,73 +2689,73 @@ export default function DashboardPage() {
                 </div>
               </div>
             ) : null}
-            <div className="space-y-3">
+            <div className=”space-y-3”>
               {filteredBridgeRiskRows.length > 0 ? (
                 filteredBridgeRiskRows.map((row) => {
                   const riskTone = resolveActivityRiskTone(row.risk);
-                  const borderColor = riskTone === "high" ? "border-destructive" : riskTone === "medium" ? "border-yellow-500" : "";
+                  const borderColor = riskTone === “high” ? “border-destructive” : riskTone === “medium” ? “border-yellow-500” : “”;
                   return (
                     <Card key={row.id} className={borderColor}>
-                      <CardContent className="pt-6">
-                        <div className="space-y-3">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex items-center gap-2">
+                      <CardContent className=”pt-6”>
+                        <div className=”space-y-3”>
+                          <div className=”flex items-start justify-between gap-4”>
+                            <div className=”flex items-center gap-2”>
                               <Checkbox
                                 id={`bridge-${row.id}`}
                                 checked={selectedBridgeIds.includes(row.id)}
                                 onCheckedChange={() => toggleBridgeSelection(row.id)}
                               />
-                              <Label htmlFor={`bridge-${row.id}`} className="text-sm cursor-pointer">
+                              <Label htmlFor={`bridge-${row.id}`} className=”text-sm cursor-pointer”>
                                 加入批量
                               </Label>
                             </div>
-                            <Badge variant={isCrossDomainBridge(row) ? "default" : "secondary"}>
-                              {isCrossDomainBridge(row) ? "跨域关系链" : "同域关系链"}
+                            <Badge variant={isCrossDomainBridge(row) ? “default” : “secondary”}>
+                              {isCrossDomainBridge(row) ? “跨域关系链” : “同域关系链”}
                             </Badge>
                           </div>
                           <div>
-                            <h4 className="font-semibold text-base flex items-center gap-2">
-                              <Link2 className="h-4 w-4" />
+                            <h4 className=”font-semibold text-base flex items-center gap-2”>
+                              <Link2 className=”h-4 w-4” />
                               {row.sourceLabel} ↔ {row.targetLabel}
                             </h4>
-                            <p className="text-sm text-muted-foreground mt-1">
+                            <p className=”text-sm text-muted-foreground mt-1”>
                               域：{row.sourceDomain}
                               {row.sourceDomain === row.targetDomain
-                                ? ""
+                                ? “”
                                 : ` → ${row.targetDomain}`}
                             </p>
                           </div>
-                          <div className="flex gap-2">
-                            <Badge variant={riskTone === "high" ? "destructive" : riskTone === "medium" ? "default" : "secondary"}>
+                          <div className=”flex gap-2”>
+                            <Badge variant={riskTone === “high” ? “destructive” : riskTone === “medium” ? “default” : “secondary”}>
                               风险 {Math.round(row.risk * 100)}%
                             </Badge>
-                            <Badge variant="outline">
+                            <Badge variant=”outline”>
                               权重 {row.weight.toFixed(2)}
                             </Badge>
                           </div>
-                          <div className="flex gap-2">
+                          <div className=”flex gap-2”>
                             <Button
-                              variant="outline"
-                              size="sm"
+                              variant=”outline”
+                              size=”sm”
                               onClick={() => jumpToGraphFromBridge(row)}
                             >
-                              <Activity className="h-4 w-4 mr-2" />
+                              <Activity className=”h-4 w-4 mr-2” />
                               联动图谱
                             </Button>
                             <Button
-                              variant="outline"
-                              size="sm"
+                              variant=”outline”
+                              size=”sm”
                               onClick={() => jumpToPathFromBridge(row)}
                             >
-                              <Send className="h-4 w-4 mr-2" />
+                              <Send className=”h-4 w-4 mr-2” />
                               推送路径
                             </Button>
                             <Button
-                              variant="outline"
-                              size="sm"
+                              variant=”outline”
+                              size=”sm”
                               onClick={() => jumpToWorkspaceFromBridge(row)}
                             >
-                              <Send className="h-4 w-4 mr-2" />
+                              <Send className=”h-4 w-4 mr-2” />
                               推送工作区
                             </Button>
                           </div>
@@ -2765,9 +2765,9 @@ export default function DashboardPage() {
                   );
                 })
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p className="font-medium">当前筛选下暂无关系链风险数据</p>
-                  <p className="text-sm mt-1">可切换域筛选/排序，或点击刷新关系榜重新计算。</p>
+                <div className=”text-center py-8 text-muted-foreground”>
+                  <p className=”font-medium”>当前筛选下暂无关系链风险数据</p>
+                  <p className=”text-sm mt-1”>可切换域筛选/排序，或点击刷新关系榜重新计算。</p>
                 </div>
               )}
             </div>
@@ -3022,17 +3022,17 @@ export default function DashboardPage() {
         </Card>
 
         <Card
-          id="dashboard_ratio_rings"
-          className="dashboard-section dashboard-section-decision dashboard-compact-hide anchor-target"
+          id=”dashboard_ratio_rings”
+          className=”dashboard-section dashboard-section-decision dashboard-compact-hide anchor-target”
         >
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
+            <CardTitle className=”flex items-center gap-2”>
+              <BarChart3 className=”h-5 w-5” />
               关键比例环图
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className=”grid gap-4 md:grid-cols-3”>
               {currentMetrics.rings.map((item) => (
                 <RatioRing
                   key={`${period}_${item.label}`}
@@ -3046,31 +3046,31 @@ export default function DashboardPage() {
         </Card>
 
         <Card
-          id="dashboard_ops_actions"
-          className="w-full dashboard-section dashboard-section-decision dashboard-compact-hide anchor-target"
+          id=”dashboard_ops_actions”
+          className=”w-full dashboard-section dashboard-section-decision dashboard-compact-hide anchor-target”
         >
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
+            <CardTitle className=”flex items-center gap-2”>
+              <Settings className=”h-5 w-5” />
               运营动作建议
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className=”space-y-4”>
             <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>针对高依赖人群启用「低层提示优先」策略</AlertTitle>
+              <AlertTriangle className=”h-4 w-4” />
+              <AlertTitle>针对高依赖人群启用”低层提示优先”策略</AlertTitle>
               <AlertDescription>
                 先收紧 Level 3/4 触发门槛，要求提交中间思路与自检结果后再开放更高层提示。
               </AlertDescription>
-              <Badge variant="secondary" className="mt-2">策略建议</Badge>
+              <Badge variant=”secondary” className=”mt-2”>策略建议</Badge>
             </Alert>
             <Alert>
-              <AlertTriangle className="h-4 w-4" />
+              <AlertTriangle className=”h-4 w-4” />
               <AlertTitle>对知识孤岛节点建立跨章节任务桥接</AlertTitle>
               <AlertDescription>
-                把「函数单调性」与「数列递推」做路径联动，提升关系密度并增强迁移能力。
+                把”函数单调性”与”数列递推”做路径联动，提升关系密度并增强迁移能力。
               </AlertDescription>
-              <Badge variant="secondary" className="mt-2">图谱建议</Badge>
+              <Badge variant=”secondary” className=”mt-2”>图谱建议</Badge>
             </Alert>
           </CardContent>
         </Card>

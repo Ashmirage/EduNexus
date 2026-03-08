@@ -73,7 +73,7 @@ export function JsonImportPanel({
   return (
     <article className="panel wide">
       <h3>JSON 导入导出</h3>
-      <div className="demo-form">
+      <div className="space-y-4">
         <textarea
           className="config-json"
           rows={14}

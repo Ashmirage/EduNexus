@@ -2390,11 +2390,11 @@ export function WorkspaceDemo() {
 
   return (
     <div
-      className="grid grid-cols-12 gap-6 workspace-layout"
+      className="panel-grid panel-grid-tight workspace-layout"
       data-view={workspaceViewMode}
       data-stream-compact={streamCompactMode ? "true" : "false"}
     >
-      <article className="glass-card col-span-12 workspace-view-switcher">
+      <article className="panel wide workspace-view-switcher">
         <header>
           <strong>工作区视图</strong>
           <div className="workspace-view-switcher-meta">
@@ -2556,7 +2556,7 @@ export function WorkspaceDemo() {
 
       <div
         id="workspace_sessions"
-        className="glass-card col-span-12 workspace-section workspace-section-sessions anchor-target"
+        className="panel wide workspace-section workspace-section-sessions anchor-target"
       >
         <div className="workspace-session-head">
           <h3>会话历史与恢复</h3>
@@ -2664,7 +2664,7 @@ export function WorkspaceDemo() {
 
       <div
         id="workspace_input_control"
-        className="glass-card col-span-12 md:col-span-6 workspace-section workspace-section-learn workspace-section-replay anchor-target"
+        className="panel half workspace-section workspace-section-learn workspace-section-replay anchor-target"
       >
         <div className="workspace-control-head">
           <h3>输入与控制</h3>
@@ -2908,7 +2908,7 @@ export function WorkspaceDemo() {
 
       <div
         id="workspace_session_records"
-        className="glass-card col-span-12 md:col-span-6 workspace-section workspace-section-learn workspace-section-replay anchor-target"
+        className="panel half workspace-section workspace-section-learn workspace-section-replay anchor-target"
       >
         <h3>会话记录</h3>
         <div className="workspace-message-list-meta">
@@ -3476,7 +3476,7 @@ export function WorkspaceDemo() {
 
       <div
         id="workspace_strategy_panel"
-        className="glass-card col-span-12 workspace-section workspace-section-learn workspace-section-replay anchor-target"
+        className="panel wide workspace-section workspace-section-learn workspace-section-replay anchor-target"
       >
         <h3>证据与策略状态</h3>
         <div className="grid gap-4">

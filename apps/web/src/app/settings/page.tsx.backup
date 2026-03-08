@@ -992,12 +992,12 @@ export default function SettingsPage() {
         description="在一个页面管理 Dashboard、Workspace、KB 的策略参数与画像版本。"
         tags={["模板切换", "JSON 导入导出", "历史回滚", "参数广播"]}
       />
-      <div className="grid grid-cols-12 gap-6">
+      <div className="panel-grid">
         <PageQuickNav title="配置中心快速导航" items={[...SETTINGS_QUICK_NAV_ITEMS]} />
       </div>
 
       <div
-        className="grid grid-cols-12 gap-6 settings-layout"
+        className="panel-grid settings-layout"
         data-view={settingsViewMode}
         data-compact={settingsCompactMode ? "true" : "false"}
       >
@@ -1024,7 +1024,7 @@ export default function SettingsPage() {
           />
         </div>
 
-        <article className="glass-card col-span-12 settings-view-switcher">
+        <article className="panel wide settings-view-switcher">
           <header>
             <strong>配置视图</strong>
             <span>按使用频率切换，减少操作噪声</span>
@@ -1220,7 +1220,7 @@ export default function SettingsPage() {
 
         <article
           id="settings_global_actions"
-          className="glass-card col-span-12 settings-section settings-section-common anchor-target"
+          className="panel wide settings-section settings-section-common anchor-target"
         >
           <h3>全局操作</h3>
           <div className="config-toolbar">
@@ -1244,10 +1244,10 @@ export default function SettingsPage() {
 
         <article
           id="settings_profile"
-          className="glass-card col-span-12 md:col-span-6 settings-section settings-section-basic anchor-target"
+          className="panel half settings-section settings-section-basic anchor-target"
         >
           <h3>策略画像管理</h3>
-          <div className="space-y-4">
+          <div className="demo-form">
             <label>切换画像</label>
             <select
               value={bundle.meta.profileId}
@@ -1382,7 +1382,7 @@ export default function SettingsPage() {
 
         <article
           id="settings_template_pack"
-          className="glass-card col-span-12 md:col-span-6 settings-section settings-section-basic anchor-target"
+          className="panel half settings-section settings-section-basic anchor-target"
         >
           <h3>一键模板包</h3>
           <div className="config-pack-grid">
@@ -1408,7 +1408,7 @@ export default function SettingsPage() {
 
         <article
           id="settings_history_rollback"
-          className="glass-card col-span-12 md:col-span-6 settings-section settings-section-advanced anchor-target"
+          className="panel half settings-section settings-section-advanced anchor-target"
         >
           <h3>变更历史与回滚</h3>
           <div className="config-history-head">
@@ -1511,10 +1511,10 @@ export default function SettingsPage() {
 
         <article
           id="settings_dashboard_params"
-          className="glass-card col-span-12 md:col-span-6 settings-section settings-section-basic anchor-target"
+          className="panel half settings-section settings-section-basic anchor-target"
         >
           <h3>Dashboard 预警参数</h3>
-          <div className="space-y-4">
+          <div className="demo-form">
             <label>策略档位</label>
             <select
               value={bundle.dashboard.alertPolicy}
@@ -1644,10 +1644,10 @@ export default function SettingsPage() {
 
         <article
           id="settings_workspace_params"
-          className="glass-card col-span-12 md:col-span-6 settings-section settings-section-basic anchor-target"
+          className="panel half settings-section settings-section-basic anchor-target"
         >
           <h3>Workspace 回放参数</h3>
-          <div className="space-y-4">
+          <div className="demo-form">
             <div className="config-preset-row">
               {(
                 [
@@ -1754,10 +1754,10 @@ export default function SettingsPage() {
 
         <article
           id="settings_kb_params"
-          className="glass-card col-span-12 md:col-span-6 settings-section settings-section-basic anchor-target"
+          className="panel half settings-section settings-section-basic anchor-target"
         >
           <h3>KB 章节参数</h3>
-          <div className="space-y-4">
+          <div className="demo-form">
             <div className="config-preset-row">
               {(
                 [
