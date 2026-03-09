@@ -110,7 +110,7 @@ export const FloatingCreateButton = memo(function FloatingCreateButton({
 
   return (
     <TooltipProvider>
-      <div className={cn('fixed z-50', positionStyles[position], className)}>
+      <div className={cn('fixed z-[60]', positionStyles[position], className)}>
         <AnimatePresence>
           {isOpen && (
             <motion.div
