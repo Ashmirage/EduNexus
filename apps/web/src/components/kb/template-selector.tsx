@@ -49,8 +49,16 @@ export function TemplateSelector({ open, onClose, onSelect }: TemplateSelectorPr
   const handleSelectTemplate = (template: NoteTemplate) => {
     const title = customTitle || template.name;
     const content = applyTemplate(template, { title });
-    onSelect(title, content, template.tags);
+
+    // 先关闭对话框，避免状态更新导致闪烁
     onClose();
+
+    // 延迟调用 onSelect，确保对话框完全关闭
+    setTimeout(() => {
+      onSelect(title, content, template.tags);
+    }, 100);
+
+    // 重置表单状态
     setCustomTitle("");
     setSearchQuery("");
   };

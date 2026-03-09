@@ -75,7 +75,7 @@ export const QuickCreateDialog = memo(function QuickCreateDialog({
   const [linkedNodeLabel, setLinkedNodeLabel] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 初始化数据
+  // 初始化数据 - 使用 JSON.stringify 来稳定依赖
   useEffect(() => {
     if (open && initialData) {
       setTitle(initialData.title || '');
@@ -85,7 +85,8 @@ export const QuickCreateDialog = memo(function QuickCreateDialog({
       setLinkedNodeId(initialData.linkedNodeId);
       setLinkedNodeLabel(initialData.linkedNodeLabel);
     }
-  }, [open, initialData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, JSON.stringify(initialData)]);
 
   // 重置表单
   const resetForm = useCallback(() => {

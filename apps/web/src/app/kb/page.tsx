@@ -388,8 +388,12 @@ export default function KnowledgeBasePage() {
           tags
         );
         setDocuments((prev) => [newDoc, ...prev]);
-        setSelectedDoc(newDoc);
-        setIsEditing(true);
+
+        // 延迟设置选中文档和编辑模式，避免触发自动保存
+        setTimeout(() => {
+          setSelectedDoc(newDoc);
+          setIsEditing(true);
+        }, 150);
       } catch (error) {
         console.error("Failed to create document:", error);
         alert("创建文档失败，请重试");
