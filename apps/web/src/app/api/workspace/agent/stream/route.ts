@@ -1,106 +1,56 @@
-import { fail } from "@/lib/server/response";
-import { workspaceAgentRunSchema } from "@/lib/server/schema";
-import {
-  streamLangGraphAgent,
-  type AgentRunOutput,
-  type AgentStreamEvent
-} from "@/lib/server/langgraph-agent";
-import {
-  appendSessionMessage,
-  getSession,
-  updateSessionLevel
-} from "@/lib/server/session-service";
+import { streamAgentConversation, createChatHistory } from "@/lib/agent/learning-agent";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
+/**
+ * Agent 流式对话 API
+ * POST /api/workspace/agent/stream
+ */
 export async function POST(request: Request) {
   try {
-    const json = await request.json().catch(() => ({}));
-    const parsed = workspaceAgentRunSchema.safeParse(json);
-    if (!parsed.success) {
-      return fail({
-        code: "INVALID_REQUEST",
-        message: "请求参数不合法。",
-        details: parsed.error.flatten()
-      });
+    const body = await request.json();
+    const { message, history = [], config = {} } = body;
+
+    if (!message || typeof message !== "string") {
+      return new Response("Invalid message", { status: 400 });
     }
 
-    const sessionId = parsed.data.sessionId?.trim();
-    if (sessionId) {
-      const session = await getSession(sessionId);
-      if (!session) {
-        return fail(
-          {
-            code: "SESSION_NOT_FOUND",
-            message: "未找到对应会话。"
-          },
-          404
-        );
-      }
-    }
+    // 转换历史消息格式
+    const chatHistory = createChatHistory(history);
+
+    // 创建流式响应
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        let finalResult: AgentRunOutput | null = null;
         try {
-          for await (const event of streamLangGraphAgent({
-            sessionId,
-            userInput: parsed.data.userInput,
-            currentLevel: parsed.data.currentLevel ?? 1
-          })) {
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify(event satisfies AgentStreamEvent)}\n\n`)
-            );
-            if (event.type === "done") {
-              finalResult = event.value;
-            }
+          for await (const chunk of streamAgentConversation(message, chatHistory, config)) {
+            const data = JSON.stringify(chunk) + "\n";
+            controller.enqueue(encoder.encode(data));
           }
-
-          if (sessionId && finalResult) {
-            await appendSessionMessage(sessionId, {
-              role: "user",
-              content: parsed.data.userInput
-            });
-            await appendSessionMessage(sessionId, {
-              role: "assistant",
-              content: `[LangGraph-Stream:${finalResult.mode}] ${finalResult.guidance}`
-            });
-            await updateSessionLevel(sessionId, finalResult.nextLevel);
-          }
+          controller.close();
         } catch (error) {
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({
-                type: "error",
-                value:
-                  error instanceof Error
-                    ? error.message
-                    : "建立 LangGraph 流式输出失败。"
-              })}\n\n`
-            )
-          );
-        } finally {
+          console.error("Stream error:", error);
+          const errorData = JSON.stringify({
+            type: "error",
+            content: "处理请求时出现错误",
+          }) + "\n";
+          controller.enqueue(encoder.encode(errorData));
           controller.close();
         }
-      }
+      },
     });
 
     return new Response(stream, {
       headers: {
-        "Content-Type": "text/event-stream; charset=utf-8",
-        "Cache-Control": "no-cache, no-transform",
-        Connection: "keep-alive"
-      }
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
     });
   } catch (error) {
-    return fail(
-      {
-        code: "WORKSPACE_AGENT_STREAM_FAILED",
-        message: "建立 LangGraph 流式输出失败。",
-        details: error instanceof Error ? error.message : error
-      },
-      500
-    );
+    console.error("Agent stream error:", error);
+    return new Response("Internal server error", { status: 500 });
   }
 }

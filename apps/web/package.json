@@ -14,6 +14,8 @@
     "test:all": "pnpm test:unit && pnpm test:smoke"
   },
   "dependencies": {
+    "@langchain/community": "^1.1.22",
+    "@langchain/core": "^1.1.31",
     "@langchain/langgraph": "^1.1.5",
     "@langchain/openai": "^1.2.10",
     "@radix-ui/react-checkbox": "^1.3.3",
