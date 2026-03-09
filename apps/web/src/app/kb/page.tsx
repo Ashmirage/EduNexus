@@ -14,22 +14,21 @@ import {
   Eye,
   Edit3,
   Hash,
-  List
+  List,
+  Upload,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { VaultSelector } from "@/components/kb/vault-selector";
+import { getKBStorage, type KBDocument } from "@/lib/client/kb-storage";
+import { AIAssistant } from "@/components/kb/ai-assistant";
 
-// 文档类型定义
-type Document = {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  createdAt: Date;
-  updatedAt: Date;
+// 文档类型定义（使用 KBDocument）
+type Document = KBDocument & {
   parentId?: string;
   children?: Document[];
 };
@@ -100,18 +99,66 @@ const mockDocuments: Document[] = [
 ];
 
 export default function KnowledgeBasePage() {
+  const storage = getKBStorage();
+
   // 状态管理
-  const [documents, setDocuments] = useState<Document[]>(mockDocuments);
-  const [selectedDoc, setSelectedDoc] = useState<Document | null>(mockDocuments[0]);
+  const [currentVaultId, setCurrentVaultId] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
+  const [editTitle, setEditTitle] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedText, setSelectedText] = useState("");
+
+  // 初始化：加载当前知识库和文档
+  useEffect(() => {
+    const initializeStorage = async () => {
+      try {
+        await storage.initialize();
+        const savedVaultId = storage.getCurrentVaultId();
+        if (savedVaultId) {
+          setCurrentVaultId(savedVaultId);
+          await loadDocuments(savedVaultId);
+        }
+      } catch (error) {
+        console.error("Failed to initialize storage:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeStorage();
+  }, []);
+
+  // 加载文档
+  const loadDocuments = async (vaultId: string) => {
+    try {
+      const docs = await storage.getDocumentsByVault(vaultId);
+      setDocuments(docs);
+      if (docs.length > 0 && !selectedDoc) {
+        setSelectedDoc(docs[0]);
+      }
+    } catch (error) {
+      console.error("Failed to load documents:", error);
+    }
+  };
+
+  // 知识库切换
+  const handleVaultChange = async (vaultId: string) => {
+    setCurrentVaultId(vaultId);
+    storage.setCurrentVault(vaultId);
+    await loadDocuments(vaultId);
+    setSelectedDoc(null);
+  };
 
   // 初始化编辑内容
   useEffect(() => {
     if (selectedDoc) {
       setEditContent(selectedDoc.content);
+      setEditTitle(selectedDoc.title);
     }
   }, [selectedDoc]);
 
@@ -214,47 +261,106 @@ export default function KnowledgeBasePage() {
   }, []);
 
   // 保存文档
-  const handleSave = useCallback(() => {
-    if (selectedDoc) {
-      setDocuments((prev) =>
-        prev.map((doc) =>
-          doc.id === selectedDoc.id
-            ? { ...doc, content: editContent, updatedAt: new Date() }
-            : doc
-        )
-      );
-      setSelectedDoc({ ...selectedDoc, content: editContent, updatedAt: new Date() });
-      setIsEditing(false);
+  const handleSave = useCallback(async () => {
+    if (selectedDoc && currentVaultId) {
+      try {
+        const updatedDoc = {
+          ...selectedDoc,
+          title: editTitle,
+          content: editContent,
+        };
+        await storage.updateDocument(updatedDoc);
+        setDocuments((prev) =>
+          prev.map((doc) =>
+            doc.id === selectedDoc.id ? updatedDoc : doc
+          )
+        );
+        setSelectedDoc(updatedDoc);
+        setIsEditing(false);
+      } catch (error) {
+        console.error("Failed to save document:", error);
+        alert("保存失败，请重试");
+      }
     }
-  }, [selectedDoc, editContent]);
+  }, [selectedDoc, editContent, editTitle, currentVaultId]);
 
   // 新建文档
-  const handleNewDocument = useCallback(() => {
-    const newDoc: Document = {
-      id: Date.now().toString(),
-      title: "新文档",
-      content: "# 新文档\n\n开始编写...",
-      tags: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setDocuments((prev) => [newDoc, ...prev]);
-    setSelectedDoc(newDoc);
-    setIsEditing(true);
-  }, []);
+  const handleNewDocument = useCallback(async () => {
+    if (!currentVaultId) {
+      alert("请先选择一个知识库");
+      return;
+    }
+
+    try {
+      const newDoc = await storage.createDocument(
+        currentVaultId,
+        "新文档",
+        "# 新文档\n\n开始编写...",
+        []
+      );
+      setDocuments((prev) => [newDoc, ...prev]);
+      setSelectedDoc(newDoc);
+      setIsEditing(true);
+    } catch (error) {
+      console.error("Failed to create document:", error);
+      alert("创建文档失败，请重试");
+    }
+  }, [currentVaultId]);
+
+  // 删除文档
+  const handleDeleteDocument = useCallback(async () => {
+    if (!selectedDoc) return;
+
+    if (!confirm(`确定要删除文档"${selectedDoc.title}"吗？`)) return;
+
+    try {
+      await storage.deleteDocument(selectedDoc.id);
+      setDocuments((prev) => prev.filter((doc) => doc.id !== selectedDoc.id));
+      setSelectedDoc(documents.length > 1 ? documents[0] : null);
+    } catch (error) {
+      console.error("Failed to delete document:", error);
+      alert("删除失败，请重试");
+    }
+  }, [selectedDoc, documents]);
 
   // 导出文档
   const handleExport = useCallback(() => {
     if (selectedDoc) {
-      const blob = new Blob([selectedDoc.content], { type: "text/markdown" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${selectedDoc.title}.md`;
-      a.click();
-      URL.revokeObjectURL(url);
+      storage.exportDocumentAsMarkdown(selectedDoc);
     }
   }, [selectedDoc]);
+
+  // 导入文档
+  const handleImport = useCallback(async () => {
+    if (!currentVaultId) {
+      alert("请先选择一个知识库");
+      return;
+    }
+
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".md";
+    input.multiple = true;
+
+    input.onchange = async (e) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (!files) return;
+
+      try {
+        const importedDocs = await storage.importMultipleFiles(currentVaultId, files);
+        setDocuments((prev) => [...importedDocs, ...prev]);
+        if (importedDocs.length > 0) {
+          setSelectedDoc(importedDocs[0]);
+        }
+        alert(`成功导入 ${importedDocs.length} 个文档`);
+      } catch (error) {
+        console.error("Failed to import documents:", error);
+        alert("导入失败，请重试");
+      }
+    };
+
+    input.click();
+  }, [currentVaultId]);
 
   // 切换标签筛选
   const toggleTag = useCallback((tag: string) => {
@@ -264,9 +370,17 @@ export default function KnowledgeBasePage() {
   }, []);
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
+    <div className="flex min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
       {/* 左侧：文档列表 */}
       <div className="w-80 border-r border-amber-200/50 bg-white/80 backdrop-blur-sm flex flex-col">
+        {/* 知识库选择器 */}
+        <div className="p-4 border-b border-amber-200/50">
+          <VaultSelector
+            currentVaultId={currentVaultId}
+            onVaultChange={handleVaultChange}
+          />
+        </div>
+
         {/* 搜索框 */}
         <div className="p-4 border-b border-amber-200/50">
           <div className="relative">

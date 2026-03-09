@@ -1,0 +1,166 @@
+import { fail, ok } from "@/lib/server/response";
+import { z } from "zod";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const kbAIChatSchema = z.object({
+  documentId: z.string().optional(),
+  documentTitle: z.string().optional(),
+  documentContent: z.string().optional(),
+  selectedText: z.string().optional(),
+  userInput: z.string().min(1).max(4000),
+  conversationHistory: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string()
+      })
+    )
+    .optional()
+});
+
+export async function POST(request: Request) {
+  try {
+    const json = await request.json().catch(() => ({}));
+    const parsed = kbAIChatSchema.safeParse(json);
+
+    if (!parsed.success) {
+      return fail({
+        code: "INVALID_REQUEST",
+        message: "请求参数不合法。",
+        details: parsed.error.flatten()
+      });
+    }
+
+    const {
+      documentTitle,
+      documentContent,
+      selectedText,
+      userInput,
+      conversationHistory
+    } = parsed.data;
+
+    // 构建上下文提示
+    let contextPrompt = "";
+    if (documentTitle) {
+      contextPrompt += `当前文档标题：${documentTitle}\n\n`;
+    }
+    if (documentContent) {
+      const contentPreview = documentContent.slice(0, 2000);
+      contextPrompt += `文档内容：\n${contentPreview}\n\n`;
+    }
+    if (selectedText) {
+      contextPrompt += `用户选中的文本：\n${selectedText}\n\n`;
+    }
+
+    // 构建系统提示
+    const systemPrompt = `你是 EduNexus 知识库的 AI 写作助手。你的任务是帮助用户：
+1. 生成文档摘要
+2. 扩展和丰富内容
+3. 解释概念和术语
+4. 改进写作质量和表达
+5. 提供写作建议
+
+请基于用户提供的文档内容和问题，给出专业、准确、有帮助的回答。
+回答要简洁明了，适合直接插入到文档中。
+
+${contextPrompt}`;
+
+    // 构建消息历史
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...(conversationHistory || []).slice(-6),
+      { role: "user", content: userInput }
+    ];
+
+    // 调用 AI 模型（这里使用简单的模拟响应）
+    // 在实际应用中，应该调用真实的 AI API（如 OpenAI、Anthropic 等）
+    const aiResponse = await generateAIResponse(userInput, contextPrompt);
+
+    return ok({
+      response: aiResponse,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    return fail(
+      {
+        code: "KB_AI_CHAT_FAILED",
+        message: "AI 助手响应失败。",
+        details: error instanceof Error ? error.message : error
+      },
+      500
+    );
+  }
+}
+
+// 模拟 AI 响应生成函数
+// 在实际应用中，应该替换为真实的 AI API 调用
+async function generateAIResponse(
+  userInput: string,
+  context: string
+): Promise<string> {
+  // 简单的关键词匹配响应
+  const input = userInput.toLowerCase();
+
+  if (input.includes("摘要") || input.includes("总结")) {
+    return `基于文档内容，我为你生成了以下摘要：
+
+这篇文档主要介绍了知识管理系统的核心功能，包括 Markdown 编辑、双链笔记、标签系统和实时预览等特性。文档强调了这些功能如何帮助用户更好地组织和管理知识。
+
+主要要点：
+- 支持完整的 Markdown 语法
+- 通过双链建立文档之间的关联
+- 使用标签进行内容分类
+- 提供实时预览功能`;
+  }
+
+  if (input.includes("扩展") || input.includes("详细")) {
+    return `我可以帮你扩展这部分内容。以下是一些建议：
+
+1. 添加具体示例：通过实际案例说明概念
+2. 补充背景信息：解释为什么这个功能重要
+3. 提供使用场景：说明在什么情况下使用
+4. 增加技术细节：深入解释实现原理
+
+你希望我重点扩展哪个方面？`;
+  }
+
+  if (input.includes("解释") || input.includes("什么是")) {
+    return `让我为你解释这个概念：
+
+双链笔记（Bidirectional Links）是一种知识管理方法，它允许在文档之间建立双向链接。当你在文档 A 中链接到文档 B 时，文档 B 会自动显示来自文档 A 的反向链接。
+
+这种方法的优势：
+- 发现知识之间的隐藏联系
+- 构建知识网络而非孤立的笔记
+- 促进创造性思维和灵感涌现
+
+它被广泛应用于 Roam Research、Obsidian 等现代笔记工具中。`;
+  }
+
+  if (input.includes("改进") || input.includes("优化") || input.includes("修改")) {
+    return `我建议从以下几个方面改进这段文字：
+
+1. 结构优化：使用更清晰的段落划分
+2. 语言精炼：去除冗余表达，使用更准确的词汇
+3. 逻辑增强：确保论点之间的连贯性
+4. 可读性提升：添加过渡句，改善阅读体验
+
+具体修改建议：
+- 将长句拆分为短句
+- 使用主动语态代替被动语态
+- 添加具体数据或例子支撑观点`;
+  }
+
+  // 默认响应
+  return `我理解你的问题。基于当前文档内容，我建议：
+
+1. 明确你的写作目标和受众
+2. 保持内容的逻辑性和连贯性
+3. 使用清晰的标题和段落结构
+4. 适当添加示例和说明
+
+如果你有更具体的需求，请告诉我，我会提供更有针对性的帮助。`;
+}
+

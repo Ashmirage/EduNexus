@@ -186,8 +186,53 @@ export default function GraphPage() {
     });
   };
 
+  // 编辑节点
+  const handleEditNode = useCallback(() => {
+    if (!selectedNode) return;
+    const newName = prompt('编辑节点名称:', selectedNode.name);
+    if (newName && newName.trim()) {
+      setGraphData(prev => ({
+        ...prev,
+        nodes: prev.nodes.map(node =>
+          node.id === selectedNode.id ? { ...node, name: newName.trim() } : node
+        )
+      }));
+      setSelectedNode({ ...selectedNode, name: newName.trim() });
+      alert('节点已更新');
+    }
+  }, [selectedNode]);
+
+  // 删除节点
+  const handleDeleteNode = useCallback(() => {
+    if (!selectedNode) return;
+    if (confirm(`确定要删除节点"${selectedNode.name}"吗?`)) {
+      setGraphData(prev => ({
+        nodes: prev.nodes.filter(node => node.id !== selectedNode.id),
+        links: prev.links.filter(link => {
+          const sourceId = typeof link.source === 'string' ? link.source : link.source.id;
+          const targetId = typeof link.target === 'string' ? link.target : link.target.id;
+          return sourceId !== selectedNode.id && targetId !== selectedNode.id;
+        })
+      }));
+      setSelectedNode(null);
+      alert('节点已删除');
+    }
+  }, [selectedNode]);
+
+  // 添加关系
+  const handleAddRelation = useCallback(() => {
+    if (!selectedNode) return;
+    alert('添加关系功能：请选择目标节点和关系类型');
+  }, [selectedNode]);
+
+  // 查看详情
+  const handleViewDetails = useCallback(() => {
+    if (!selectedNode) return;
+    alert(`节点详情:\n名称: ${selectedNode.name}\n类型: ${NODE_TYPES[selectedNode.type].label}\n连接数: ${selectedNode.connections}`);
+  }, [selectedNode]);
+
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
       <div className="border-b bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
@@ -272,7 +317,7 @@ export default function GraphPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex min-h-[600px]">
         {/* Graph Canvas */}
         <div className="flex-1 relative bg-gradient-to-br from-background via-background to-primary/5">
           <ForceGraph2D
@@ -440,21 +485,22 @@ export default function GraphPage() {
               {/* Actions */}
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold mb-3">操作</h3>
-                <Button className="w-full justify-start gap-2" variant="outline">
+                <Button className="w-full justify-start gap-2" variant="outline" onClick={handleEditNode}>
                   <Edit className="h-4 w-4" />
                   编辑节点
                 </Button>
-                <Button className="w-full justify-start gap-2" variant="outline">
+                <Button className="w-full justify-start gap-2" variant="outline" onClick={handleAddRelation}>
                   <Plus className="h-4 w-4" />
                   添加关系
                 </Button>
-                <Button className="w-full justify-start gap-2" variant="outline">
+                <Button className="w-full justify-start gap-2" variant="outline" onClick={handleViewDetails}>
                   <LinkIcon className="h-4 w-4" />
                   查看详情
                 </Button>
                 <Button
                   className="w-full justify-start gap-2"
                   variant="outline"
+                  onClick={handleDeleteNode}
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
                   <span className="text-destructive">删除节点</span>

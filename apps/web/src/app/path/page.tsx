@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Plus,
   Search,
@@ -182,14 +182,42 @@ export default function PathPage() {
     return true;
   });
 
+  // 创建新路径
+  const handleCreatePath = useCallback(() => {
+    const title = prompt('输入新路径名称:');
+    if (title && title.trim()) {
+      alert(`创建路径: ${title}`);
+    }
+  }, []);
+
+  // 开始学习任务
+  const handleStartTask = useCallback(() => {
+    if (!selectedTask) return;
+    alert(`开始学习: ${selectedTask.title}`);
+  }, [selectedTask]);
+
+  // 标记任务完成
+  const handleCompleteTask = useCallback(() => {
+    if (!selectedTask) return;
+    if (confirm(`确定标记"${selectedTask.title}"为已完成吗?`)) {
+      alert('任务已标记为完成');
+    }
+  }, [selectedTask]);
+
+  // 编辑任务
+  const handleEditTask = useCallback(() => {
+    if (!selectedTask) return;
+    alert(`编辑任务: ${selectedTask.title}`);
+  }, [selectedTask]);
+
   return (
-    <div className="flex h-screen bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-yellow-50/30">
+    <div className="flex min-h-screen bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-yellow-50/30">
       {/* 左侧面板 */}
       <div className="w-80 border-r bg-white/80 backdrop-blur-sm flex flex-col">
         <div className="p-4 border-b space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">学习路径</h2>
-            <Button size="sm" className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600">
+            <Button size="sm" className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600" onClick={handleCreatePath}>
               <Plus className="h-4 w-4" />
             </Button>
           </div>
@@ -496,13 +524,13 @@ export default function PathPage() {
             )}
 
             <div className="space-y-2 pt-4 border-t">
-              <Button className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600">
+              <Button className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600" onClick={handleStartTask}>
                 开始学习
               </Button>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={handleCompleteTask}>
                 标记为完成
               </Button>
-              <Button variant="ghost" className="w-full">
+              <Button variant="ghost" className="w-full" onClick={handleEditTask}>
                 编辑任务
               </Button>
             </div>
