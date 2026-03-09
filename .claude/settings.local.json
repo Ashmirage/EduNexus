@@ -43,7 +43,8 @@
       "Bash(mv:*)",
       "Bash(python:*)",
       "Bash(true:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(chmod +x:*)"
     ]
   }
 }

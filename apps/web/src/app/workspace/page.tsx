@@ -1,757 +1,385 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
-  Search,
-  Plus,
   Send,
-  ChevronDown,
-  ChevronRight,
-  BookOpen,
-  FileText,
-  Download,
   Sparkles,
-  User,
-  Bot,
   Loader2,
-  Copy,
-  Check,
-  MoreVertical,
-  MessageSquare,
-  Clock,
-  Lightbulb,
-  StickyNote,
-  Link2,
   Brain,
-  Zap
+  Lightbulb,
+  BookOpen,
+  Target,
+  MessageSquare,
+  Settings,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Timestamp, TimeRange } from "@/components/ui/timestamp";
+import { cn } from "@/lib/utils";
 
-// Types
 type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  timestamp: Date;
   thinking?: string;
-  codeBlocks?: CodeBlock[];
-  knowledgePoints?: string[];
-  isStreaming?: boolean;
-};
-
-type CodeBlock = {
-  language: string;
-  code: string;
-};
-
-type Session = {
-  id: string;
-  title: string;
-  lastMessage: string;
   timestamp: Date;
-  messageCount: number;
-  createdAt: Date;
-  updatedAt: Date;
 };
-
-type Note = {
-  id: string;
-  content: string;
-  timestamp: Date;
-  messageId?: string;
-};
-
-type Resource = {
-  id: string;
-  title: string;
-  type: "document" | "link" | "concept";
-  url?: string;
-};
-
-// Mock data
-const mockSessions: Session[] = [
-  {
-    id: "1",
-    title: "线性代数基础",
-    lastMessage: "矩阵乘法的交换律...",
-    timestamp: new Date(),
-    createdAt: new Date(Date.now() - 7200000), // 2小时前创建
-    updatedAt: new Date(),
-    messageCount: 12
-  },
-  {
-    id: "2",
-    title: "微积分导数应用",
-    lastMessage: "如何求函数的极值...",
-    timestamp: new Date(Date.now() - 3600000),
-    createdAt: new Date(Date.now() - 86400000), // 1天前创建
-    updatedAt: new Date(Date.now() - 3600000),
-    messageCount: 8
-  },
-  {
-    id: "3",
-    title: "概率论基础",
-    lastMessage: "贝叶斯定理的理解...",
-    timestamp: new Date(Date.now() - 86400000),
-    createdAt: new Date(Date.now() - 172800000), // 2天前创建
-    updatedAt: new Date(Date.now() - 86400000),
-    messageCount: 15
-  }
-];
 
 export default function WorkspacePage() {
-  // State
-  const [sessions] = useState<Session[]>(mockSessions);
-  const [currentSessionId, setCurrentSessionId] = useState<string>("1");
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "1",
+      id: "welcome",
       role: "assistant",
-      content: "你好！我是你的学习助手。我会用苏格拉底式提问引导你深入思考。有什么问题想探讨吗？",
+      content: "你好！我是你的智能学习助手。我使用 ReAct Agent 模式工作，可以帮你：\n\n- 🔍 搜索知识库和图谱\n- 📝 生成个性化练习题\n- 🗺️ 规划学习路径\n- 💡 解释复杂概念\n- 🤔 通过提问引导思考\n\n有什么想学习或探讨的吗？",
       timestamp: new Date(),
-      knowledgePoints: ["苏格拉底式教学法"]
-    }
+    },
   ]);
   const [inputValue, setInputValue] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [socraticMode, setSocraticMode] = useState(true);
-  const [showThinking] = useState(true);
-  const [expandedThinking, setExpandedThinking] = useState<Set<string>>(new Set());
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
-  const [notes] = useState<Note[]>([]);
-  const [resources] = useState<Resource[]>([
-    { id: "1", title: "线性代数教程", type: "document" },
-    { id: "2", title: "MIT 公开课", type: "link", url: "#" }
-  ]);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [rightPanelTab, setRightPanelTab] = useState<"resources" | "knowledge" | "notes">("knowledge");
-
+  const [showThinking, setShowThinking] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Handle send message
   const handleSend = async () => {
-    if (!inputValue.trim() || isStreaming) return;
+    if (!inputValue.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
       content: inputValue,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
-    setIsStreaming(true);
+    setIsLoading(true);
 
-    // Simulate streaming response
-    setTimeout(() => {
-      const assistantMessage: Message = {
+    try {
+      const response = await fetch("/api/workspace/agent/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: inputValue,
+          history: messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+          config: {
+            socraticMode,
+            temperature: 0.7,
+            maxIterations: 5,
+          },
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: data.response,
+          thinking: data.thinking,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      } else {
+        throw new Error(data.error || "Unknown error");
+      }
+    } catch (error) {
+      console.error("Chat error:", error);
+      const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: socraticMode
-          ? `很好的问题！让我们一起探索。首先，你能告诉我你对"${inputValue.slice(0, 20)}..."的初步理解吗？`
-          : `关于"${inputValue.slice(0, 20)}..."，让我为你详细解答...`,
+        content: "抱歉，处理你的请求时出现了错误。请稍后重试。",
         timestamp: new Date(),
-        thinking: "分析问题 → 识别关键概念 → 构建引导性问题 → 生成回复",
-        knowledgePoints: ["问题分析", "概念理解"],
-        isStreaming: false
       };
-      setMessages(prev => [...prev, assistantMessage]);
-      setIsStreaming(false);
-    }, 1500);
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Handle key press
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
 
-  // Copy code
-  const copyCode = (code: string, id: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode(id);
-    setTimeout(() => setCopiedCode(null), 2000);
-  };
-
-  // Group sessions by time
-  const groupedSessions = {
-    today: sessions.filter(s => {
-      const diff = Date.now() - s.timestamp.getTime();
-      return diff < 86400000;
-    }),
-    thisWeek: sessions.filter(s => {
-      const diff = Date.now() - s.timestamp.getTime();
-      return diff >= 86400000 && diff < 604800000;
-    }),
-    older: sessions.filter(s => {
-      const diff = Date.now() - s.timestamp.getTime();
-      return diff >= 604800000;
-    })
-  };
-
-  // 新建会话
-  const handleNewSession = useCallback(() => {
-    const title = prompt('输入会话标题:');
-    if (title && title.trim()) {
-      alert(`创建新会话: ${title}`);
-    }
-  }, []);
-
-  // 导出会话
-  const handleExportSession = useCallback(() => {
-    alert('正在导出会话...');
-    setTimeout(() => {
-      alert('会话导出成功');
-    }, 1000);
-  }, []);
+  const quickActions = [
+    { icon: Brain, label: "解释概念", prompt: "请解释一下" },
+    { icon: Lightbulb, label: "生成练习", prompt: "我想练习" },
+    { icon: BookOpen, label: "学习路径", prompt: "我想学习" },
+    { icon: Target, label: "检查理解", prompt: "测试我对...的理解" },
+  ];
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-rose-50/30">
-      {/* Left Sidebar - Session List */}
-      <div
-        className={cn(
-          "border-r border-border bg-card/50 backdrop-blur-sm transition-all duration-300",
-          sidebarCollapsed ? "w-0 overflow-hidden" : "w-80"
-        )}
-      >
-        <div className="flex h-full flex-col">
-          {/* Header */}
-          <div className="border-b border-border p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-foreground">学习工作区</h2>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setSidebarCollapsed(true)}
-                className="h-8 w-8"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="搜索会话..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-
-            {/* New Session Button */}
-            <Button className="w-full mt-3" onClick={handleNewSession}>
-              <Plus className="h-4 w-4 mr-2" />
-              新建会话
-            </Button>
-          </div>
-
-          {/* Session List */}
-          <div className="flex-1 overflow-y-auto p-2">
-            {/* Today */}
-            {groupedSessions.today.length > 0 && (
-              <div className="mb-4">
-                <div className="px-3 py-2 text-xs font-medium text-muted-foreground">今天</div>
-                {groupedSessions.today.map(session => (
-                  <button
-                    key={session.id}
-                    onClick={() => setCurrentSessionId(session.id)}
-                    className={cn(
-                      "w-full text-left p-3 rounded-lg mb-1 transition-colors",
-                      "hover:bg-accent/50",
-                      currentSessionId === session.id
-                        ? "bg-primary/10 border border-primary/20"
-                        : "bg-transparent"
-                    )}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm text-foreground truncate">
-                          {session.title}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate mt-1">
-                          {session.lastMessage}
-                        </div>
-                        <TimeRange
-                          createdAt={session.createdAt}
-                          updatedAt={session.updatedAt}
-                          className="mt-1"
-                        />
-                      </div>
-                      <Badge variant="secondary" className="ml-2 text-xs">
-                        {session.messageCount}
-                      </Badge>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* This Week */}
-            {groupedSessions.thisWeek.length > 0 && (
-              <div className="mb-4">
-                <div className="px-3 py-2 text-xs font-medium text-muted-foreground">本周</div>
-                {groupedSessions.thisWeek.map(session => (
-                  <button
-                    key={session.id}
-                    onClick={() => setCurrentSessionId(session.id)}
-                    className={cn(
-                      "w-full text-left p-3 rounded-lg mb-1 transition-colors",
-                      "hover:bg-accent/50",
-                      currentSessionId === session.id
-                        ? "bg-primary/10 border border-primary/20"
-                        : "bg-transparent"
-                    )}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm text-foreground truncate">
-                          {session.title}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate mt-1">
-                          {session.lastMessage}
-                        </div>
-                        <TimeRange
-                          createdAt={session.createdAt}
-                          updatedAt={session.updatedAt}
-                          className="mt-1"
-                        />
-                      </div>
-                      <Badge variant="secondary" className="ml-2 text-xs">
-                        {session.messageCount}
-                      </Badge>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Older */}
-            {groupedSessions.older.length > 0 && (
-              <div className="mb-4">
-                <div className="px-3 py-2 text-xs font-medium text-muted-foreground">更早</div>
-                {groupedSessions.older.map(session => (
-                  <button
-                    key={session.id}
-                    onClick={() => setCurrentSessionId(session.id)}
-                    className={cn(
-                      "w-full text-left p-3 rounded-lg mb-1 transition-colors",
-                      "hover:bg-accent/50",
-                      currentSessionId === session.id
-                        ? "bg-primary/10 border border-primary/20"
-                        : "bg-transparent"
-                    )}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm text-foreground truncate">
-                          {session.title}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate mt-1">
-                          {session.lastMessage}
-                        </div>
-                        <TimeRange
-                          createdAt={session.createdAt}
-                          updatedAt={session.updatedAt}
-                          className="mt-1"
-                        />
-                      </div>
-                      <Badge variant="secondary" className="ml-2 text-xs">
-                        {session.messageCount}
-                      </Badge>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
+    <div className="flex h-screen bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-rose-50/30">
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <div className="border-b border-border bg-card/50 backdrop-blur-sm p-4">
-          <div className="flex items-center justify-between">
+        <div className="border-b bg-white/80 backdrop-blur-sm p-4">
+          <div className="flex items-center justify-between max-w-4xl mx-auto">
             <div className="flex items-center gap-3">
-              {sidebarCollapsed && (
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => setSidebarCollapsed(false)}
-                  className="h-8 w-8"
-                >
-                  <MessageSquare className="h-4 w-4" />
-                </Button>
-              )}
+              <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-rose-500">
+                <Sparkles className="h-5 w-5 text-white" />
+              </div>
               <div>
-                <h1 className="text-lg font-semibold text-foreground">线性代数基础</h1>
-                <p className="text-xs text-muted-foreground">12 条消息</p>
+                <h1 className="text-xl font-semibold">学习工作区</h1>
+                <p className="text-sm text-muted-foreground">
+                  React Agent · 智能学习助手
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 mr-4">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <Label htmlFor="socratic-mode" className="text-sm cursor-pointer">
-                  苏格拉底模式
-                </Label>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
                 <Switch
-                  id="socratic-mode"
+                  id="socratic"
                   checked={socraticMode}
                   onCheckedChange={setSocraticMode}
                 />
+                <Label htmlFor="socratic" className="text-sm cursor-pointer">
+                  苏格拉底模式
+                </Label>
               </div>
-              <Button variant="ghost" size="icon">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="thinking"
+                  checked={showThinking}
+                  onCheckedChange={setShowThinking}
+                />
+                <Label htmlFor="thinking" className="text-sm cursor-pointer">
+                  显示思考
+                </Label>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={cn(
-                "flex gap-4",
-                message.role === "user" ? "justify-end" : "justify-start"
-              )}
-            >
-              {message.role === "assistant" && (
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <Bot className="h-5 w-5 text-white" />
-                </div>
-              )}
-
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="max-w-4xl mx-auto space-y-4">
+            {messages.map((message) => (
               <div
+                key={message.id}
                 className={cn(
-                  "max-w-3xl",
-                  message.role === "user" ? "order-first" : ""
+                  "flex gap-3",
+                  message.role === "user" ? "justify-end" : "justify-start"
                 )}
               >
-                {/* Thinking Process */}
-                {message.role === "assistant" && message.thinking && showThinking && (
-                  <Card className="mb-3 bg-accent/30 border-accent/50">
-                    <CardHeader className="p-3">
-                      <button
-                        onClick={() => {
-                          const newExpanded = new Set(expandedThinking);
-                          if (newExpanded.has(message.id)) {
-                            newExpanded.delete(message.id);
-                          } else {
-                            newExpanded.add(message.id);
-                          }
-                          setExpandedThinking(newExpanded);
-                        }}
-                        className="flex items-center gap-2 w-full text-left"
-                      >
-                        <Brain className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-medium">思考过程</span>
-                        {expandedThinking.has(message.id) ? (
-                          <ChevronDown className="h-4 w-4 ml-auto" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 ml-auto" />
-                        )}
-                      </button>
-                    </CardHeader>
-                    {expandedThinking.has(message.id) && (
-                      <CardContent className="p-3 pt-0">
-                        <p className="text-sm text-muted-foreground">{message.thinking}</p>
-                      </CardContent>
-                    )}
-                  </Card>
+                {message.role === "assistant" && (
+                  <div className="p-2 rounded-full bg-gradient-to-br from-orange-500 to-rose-500 h-8 w-8 flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="h-4 w-4 text-white" />
+                  </div>
                 )}
 
-                {/* Message Content */}
                 <div
                   className={cn(
-                    "rounded-2xl p-4",
+                    "rounded-lg p-4 max-w-[80%]",
                     message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card border border-border"
+                      ? "bg-gradient-to-br from-orange-500 to-rose-500 text-white"
+                      : "bg-white border"
                   )}
                 >
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                    {message.content}
-                  </p>
-
-                  {/* Knowledge Points */}
-                  {message.knowledgePoints && message.knowledgePoints.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {message.knowledgePoints.map((point, idx) => (
-                        <Badge
-                          key={idx}
-                          variant="secondary"
-                          className="text-xs bg-accent/50"
-                        >
-                          <Lightbulb className="h-3 w-3 mr-1" />
-                          {point}
-                        </Badge>
-                      ))}
-                    </div>
+                  {message.thinking && showThinking && (
+                    <details className="mb-3 text-sm">
+                      <summary className="cursor-pointer text-muted-foreground hover:text-foreground flex items-center gap-2">
+                        <Brain className="h-4 w-4" />
+                        思考过程
+                      </summary>
+                      <div className="mt-2 p-3 bg-muted/50 rounded text-xs whitespace-pre-wrap">
+                        {message.thinking}
+                      </div>
+                    </details>
                   )}
-
-                  {/* Code Blocks */}
-                  {message.codeBlocks && message.codeBlocks.length > 0 && (
-                    <div className="space-y-3 mt-3">
-                      {message.codeBlocks.map((block, idx) => (
-                        <div
-                          key={idx}
-                          className="rounded-lg bg-muted/50 border border-border overflow-hidden"
-                        >
-                          <div className="flex items-center justify-between px-3 py-2 bg-muted/80 border-b border-border">
-                            <span className="text-xs font-mono text-muted-foreground">
-                              {block.language}
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => copyCode(block.code, `${message.id}-${idx}`)}
-                              className="h-6 px-2"
-                            >
-                              {copiedCode === `${message.id}-${idx}` ? (
-                                <Check className="h-3 w-3" />
-                              ) : (
-                                <Copy className="h-3 w-3" />
-                              )}
-                            </Button>
-                          </div>
-                          <pre className="p-3 text-xs font-mono overflow-x-auto">
-                            <code>{block.code}</code>
-                          </pre>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <div className="prose prose-sm max-w-none">
+                    <div className="whitespace-pre-wrap">{message.content}</div>
+                  </div>
+                  <div className="text-xs opacity-70 mt-2">
+                    {message.timestamp.toLocaleTimeString()}
+                  </div>
                 </div>
 
-                {/* Timestamp */}
-                <Timestamp date={message.timestamp} className="mt-2 px-2" />
+                {message.role === "user" && (
+                  <div className="p-2 rounded-full bg-gray-200 h-8 w-8 flex items-center justify-center flex-shrink-0">
+                    <MessageSquare className="h-4 w-4 text-gray-600" />
+                  </div>
+                )}
               </div>
+            ))}
 
-              {message.role === "user" && (
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
-                  <User className="h-5 w-5 text-white" />
+            {isLoading && (
+              <div className="flex gap-3 justify-start">
+                <div className="p-2 rounded-full bg-gradient-to-br from-orange-500 to-rose-500 h-8 w-8 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="h-4 w-4 text-white" />
                 </div>
-              )}
-            </div>
-          ))}
-
-          {/* Streaming Indicator */}
-          {isStreaming && (
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Bot className="h-5 w-5 text-white" />
-              </div>
-              <div className="bg-card border border-border rounded-2xl p-4">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span className="text-sm text-muted-foreground">正在思考...</span>
+                <div className="bg-white border rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm">正在思考...</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} />
+          </div>
         </div>
 
-        {/* Input Area */}
-        <div className="border-t border-border bg-card/50 backdrop-blur-sm p-4">
+        {/* Quick Actions */}
+        <div className="border-t bg-white/80 backdrop-blur-sm p-4">
           <div className="max-w-4xl mx-auto">
-            <div className="relative">
+            <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
+              {quickActions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <Button
+                    key={action.label}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setInputValue(action.prompt)}
+                    className="flex-shrink-0"
+                  >
+                    <Icon className="h-4 w-4 mr-2" />
+                    {action.label}
+                  </Button>
+                );
+              })}
+            </div>
+
+            {/* Input */}
+            <div className="flex gap-2">
               <Textarea
                 ref={textareaRef}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 placeholder={
                   socraticMode
-                    ? "描述你的问题，我会引导你思考..."
+                    ? "提出你的问题，我会引导你思考..."
                     : "输入你的问题..."
                 }
-                className="min-h-[80px] pr-12 resize-none"
+                className="min-h-[60px] max-h-[200px] resize-none"
+                disabled={isLoading}
               />
               <Button
-                size="icon"
                 onClick={handleSend}
-                disabled={!inputValue.trim() || isStreaming}
-                className="absolute bottom-3 right-3"
+                disabled={!inputValue.trim() || isLoading}
+                className="bg-gradient-to-br from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600"
               >
-                <Send className="h-4 w-4" />
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
               </Button>
             </div>
 
-            <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-              <span>按 Enter 发送，Shift + Enter 换行</span>
-              <span>{inputValue.length} 字符</span>
+            <div className="mt-2 text-xs text-muted-foreground">
+              {socraticMode ? (
+                <span>💡 苏格拉底模式：我会通过提问引导你思考</span>
+              ) : (
+                <span>📚 直接教学模式：我会直接解答你的问题</span>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Right Panel - Tools */}
-      <div className="w-80 border-l border-border bg-card/50 backdrop-blur-sm flex flex-col">
-        {/* Tabs */}
-        <div className="border-b border-border p-2">
-          <div className="flex gap-1">
-            <Button
-              variant={rightPanelTab === "knowledge" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setRightPanelTab("knowledge")}
-              className="flex-1"
-            >
-              <Lightbulb className="h-4 w-4 mr-1" />
-              知识点
-            </Button>
-            <Button
-              variant={rightPanelTab === "resources" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setRightPanelTab("resources")}
-              className="flex-1"
-            >
-              <BookOpen className="h-4 w-4 mr-1" />
-              资源
-            </Button>
-            <Button
-              variant={rightPanelTab === "notes" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setRightPanelTab("notes")}
-              className="flex-1"
-            >
-              <StickyNote className="h-4 w-4 mr-1" />
-              笔记
-            </Button>
-          </div>
-        </div>
-
-        {/* Panel Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {/* Knowledge Points Tab */}
-          {rightPanelTab === "knowledge" && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold">提取的知识点</h3>
-                <Badge variant="secondary">{messages.length}</Badge>
-              </div>
-
-              {messages
-                .filter(m => m.knowledgePoints && m.knowledgePoints.length > 0)
-                .map((message) => (
-                  <Card key={message.id} className="p-3">
-                    <div className="space-y-2">
-                      {message.knowledgePoints?.map((point, idx) => (
-                        <div key={idx} className="flex items-start gap-2">
-                          <Zap className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                          <span className="text-sm">{point}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-                ))}
-
-              {messages.filter(m => m.knowledgePoints && m.knowledgePoints.length > 0)
-                .length === 0 && (
-                <div className="text-center py-8 text-muted-foreground text-sm">
-                  <Lightbulb className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>暂无提取的知识点</p>
-                </div>
-              )}
+      {/* Right Sidebar - Info Panel */}
+      <div className="w-80 border-l bg-white/50 backdrop-blur-sm p-4 overflow-y-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Agent 状态
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">工作模式</span>
+              <Badge variant={socraticMode ? "default" : "secondary"}>
+                {socraticMode ? "苏格拉底" : "直接教学"}
+              </Badge>
             </div>
-          )}
-
-          {/* Resources Tab */}
-          {rightPanelTab === "resources" && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold">相关资源</h3>
-                <Button size="sm" variant="ghost">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {resources.map((resource) => (
-                <Card key={resource.id} className="p-3 hover:bg-accent/50 transition-colors cursor-pointer">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
-                      {resource.type === "document" && <FileText className="h-4 w-4 text-primary" />}
-                      {resource.type === "link" && <Link2 className="h-4 w-4 text-primary" />}
-                      {resource.type === "concept" && <Brain className="h-4 w-4 text-primary" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{resource.title}</div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {resource.type === "document" && "文档"}
-                        {resource.type === "link" && "链接"}
-                        {resource.type === "concept" && "概念"}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">对话轮数</span>
+              <Badge variant="outline">{messages.length}</Badge>
             </div>
-          )}
-
-          {/* Notes Tab */}
-          {rightPanelTab === "notes" && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold">我的笔记</h3>
-                <Button size="sm" variant="ghost">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {notes.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground text-sm">
-                  <StickyNote className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>暂无笔记</p>
-                  <Button size="sm" variant="outline" className="mt-3">
-                    创建第一条笔记
-                  </Button>
-                </div>
-              ) : (
-                notes.map((note) => (
-                  <Card key={note.id} className="p-3">
-                    <p className="text-sm">{note.content}</p>
-                    <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      {note.timestamp.toLocaleString("zh-CN")}
-                    </div>
-                  </Card>
-                ))
-              )}
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">状态</span>
+              <Badge variant={isLoading ? "default" : "secondary"}>
+                {isLoading ? "思考中" : "就绪"}
+              </Badge>
             </div>
-          )}
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* Export Options */}
-        <div className="border-t border-border p-4">
-          <Button variant="outline" className="w-full" size="sm" onClick={handleExportSession}>
-            <Download className="h-4 w-4 mr-2" />
-            导出会话
-          </Button>
-        </div>
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle className="text-sm">可用工具</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-xs">
+            <div className="flex items-start gap-2">
+              <div className="p-1 rounded bg-blue-100">
+                <BookOpen className="h-3 w-3 text-blue-600" />
+              </div>
+              <div>
+                <div className="font-medium">搜索知识库</div>
+                <div className="text-muted-foreground">查找相关文档</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="p-1 rounded bg-purple-100">
+                <Brain className="h-3 w-3 text-purple-600" />
+              </div>
+              <div>
+                <div className="font-medium">查询图谱</div>
+                <div className="text-muted-foreground">获取知识关系</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="p-1 rounded bg-green-100">
+                <Target className="h-3 w-3 text-green-600" />
+              </div>
+              <div>
+                <div className="font-medium">生成练习</div>
+                <div className="text-muted-foreground">个性化题目</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="p-1 rounded bg-orange-100">
+                <Lightbulb className="h-3 w-3 text-orange-600" />
+              </div>
+              <div>
+                <div className="font-medium">学习路径</div>
+                <div className="text-muted-foreground">智能规划</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle className="text-sm">使用提示</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-xs text-muted-foreground">
+            <p>• 苏格拉底模式会引导你思考</p>
+            <p>• 可以查看 Agent 的思考过程</p>
+            <p>• 使用快捷按钮快速开始</p>
+            <p>• Shift+Enter 换行，Enter 发送</p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

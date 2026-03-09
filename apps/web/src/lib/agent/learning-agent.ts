@@ -8,7 +8,7 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 import { AgentExecutor, createReactAgent } from "langchain/agents";
-import { getAllTools, getToolsDescription } from "./tools";
+import { getAllTools, getToolsDescription } from "./tools-real";
 import { BaseMessage, HumanMessage, AIMessage } from "@langchain/core/messages";
 
 /**
