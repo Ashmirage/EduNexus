@@ -39,7 +39,7 @@ export function ModelConfigPanel({
   onApiKeyChange,
 }: ModelConfigPanelProps) {
   const [showApiKey, setShowApiKey] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("Qwen/Qwen3-8B");
+  const [selectedModel, setSelectedModel] = useState("Qwen/Qwen3.5-122B-A10B");
   const [apiEndpoint, setApiEndpoint] = useState("https://api-inference.modelscope.cn/v1");
   const [models, setModels] = useState<Model[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
@@ -53,93 +53,18 @@ export function ModelConfigPanel({
       const response = await fetch("/api/models/list");
       const data = await response.json();
 
-      if (data.success && data.models) {
+      if (data.success && data.models && data.models.length > 0) {
         setModels(data.models);
-        if (data.fallback) {
+        if (data.source === "fallback") {
           setModelsError("使用默认模型列表（API 调用失败）");
         }
       } else {
-        throw new Error("Failed to load models");
+        throw new Error(data.message || "Failed to load models");
       }
     } catch (error) {
       console.error("Failed to load models:", error);
-      setModelsError("加载模型列表失败");
-      // 使用默认模型列表
-      setModels([
-        // Qwen3.5 系列（最新）
-        {
-          id: "Qwen/Qwen3.5-122B-A10B",
-          name: "Qwen3.5-122B-A10B",
-          description: "通义千问 3.5 代 122B 模型（最强）",
-          provider: "ModelScope",
-          multimodal: false
-        },
-        {
-          id: "Qwen/Qwen3.5-72B-Instruct",
-          name: "Qwen3.5-72B-Instruct",
-          description: "通义千问 3.5 代 72B 指令模型",
-          provider: "ModelScope",
-          multimodal: false
-        },
-        {
-          id: "Qwen/Qwen3.5-32B-Instruct",
-          name: "Qwen3.5-32B-Instruct",
-          description: "通义千问 3.5 代 32B 指令模型",
-          provider: "ModelScope",
-          multimodal: false
-        },
-        {
-          id: "Qwen/Qwen3.5-14B-Instruct",
-          name: "Qwen3.5-14B-Instruct",
-          description: "通义千问 3.5 代 14B 指令模型",
-          provider: "ModelScope",
-          multimodal: false
-        },
-        {
-          id: "Qwen/Qwen3.5-7B-Instruct",
-          name: "Qwen3.5-7B-Instruct",
-          description: "通义千问 3.5 代 7B 指令模型（推荐）",
-          provider: "ModelScope",
-          multimodal: false
-        },
-        // Qwen3.5 VL 系列（多模态）
-        {
-          id: "Qwen/Qwen3.5-VL-72B",
-          name: "Qwen3.5-VL-72B 🖼️",
-          description: "支持图片理解的视觉语言模型 72B",
-          provider: "ModelScope",
-          multimodal: true
-        },
-        {
-          id: "Qwen/Qwen3.5-VL-32B",
-          name: "Qwen3.5-VL-32B 🖼️",
-          description: "支持图片理解的视觉语言模型 32B",
-          provider: "ModelScope",
-          multimodal: true
-        },
-        {
-          id: "Qwen/Qwen3.5-VL-7B",
-          name: "Qwen3.5-VL-7B 🖼️",
-          description: "支持图片理解的视觉语言模型 7B",
-          provider: "ModelScope",
-          multimodal: true
-        },
-        // Qwen3 系列
-        {
-          id: "Qwen/Qwen3-8B",
-          name: "Qwen3-8B",
-          description: "通义千问 3 代 8B 模型",
-          provider: "ModelScope",
-          multimodal: false
-        },
-        {
-          id: "deepseek-ai/DeepSeek-V3.2",
-          name: "DeepSeek-V3.2",
-          description: "DeepSeek V3.2 最新版本",
-          provider: "ModelScope",
-          multimodal: false
-        }
-      ]);
+      setModelsError("加载模型列表失败，请检查 API Key 配置");
+      setModels([]);
     } finally {
       setIsLoadingModels(false);
     }

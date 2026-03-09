@@ -44,7 +44,7 @@ export async function runAgentConversation(
 }> {
   try {
     const {
-      modelName = process.env.MODELSCOPE_CHAT_MODEL || "Qwen/Qwen3-8B",
+      modelName = process.env.MODELSCOPE_CHAT_MODEL || "Qwen/Qwen3.5-122B-A10B",
       temperature = 0.7,
       socraticMode = true,
     } = config;
