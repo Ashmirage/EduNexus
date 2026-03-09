@@ -28,6 +28,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+      <head>
+        <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js" async></script>
+      </head>
       <body>
         <QueryProvider>
           <AppShell>{children}</AppShell>
