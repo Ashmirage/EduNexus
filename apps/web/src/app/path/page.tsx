@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Timestamp } from "@/components/ui/timestamp";
 
 type PathStatus = "not_started" | "in_progress" | "completed";
 type TaskStatus = "not_started" | "in_progress" | "completed";
@@ -45,6 +46,9 @@ type Task = {
   dependencies: string[];
   resources: Resource[];
   notes: string;
+  createdAt: Date;
+  startedAt?: Date;
+  completedAt?: Date;
 };
 
 type Resource = {
@@ -61,7 +65,7 @@ type LearningPath = {
   status: PathStatus;
   progress: number;
   tags: string[];
-  createdAt: string;
+  createdAt: Date;
   tasks: Task[];
   milestones: Milestone[];
 };
@@ -80,7 +84,7 @@ const mockPaths: LearningPath[] = [
     status: "in_progress",
     progress: 45,
     tags: ["前端", "基础"],
-    createdAt: "2026-03-01",
+    createdAt: new Date("2026-03-01"),
     milestones: [
       { id: "m1", title: "HTML/CSS 基础", taskIds: ["t1", "t2"] },
       { id: "m2", title: "JavaScript 核心", taskIds: ["t3", "t4"] },
@@ -98,6 +102,9 @@ const mockPaths: LearningPath[] = [
           { id: "r1", title: "MDN HTML 指南", type: "article", url: "#" },
         ],
         notes: "已完成基础学习",
+        createdAt: new Date("2026-03-01"),
+        startedAt: new Date("2026-03-01"),
+        completedAt: new Date("2026-03-02")
       },
       {
         id: "t2",
@@ -111,6 +118,8 @@ const mockPaths: LearningPath[] = [
           { id: "r2", title: "Flexbox 完全指南", type: "article", url: "#" },
         ],
         notes: "正在学习对齐属性",
+        createdAt: new Date("2026-03-02"),
+        startedAt: new Date("2026-03-03")
       },
       {
         id: "t3",
@@ -122,6 +131,8 @@ const mockPaths: LearningPath[] = [
         dependencies: ["t1"],
         resources: [],
         notes: "",
+        createdAt: new Date("2026-03-03"),
+        startedAt: new Date("2026-03-05")
       },
       {
         id: "t4",
@@ -133,6 +144,7 @@ const mockPaths: LearningPath[] = [
         dependencies: ["t3"],
         resources: [],
         notes: "",
+        createdAt: new Date("2026-03-04")
       },
     ],
   },
@@ -143,7 +155,7 @@ const mockPaths: LearningPath[] = [
     status: "not_started",
     progress: 0,
     tags: ["React", "进阶"],
-    createdAt: "2026-03-05",
+    createdAt: new Date("2026-03-05"),
     milestones: [],
     tasks: [],
   },
@@ -270,10 +282,7 @@ export default function PathPage() {
                 <CardDescription className="text-xs mt-1">{path.description}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 pt-2 space-y-2">
-                <div className="flex items-center gap-2 text-xs text-gray-600">
-                  <Calendar className="h-3 w-3" />
-                  <span>{path.createdAt}</span>
-                </div>
+                <Timestamp date={path.createdAt} showIcon={true} className="text-gray-600" />
                 <Progress value={path.progress} className="h-1.5" />
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-600">{path.progress}% 完成</span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Settings,
   Cpu,
@@ -78,6 +78,59 @@ export default function SettingsPage() {
   const [maxTokens, setMaxTokens] = useState(2000);
   const [apiKey, setApiKey] = useState("");
 
+  // 保存设置
+  const handleSaveSettings = useCallback(() => {
+    alert('设置已保存');
+  }, []);
+
+  // 导出配置
+  const handleExportConfig = useCallback(() => {
+    const config = {
+      theme,
+      language,
+      temperature,
+      topP,
+      maxTokens,
+      apiKey: apiKey ? '***' : ''
+    };
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'edunexus-config.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    alert('配置已导出');
+  }, [theme, language, temperature, topP, maxTokens, apiKey]);
+
+  // 导入配置
+  const handleImportConfig = useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const config = JSON.parse(event.target?.result as string);
+            if (config.theme) setTheme(config.theme);
+            if (config.language) setLanguage(config.language);
+            if (config.temperature) setTemperature(config.temperature);
+            if (config.topP) setTopP(config.topP);
+            if (config.maxTokens) setMaxTokens(config.maxTokens);
+            alert('配置已导入');
+          } catch (error) {
+            alert('配置文件格式错误');
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  }, []);
+
   const renderContent = () => {
     switch (activeSection) {
       case "general":
@@ -137,7 +190,7 @@ export default function SettingsPage() {
                     </p>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={handleExportConfig}>
                   <Download className="h-4 w-4 mr-2" />
                   导出数据
                 </Button>

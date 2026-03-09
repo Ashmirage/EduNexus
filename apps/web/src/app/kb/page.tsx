@@ -26,6 +26,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { VaultSelector } from "@/components/kb/vault-selector";
 import { getKBStorage, type KBDocument } from "@/lib/client/kb-storage";
 import { AIAssistant } from "@/components/kb/ai-assistant";
+import { Timestamp, TimeRange } from "@/components/ui/timestamp";
 
 // 文档类型定义（使用 KBDocument）
 type Document = KBDocument & {
@@ -566,9 +567,11 @@ export default function KnowledgeBasePage() {
 
               {/* 元信息 */}
               <div className="flex items-center gap-4 text-sm text-amber-600 mb-8">
-                <span>创建于 {selectedDoc.createdAt.toLocaleDateString("zh-CN")}</span>
-                <span>•</span>
-                <span>更新于 {selectedDoc.updatedAt.toLocaleDateString("zh-CN")}</span>
+                <TimeRange
+                  createdAt={selectedDoc.createdAt}
+                  updatedAt={selectedDoc.updatedAt}
+                  showIcon={true}
+                />
               </div>
 
               {/* 内容区 */}
@@ -576,12 +579,25 @@ export default function KnowledgeBasePage() {
                 <Textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
+                  onSelect={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    const selected = target.value.substring(
+                      target.selectionStart,
+                      target.selectionEnd
+                    );
+                    setSelectedText(selected);
+                  }}
                   className="min-h-[600px] font-mono text-sm bg-white border-amber-200 focus:border-amber-400"
                   placeholder="开始编写..."
                 />
               ) : (
                 <div
                   className="prose prose-amber max-w-none"
+                  onMouseUp={() => {
+                    const selection = window.getSelection();
+                    const selected = selection?.toString() || "";
+                    setSelectedText(selected);
+                  }}
                   dangerouslySetInnerHTML={{
                     __html: renderMarkdown(selectedDoc.content),
                   }}
@@ -681,6 +697,19 @@ export default function KnowledgeBasePage() {
           </div>
         </div>
       </div>
+
+      {/* AI 助手 */}
+      <AIAssistant
+        documentId={selectedDoc?.id}
+        documentTitle={selectedDoc?.title}
+        documentContent={selectedDoc?.content}
+        selectedText={selectedText}
+        onInsertText={(text) => {
+          if (isEditing) {
+            setEditContent((prev) => prev + "\n\n" + text);
+          }
+        }}
+      />
     </div>
   );
 }

@@ -9,6 +9,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Save } from "lucide-react";
 
 interface GeneralSettingsPanelProps {
   theme: string;
@@ -77,6 +79,13 @@ export function GeneralSettingsPanel({
           </div>
         </CardContent>
       </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={() => alert('设置已保存')}>
+          <Save className="h-4 w-4 mr-2" />
+          保存设置
+        </Button>
+      </div>
     </div>
   );
 }

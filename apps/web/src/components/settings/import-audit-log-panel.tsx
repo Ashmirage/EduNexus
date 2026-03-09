@@ -3,10 +3,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle2, Info, AlertTriangle } from "lucide-react";
+import { Timestamp } from "@/components/ui/timestamp";
 
 interface AuditLog {
   id: string;
-  timestamp: string;
+  timestamp: Date;
   action: string;
   user: string;
   status: "success" | "error" | "warning" | "info";
@@ -16,7 +17,7 @@ interface AuditLog {
 const mockLogs: AuditLog[] = [
   {
     id: "1",
-    timestamp: "2026-03-09 14:32:15",
+    timestamp: new Date("2026-03-09T14:32:15"),
     action: "数据导入",
     user: "admin@edunexus.com",
     status: "success",
@@ -24,7 +25,7 @@ const mockLogs: AuditLog[] = [
   },
   {
     id: "2",
-    timestamp: "2026-03-09 13:15:42",
+    timestamp: new Date("2026-03-09T13:15:42"),
     action: "模型配置更新",
     user: "admin@edunexus.com",
     status: "success",
@@ -32,7 +33,7 @@ const mockLogs: AuditLog[] = [
   },
   {
     id: "3",
-    timestamp: "2026-03-09 11:20:33",
+    timestamp: new Date("2026-03-09T11:20:33"),
     action: "API 密钥更新",
     user: "admin@edunexus.com",
     status: "warning",
@@ -40,7 +41,7 @@ const mockLogs: AuditLog[] = [
   },
   {
     id: "4",
-    timestamp: "2026-03-09 09:45:12",
+    timestamp: new Date("2026-03-09T09:45:12"),
     action: "数据导出",
     user: "admin@edunexus.com",
     status: "success",
@@ -48,7 +49,7 @@ const mockLogs: AuditLog[] = [
   },
   {
     id: "5",
-    timestamp: "2026-03-08 16:30:00",
+    timestamp: new Date("2026-03-08T16:30:00"),
     action: "主题切换",
     user: "admin@edunexus.com",
     status: "info",
@@ -110,7 +111,7 @@ export function ImportAuditLogPanel() {
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>{log.user}</span>
                       <span>•</span>
-                      <span>{log.timestamp}</span>
+                      <Timestamp date={log.timestamp} showIcon={false} />
                     </div>
                   </div>
                 </div>

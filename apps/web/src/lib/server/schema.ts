@@ -68,3 +68,20 @@ export const lessonPlanGenerateSchema = z.object({
   difficulty: z.enum(["基础", "中等", "提升"]).default("中等"),
   classWeakness: z.string().max(300).optional()
 });
+
+export const kbAIChatSchema = z.object({
+  documentId: z.string().optional(),
+  documentTitle: z.string().optional(),
+  documentContent: z.string().optional(),
+  selectedText: z.string().optional(),
+  userInput: z.string().min(1).max(4000),
+  conversationHistory: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string()
+      })
+    )
+    .optional()
+});
+

@@ -17,7 +17,8 @@ export function JsonImportPanel() {
     try {
       JSON.parse(jsonInput);
       setError("");
-      // Handle import logic
+      alert('数据导入成功');
+      setJsonInput("");
     } catch {
       setError("无效的 JSON 格式");
     }

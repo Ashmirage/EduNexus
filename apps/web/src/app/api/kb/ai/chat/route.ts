@@ -1,24 +1,9 @@
 import { fail, ok } from "@/lib/server/response";
-import { z } from "zod";
+import { kbAIChatSchema } from "@/lib/server/schema";
+import { AI_CONFIG } from "@/lib/ai-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const kbAIChatSchema = z.object({
-  documentId: z.string().optional(),
-  documentTitle: z.string().optional(),
-  documentContent: z.string().optional(),
-  selectedText: z.string().optional(),
-  userInput: z.string().min(1).max(4000),
-  conversationHistory: z
-    .array(
-      z.object({
-        role: z.enum(["user", "assistant"]),
-        content: z.string()
-      })
-    )
-    .optional()
-});
 
 export async function POST(request: Request) {
   try {
@@ -42,40 +27,23 @@ export async function POST(request: Request) {
     } = parsed.data;
 
     // 构建上下文提示
-    let contextPrompt = "";
-    if (documentTitle) {
-      contextPrompt += `当前文档标题：${documentTitle}\n\n`;
-    }
-    if (documentContent) {
-      const contentPreview = documentContent.slice(0, 2000);
-      contextPrompt += `文档内容：\n${contentPreview}\n\n`;
-    }
-    if (selectedText) {
-      contextPrompt += `用户选中的文本：\n${selectedText}\n\n`;
-    }
+    const contextPrompt = AI_CONFIG.prompts.contextTemplate(
+      documentTitle,
+      documentContent,
+      selectedText
+    );
 
     // 构建系统提示
-    const systemPrompt = `你是 EduNexus 知识库的 AI 写作助手。你的任务是帮助用户：
-1. 生成文档摘要
-2. 扩展和丰富内容
-3. 解释概念和术语
-4. 改进写作质量和表达
-5. 提供写作建议
-
-请基于用户提供的文档内容和问题，给出专业、准确、有帮助的回答。
-回答要简洁明了，适合直接插入到文档中。
-
-${contextPrompt}`;
+    const systemPrompt = AI_CONFIG.prompts.system + "\n\n" + contextPrompt;
 
     // 构建消息历史
     const messages = [
-      { role: "system", content: systemPrompt },
-      ...(conversationHistory || []).slice(-6),
-      { role: "user", content: userInput }
+      { role: "system" as const, content: systemPrompt },
+      ...(conversationHistory || []).slice(-AI_CONFIG.general.maxHistoryRounds),
+      { role: "user" as const, content: userInput }
     ];
 
-    // 调用 AI 模型（这里使用简单的模拟响应）
-    // 在实际应用中，应该调用真实的 AI API（如 OpenAI、Anthropic 等）
+    // 调用 AI 模型
     const aiResponse = await generateAIResponse(userInput, contextPrompt);
 
     return ok({

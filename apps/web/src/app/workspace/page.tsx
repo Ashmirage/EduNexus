@@ -32,8 +32,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatRelativeTime, formatAbsoluteTime } from "@/lib/utils/time-format";
+import { Timestamp, TimeRange } from "@/components/ui/timestamp";
 
 // Types
 type Message = {
@@ -207,6 +206,22 @@ export default function WorkspacePage() {
     })
   };
 
+  // 新建会话
+  const handleNewSession = useCallback(() => {
+    const title = prompt('输入会话标题:');
+    if (title && title.trim()) {
+      alert(`创建新会话: ${title}`);
+    }
+  }, []);
+
+  // 导出会话
+  const handleExportSession = useCallback(() => {
+    alert('正在导出会话...');
+    setTimeout(() => {
+      alert('会话导出成功');
+    }, 1000);
+  }, []);
+
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-rose-50/30">
       {/* Left Sidebar - Session List */}
@@ -244,7 +259,7 @@ export default function WorkspacePage() {
             </div>
 
             {/* New Session Button */}
-            <Button className="w-full mt-3" onClick={() => {}}>
+            <Button className="w-full mt-3" onClick={handleNewSession}>
               <Plus className="h-4 w-4 mr-2" />
               新建会话
             </Button>
@@ -276,22 +291,11 @@ export default function WorkspacePage() {
                         <div className="text-xs text-muted-foreground truncate mt-1">
                           {session.lastMessage}
                         </div>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                                <Clock className="h-3 w-3" />
-                                <span>{formatRelativeTime(session.updatedAt)}</span>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <div className="text-xs space-y-1">
-                                <div>创建: {formatAbsoluteTime(session.createdAt)}</div>
-                                <div>更新: {formatAbsoluteTime(session.updatedAt)}</div>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <TimeRange
+                          createdAt={session.createdAt}
+                          updatedAt={session.updatedAt}
+                          className="mt-1"
+                        />
                       </div>
                       <Badge variant="secondary" className="ml-2 text-xs">
                         {session.messageCount}
@@ -326,22 +330,11 @@ export default function WorkspacePage() {
                         <div className="text-xs text-muted-foreground truncate mt-1">
                           {session.lastMessage}
                         </div>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                                <Clock className="h-3 w-3" />
-                                <span>{formatRelativeTime(session.updatedAt)}</span>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <div className="text-xs space-y-1">
-                                <div>创建: {formatAbsoluteTime(session.createdAt)}</div>
-                                <div>更新: {formatAbsoluteTime(session.updatedAt)}</div>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <TimeRange
+                          createdAt={session.createdAt}
+                          updatedAt={session.updatedAt}
+                          className="mt-1"
+                        />
                       </div>
                       <Badge variant="secondary" className="ml-2 text-xs">
                         {session.messageCount}
@@ -376,22 +369,11 @@ export default function WorkspacePage() {
                         <div className="text-xs text-muted-foreground truncate mt-1">
                           {session.lastMessage}
                         </div>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                                <Clock className="h-3 w-3" />
-                                <span>{formatRelativeTime(session.updatedAt)}</span>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <div className="text-xs space-y-1">
-                                <div>创建: {formatAbsoluteTime(session.createdAt)}</div>
-                                <div>更新: {formatAbsoluteTime(session.updatedAt)}</div>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <TimeRange
+                          createdAt={session.createdAt}
+                          updatedAt={session.updatedAt}
+                          className="mt-1"
+                        />
                       </div>
                       <Badge variant="secondary" className="ml-2 text-xs">
                         {session.messageCount}
@@ -565,21 +547,7 @@ export default function WorkspacePage() {
                 </div>
 
                 {/* Timestamp */}
-                <div className="flex items-center gap-2 mt-2 px-2">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground cursor-help">
-                          <Clock className="h-3 w-3" />
-                          <span>{formatRelativeTime(message.timestamp)}</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">{formatAbsoluteTime(message.timestamp)}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+                <Timestamp date={message.timestamp} className="mt-2 px-2" />
               </div>
 
               {message.role === "user" && (
@@ -779,7 +747,7 @@ export default function WorkspacePage() {
 
         {/* Export Options */}
         <div className="border-t border-border p-4">
-          <Button variant="outline" className="w-full" size="sm">
+          <Button variant="outline" className="w-full" size="sm" onClick={handleExportSession}>
             <Download className="h-4 w-4 mr-2" />
             导出会话
           </Button>

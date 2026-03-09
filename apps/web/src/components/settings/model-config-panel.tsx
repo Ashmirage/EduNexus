@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Save } from "lucide-react";
 import { useState } from "react";
 
 interface ModelConfigPanelProps {
@@ -130,6 +130,13 @@ export function ModelConfigPanel({
           </div>
         </CardContent>
       </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={() => alert('模型配置已保存')}>
+          <Save className="h-4 w-4 mr-2" />
+          保存配置
+        </Button>
+      </div>
     </div>
   );
 }

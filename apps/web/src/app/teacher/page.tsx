@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Timestamp } from "@/components/ui/timestamp";
 
 type Course = {
   id: string;
@@ -38,12 +39,15 @@ type Course = {
   progress: number;
   status: "active" | "completed" | "draft";
   color: string;
+  createdAt: Date;
 };
 
 type Assignment = {
   id: string;
   title: string;
   dueDate: string;
+  publishedAt: Date;
+  submittedAt?: Date;
   submitted: number;
   total: number;
   status: "pending" | "grading" | "completed";
@@ -58,7 +62,8 @@ const mockCourses: Course[] = [
     studentCount: 45,
     progress: 68,
     status: "active",
-    color: "bg-rose-500"
+    color: "bg-rose-500",
+    createdAt: new Date("2026-02-15")
   },
   {
     id: "2",
@@ -68,7 +73,8 @@ const mockCourses: Course[] = [
     studentCount: 38,
     progress: 72,
     status: "active",
-    color: "bg-amber-500"
+    color: "bg-amber-500",
+    createdAt: new Date("2026-02-16")
   },
   {
     id: "3",
@@ -78,14 +84,40 @@ const mockCourses: Course[] = [
     studentCount: 42,
     progress: 55,
     status: "active",
-    color: "bg-sky-500"
+    color: "bg-sky-500",
+    createdAt: new Date("2026-02-17")
   }
 ];
 
 const mockAssignments: Assignment[] = [
-  { id: "1", title: "第三章习题集", dueDate: "2026-03-15", submitted: 32, total: 45, status: "pending" },
-  { id: "2", title: "期中测验", dueDate: "2026-03-20", submitted: 28, total: 45, status: "grading" },
-  { id: "3", title: "矩阵运算练习", dueDate: "2026-03-18", submitted: 38, total: 38, status: "completed" }
+  {
+    id: "1",
+    title: "第三章习题集",
+    dueDate: "2026-03-15",
+    publishedAt: new Date("2026-03-01"),
+    submitted: 32,
+    total: 45,
+    status: "pending"
+  },
+  {
+    id: "2",
+    title: "期中测验",
+    dueDate: "2026-03-20",
+    publishedAt: new Date("2026-03-05"),
+    submitted: 28,
+    total: 45,
+    status: "grading"
+  },
+  {
+    id: "3",
+    title: "矩阵运算练习",
+    dueDate: "2026-03-18",
+    publishedAt: new Date("2026-03-03"),
+    submittedAt: new Date("2026-03-18"),
+    submitted: 38,
+    total: 38,
+    status: "completed"
+  }
 ];
 
 export default function TeacherPage() {
@@ -94,6 +126,35 @@ export default function TeacherPage() {
   const [semesterFilter, setSemesterFilter] = useState("all");
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // 新建课程
+  const handleCreateCourse = useCallback(() => {
+    const courseName = prompt('输入课程名称:');
+    if (courseName && courseName.trim()) {
+      alert(`创建课程: ${courseName}`);
+    }
+  }, []);
+
+  // 新建作业
+  const handleCreateAssignment = useCallback(() => {
+    const assignmentTitle = prompt('输入作业标题:');
+    if (assignmentTitle && assignmentTitle.trim()) {
+      alert(`创建作业: ${assignmentTitle}`);
+    }
+  }, []);
+
+  // 查看学生进度
+  const handleViewStudentProgress = useCallback(() => {
+    alert('查看学生进度');
+  }, []);
+
+  // 导出报告
+  const handleExportReport = useCallback(() => {
+    alert('正在导出报告...');
+    setTimeout(() => {
+      alert('报告导出成功');
+    }, 1000);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-amber-50 to-sky-50">
@@ -108,19 +169,19 @@ export default function TeacherPage() {
               <p className="text-sm text-muted-foreground mt-1">管理课程、作业和学生表现</p>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleCreateCourse}>
                 <BookOpen className="mr-2 h-4 w-4" />
                 新建课程
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleCreateAssignment}>
                 <FileText className="mr-2 h-4 w-4" />
                 新建作业
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleViewStudentProgress}>
                 <Users className="mr-2 h-4 w-4" />
                 学生进度
               </Button>
-              <Button size="sm" className="bg-gradient-to-r from-rose-500 via-amber-500 to-sky-500 text-white">
+              <Button size="sm" className="bg-gradient-to-r from-rose-500 via-amber-500 to-sky-500 text-white" onClick={handleExportReport}>
                 <Download className="mr-2 h-4 w-4" />
                 导出报告
               </Button>
@@ -369,9 +430,11 @@ export default function TeacherPage() {
                             <div className="flex items-start justify-between mb-3">
                               <div>
                                 <h3 className="font-medium">{assignment.title}</h3>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  截止日期：{assignment.dueDate}
-                                </p>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                  <span>截止: {assignment.dueDate}</span>
+                                  <span>•</span>
+                                  <Timestamp date={assignment.publishedAt} showIcon={false} />
+                                </div>
                               </div>
                               <Badge variant={
                                 assignment.status === "completed" ? "default" :
