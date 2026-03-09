@@ -142,7 +142,7 @@ export const FloatingCreateButton = memo(function FloatingCreateButton({
                         {option.label}
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="left">
+                    <TooltipContent side="right">
                       {option.description}
                     </TooltipContent>
                   </Tooltip>
@@ -168,7 +168,7 @@ export const FloatingCreateButton = memo(function FloatingCreateButton({
               <Plus className="w-6 h-6" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="left">
+          <TooltipContent side="right">
             {isOpen ? '关闭菜单' : '快速创建'}
           </TooltipContent>
         </Tooltip>

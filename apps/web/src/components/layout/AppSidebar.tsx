@@ -23,6 +23,9 @@ import {
   ChevronLeft,
   Menu,
   BarChart3,
+  Target,
+  FolderOpen,
+  GitBranch,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 
@@ -34,6 +37,9 @@ const navigation = [
       { name: '🌌 知识星图', href: '/graph', icon: Network },
       { name: '📚 知识宝库', href: '/kb', icon: BookOpen },
       { name: '🎮 成长地图', href: '/path', icon: Route },
+      { name: '🛤️ 学习路径', href: '/learning-paths', icon: GitBranch },
+      { name: '🎯 目标管理', href: '/goals', icon: Target },
+      { name: '📦 资源中心', href: '/resources', icon: FolderOpen },
     ],
   },
   {

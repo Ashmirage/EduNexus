@@ -33,6 +33,7 @@ import { QuizGenerator } from "@/components/workspace/quiz-generator";
 import { CompactLevelDisplay } from "@/components/compact-level-display";
 import { LearningPlanner } from "@/components/kb/learning-planner";
 import { KBQAAssistant } from "@/components/kb/kb-qa-assistant";
+import { ProgrammingLab } from "@/components/workspace/programming-lab";
 import { getKBStorage } from "@/lib/client/kb-storage";
 
 type Message = {
@@ -61,7 +62,7 @@ export default function WorkspacePage() {
   const [socraticMode, setSocraticMode] = useState(true);
   const [showThinking, setShowThinking] = useState(true);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<"status" | "tools" | "notes" | "quiz" | "plan" | "kb-qa">("status");
+  const [activeTab, setActiveTab] = useState<"status" | "tools" | "notes" | "quiz" | "plan" | "kb-qa" | "lab">("status");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -439,14 +440,17 @@ export default function WorkspacePage() {
       </div>
 
       {/* Right Sidebar - Info Panel */}
-      <div className="w-80 border-l bg-white/50 backdrop-blur-sm overflow-y-auto flex flex-col">
+      <div className={cn(
+        "border-l bg-white/50 backdrop-blur-sm overflow-y-auto flex flex-col",
+        activeTab === "lab" ? "w-[800px]" : "w-80"
+      )}>
         {/* Tabs */}
-        <div className="border-b bg-white/80 p-2 flex gap-1">
+        <div className="border-b bg-white/80 p-2 flex gap-1 overflow-x-auto">
           <Button
             variant={activeTab === "status" ? "default" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("status")}
-            className="flex-1 text-xs"
+            className="flex-shrink-0 text-xs"
           >
             <Settings className="h-3 w-3 mr-1" />
             状态
@@ -455,16 +459,25 @@ export default function WorkspacePage() {
             variant={activeTab === "tools" ? "default" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("tools")}
-            className="flex-1 text-xs"
+            className="flex-shrink-0 text-xs"
           >
             <Code className="h-3 w-3 mr-1" />
             工具
           </Button>
           <Button
+            variant={activeTab === "lab" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setActiveTab("lab")}
+            className="flex-shrink-0 text-xs"
+          >
+            <Code className="h-3 w-3 mr-1" />
+            实验室
+          </Button>
+          <Button
             variant={activeTab === "notes" ? "default" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("notes")}
-            className="flex-1 text-xs"
+            className="flex-shrink-0 text-xs"
           >
             <FileText className="h-3 w-3 mr-1" />
             笔记
@@ -473,7 +486,7 @@ export default function WorkspacePage() {
             variant={activeTab === "quiz" ? "default" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("quiz")}
-            className="flex-1 text-xs"
+            className="flex-shrink-0 text-xs"
           >
             <Target className="h-3 w-3 mr-1" />
             练习
@@ -482,7 +495,7 @@ export default function WorkspacePage() {
             variant={activeTab === "plan" ? "default" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("plan")}
-            className="flex-1 text-xs"
+            className="flex-shrink-0 text-xs"
           >
             <Sparkles className="h-3 w-3 mr-1" />
             计划
@@ -491,7 +504,7 @@ export default function WorkspacePage() {
             variant={activeTab === "kb-qa" ? "default" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("kb-qa")}
-            className="flex-1 text-xs"
+            className="flex-shrink-0 text-xs"
           >
             <Brain className="h-3 w-3 mr-1" />
             问答
@@ -602,6 +615,12 @@ export default function WorkspacePage() {
           {activeTab === "tools" && (
             <div className="space-y-4">
               <CodeExecutor />
+            </div>
+          )}
+
+          {activeTab === "lab" && (
+            <div className="h-full">
+              <ProgrammingLab />
             </div>
           )}
 

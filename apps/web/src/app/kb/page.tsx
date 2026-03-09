@@ -1257,7 +1257,7 @@ export default function KnowledgeBasePage() {
         onCreateBlank={() => openQuickCreateDialog('blank')}
         onCreateFromTemplate={() => openQuickCreateDialog('template')}
         onQuickNote={() => openQuickCreateDialog('quick')}
-        position="bottom-right"
+        position="bottom-left"
       />
 
       {/* 快速创建对话框 */}

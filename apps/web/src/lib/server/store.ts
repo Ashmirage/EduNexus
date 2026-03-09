@@ -2,6 +2,7 @@ import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { UserLevel, UserExperience, UserAchievement, UserStats, ExpGainEvent } from './user-level-types';
+import type { Resource, Bookmark, BookmarkFolder, ResourceNote } from '../resources/resource-types';
 
 type SessionRecord = {
   id: string;
@@ -43,6 +44,10 @@ type DbSchema = {
   userAchievements: UserAchievement[];
   userStats: Record<string, UserStats>;
   expGainHistory: ExpGainEvent[];
+  resources: Resource[];
+  bookmarks: Bookmark[];
+  bookmarkFolders: BookmarkFolder[];
+  resourceNotes: ResourceNote[];
 };
 
 const DEFAULT_DB: DbSchema = {
@@ -53,7 +58,11 @@ const DEFAULT_DB: DbSchema = {
   userExperience: {},
   userAchievements: [],
   userStats: {},
-  expGainHistory: []
+  expGainHistory: [],
+  resources: [],
+  bookmarks: [],
+  bookmarkFolders: [],
+  resourceNotes: []
 };
 
 async function ensureDir(dir: string) {
@@ -117,7 +126,11 @@ export async function loadDb(): Promise<DbSchema> {
       userExperience: parsed.userExperience ?? {},
       userAchievements: parsed.userAchievements ?? [],
       userStats: parsed.userStats ?? {},
-      expGainHistory: parsed.expGainHistory ?? []
+      expGainHistory: parsed.expGainHistory ?? [],
+      resources: parsed.resources ?? [],
+      bookmarks: parsed.bookmarks ?? [],
+      bookmarkFolders: parsed.bookmarkFolders ?? [],
+      resourceNotes: parsed.resourceNotes ?? []
     };
   } catch {
     await fs.writeFile(filePath, JSON.stringify(DEFAULT_DB, null, 2), "utf8");
