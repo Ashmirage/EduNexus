@@ -96,17 +96,26 @@ export default function ResourcesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-rose-50/30">
       <div className="page-container">
         {/* 页面标题 */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">资源中心</h1>
+            <h1 className="text-3xl font-bold flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-rose-500">
+                <Sparkles className="h-6 w-6 text-white" />
+              </div>
+              资源中心
+            </h1>
             <p className="text-muted-foreground">
-              管理和分享你的学习资源，构建个人知识库
+              管理和分享你的学习资源，构建个人知识库，智能推荐优质内容
             </p>
           </div>
-          <Button onClick={() => setShowUpload(true)} size="lg">
+          <Button
+            onClick={() => setShowUpload(true)}
+            size="lg"
+            className="bg-gradient-to-br from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600"
+          >
             <Plus className="w-5 h-5 mr-2" />
             添加资源
           </Button>
@@ -114,43 +123,49 @@ export default function ResourcesPage() {
 
         {/* 统计卡片 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="panel">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">全部资源</p>
-                <p className="text-3xl font-bold">{resources.length}</p>
+          <Card className="card-hover border-l-4 border-l-orange-500">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">全部资源</p>
+                  <p className="text-3xl font-bold">{resources.length}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-orange-500" />
+                </div>
               </div>
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-primary" />
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="panel">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">我的收藏</p>
-                <p className="text-3xl font-bold">
-                  {getAllBookmarks(userId).length}
-                </p>
+          <Card className="card-hover border-l-4 border-l-blue-500">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">我的收藏</p>
+                  <p className="text-3xl font-bold">
+                    {getAllBookmarks(userId).length}
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
+                  <Bookmark className="w-6 h-6 text-blue-500" />
+                </div>
               </div>
-              <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
-                <Bookmark className="w-6 h-6 text-blue-500" />
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="panel">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">资源标签</p>
-                <p className="text-3xl font-bold">{availableTags.length}</p>
+          <Card className="card-hover border-l-4 border-l-green-500">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">资源标签</p>
+                  <p className="text-3xl font-bold">{availableTags.length}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-green-500" />
+                </div>
               </div>
-              <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-green-500" />
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* 主内容区 */}
@@ -168,7 +183,7 @@ export default function ResourcesPage() {
           {/* 右侧：资源列表 */}
           <div className="lg:col-span-3 space-y-8">
             <Tabs defaultValue="all" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-3 max-w-2xl">
                 <TabsTrigger value="all">全部资源</TabsTrigger>
                 <TabsTrigger value="bookmarked">我的收藏</TabsTrigger>
                 <TabsTrigger value="recommended">推荐</TabsTrigger>

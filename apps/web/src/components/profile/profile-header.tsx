@@ -5,6 +5,13 @@ import type { UserProfile, UserSocialStats } from '@/lib/profile/profile-types';
 import type { UserLevel } from '@/lib/server/user-level-types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Mail, Share2, MoreHorizontal, MapPin, Briefcase, GraduationCap, Link as LinkIcon } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 type ProfileHeaderProps = {
   profile: UserProfile;
@@ -30,76 +37,113 @@ export function ProfileHeader({
   const [imageError, setImageError] = useState(false);
 
   const themeColors = {
-    default: 'from-gray-500 to-gray-700',
-    dark: 'from-gray-800 to-black',
-    blue: 'from-blue-500 to-blue-700',
-    green: 'from-green-500 to-green-700',
-    purple: 'from-purple-500 to-purple-700'
+    default: 'from-blue-500 via-purple-500 to-pink-500',
+    dark: 'from-gray-800 via-gray-900 to-black',
+    blue: 'from-blue-400 via-blue-600 to-indigo-600',
+    green: 'from-green-400 via-emerald-500 to-teal-600',
+    purple: 'from-purple-400 via-purple-600 to-indigo-600'
   };
 
   const gradientClass = themeColors[profile.theme || 'default'];
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-      {/* 封面图片 */}
-      <div className={`h-48 bg-gradient-to-r ${gradientClass} relative`}>
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden transition-all hover:shadow-2xl">
+      {/* 封面图片 - 增加高度和动态效果 */}
+      <div className={`h-56 md:h-64 bg-gradient-to-r ${gradientClass} relative group`}>
         {profile.coverImage && !imageError ? (
           <img
             src={profile.coverImage}
             alt="Cover"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform group-hover:scale-105"
             onError={() => setImageError(true)}
           />
-        ) : null}
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 via-purple-400/20 to-pink-400/20 backdrop-blur-3xl" />
+        )}
+        {/* 渐变遮罩 */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
       </div>
 
       {/* 个人信息 */}
-      <div className="px-6 pb-6">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16 mb-4">
+      <div className="px-4 sm:px-6 pb-6">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-20 mb-6">
           {/* 头像和基本信息 */}
-          <div className="flex items-end space-x-4">
-            <div className="w-32 h-32 rounded-full bg-white dark:bg-gray-700 border-4 border-white dark:border-gray-800 flex items-center justify-center text-6xl shadow-lg">
-              {profile.avatar || '👤'}
+          <div className="flex flex-col sm:flex-row items-center sm:items-end space-y-4 sm:space-y-0 sm:space-x-5">
+            <div className="relative group">
+              <div className="w-36 h-36 rounded-2xl bg-white dark:bg-gray-700 border-4 border-white dark:border-gray-800 flex items-center justify-center text-7xl shadow-2xl transition-transform group-hover:scale-105">
+                {profile.avatar || '👤'}
+              </div>
+              {/* 在线状态指示器 */}
+              <div className="absolute bottom-2 right-2 w-6 h-6 bg-green-500 border-4 border-white dark:border-gray-800 rounded-full" />
             </div>
 
-            <div className="mb-2">
-              <div className="flex items-center space-x-2">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="mb-2 text-center sm:text-left">
+              <div className="flex flex-col sm:flex-row items-center sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                   {profile.displayName}
                 </h1>
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-sm px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">
                   {userLevel.titleEmoji} {userLevel.title}
                 </Badge>
               </div>
-              <p className="text-gray-600 dark:text-gray-400">@{profile.username}</p>
+              <p className="text-gray-600 dark:text-gray-400 text-lg mb-2">@{profile.username}</p>
               {profile.signature && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {profile.signature}
+                <p className="text-sm text-gray-600 dark:text-gray-400 max-w-md italic">
+                  "{profile.signature}"
                 </p>
               )}
             </div>
           </div>
 
           {/* 操作按钮 */}
-          <div className="flex space-x-2 mt-4 md:mt-0">
+          <div className="flex flex-wrap gap-2 mt-4 md:mt-0 justify-center md:justify-end">
             {isOwnProfile ? (
-              <Button onClick={onEditProfile} variant="outline">
+              <Button onClick={onEditProfile} variant="outline" size="lg" className="gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
                 编辑资料
               </Button>
             ) : (
               <>
                 {isFollowing ? (
-                  <Button onClick={onUnfollow} variant="outline">
+                  <Button onClick={onUnfollow} variant="outline" size="lg" className="gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:hover:bg-red-900/20">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
                     已关注
                   </Button>
                 ) : (
-                  <Button onClick={onFollow}>
+                  <Button onClick={onFollow} size="lg" className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
                     关注
                   </Button>
                 )}
-                <Button variant="outline">
+                <Button variant="outline" size="lg" className="gap-2">
+                  <Mail className="w-4 h-4" />
                   发消息
                 </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="lg">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem className="gap-2">
+                      <Share2 className="w-4 h-4" />
+                      分享主页
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="gap-2 text-red-600">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                      </svg>
+                      屏蔽用户
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             )}
           </div>

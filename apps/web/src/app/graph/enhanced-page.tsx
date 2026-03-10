@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,7 @@ import { LearningPathOverlay } from "@/components/graph/learning-path-overlay";
 import { ProgressLegend } from "@/components/graph/progress-legend";
 import { RecommendationEngine } from "@/lib/graph/recommendation-engine";
 import { ProgressTracker } from "@/lib/graph/progress-tracker";
+import { cn } from "@/lib/utils";
 import type {
   GraphNode,
   GraphEdge,
@@ -373,98 +375,155 @@ export default function EnhancedGraphPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* 头部 */}
-      <div className="border-b bg-card/50 backdrop-blur-sm">
+      <motion.div
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="border-b bg-card/50 backdrop-blur-sm"
+      >
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="flex items-center gap-3"
+            >
+              <motion.div
+                whileHover={{ scale: 1.1, rotate: 180 }}
+                transition={{ type: "spring", stiffness: 200 }}
+                className="p-2 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10"
+              >
                 <Network className="h-5 w-5 text-primary" />
-              </div>
+              </motion.div>
               <div>
                 <h1 className="text-xl font-semibold">知识星图</h1>
-                <p className="text-sm text-muted-foreground">
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-sm text-muted-foreground"
+                >
                   {filteredNodes.length} 个节点 · {filteredEdges.length} 条关系 ·{" "}
                   {(stats.completionRate * 100).toFixed(1)}% 完成
-                </p>
+                </motion.p>
               </div>
-            </div>
+            </motion.div>
 
             {/* 搜索和控制 */}
-            <div className="flex items-center gap-3">
-              <div className="relative w-64">
+            <motion.div
+              initial={{ x: 20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="flex items-center gap-3"
+            >
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                className="relative w-64"
+              >
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="搜索节点..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
+                  className="pl-9 focus:ring-2 focus:ring-primary/20 transition-all"
                 />
-              </div>
+              </motion.div>
 
               {/* 布局选择 */}
-              <Select value={layout} onValueChange={(v) => setLayout(v as LayoutType)}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="force">力导向</SelectItem>
-                  <SelectItem value="hierarchical">层次</SelectItem>
-                  <SelectItem value="radial">径向</SelectItem>
-                  <SelectItem value="timeline">时间轴</SelectItem>
-                </SelectContent>
-              </Select>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Select value={layout} onValueChange={(v) => setLayout(v as LayoutType)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="force">力导向</SelectItem>
+                    <SelectItem value="hierarchical">层次</SelectItem>
+                    <SelectItem value="radial">径向</SelectItem>
+                    <SelectItem value="timeline">时间轴</SelectItem>
+                  </SelectContent>
+                </Select>
+              </motion.div>
 
               {/* 主题选择 */}
-              <Select value={theme} onValueChange={(v) => setTheme(v as ThemeType)}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tech">科技风</SelectItem>
-                  <SelectItem value="nature">自然风</SelectItem>
-                  <SelectItem value="minimal">简约风</SelectItem>
-                </SelectContent>
-              </Select>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Select value={theme} onValueChange={(v) => setTheme(v as ThemeType)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tech">科技风</SelectItem>
+                    <SelectItem value="nature">自然风</SelectItem>
+                    <SelectItem value="minimal">简约风</SelectItem>
+                  </SelectContent>
+                </Select>
+              </motion.div>
 
               {/* 功能按钮 */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowLearningPath(!showLearningPath)}
-              >
-                <Route className="h-4 w-4 mr-1" />
-                学习路径
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleShare}>
-                <Share2 className="h-4 w-4" />
-              </Button>
-            </div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowLearningPath(!showLearningPath)}
+                  className={cn(
+                    "transition-all",
+                    showLearningPath && "bg-primary text-primary-foreground"
+                  )}
+                >
+                  <Route className="h-4 w-4 mr-1" />
+                  学习路径
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.1, rotate: 15 }} whileTap={{ scale: 0.9 }}>
+                <Button variant="outline" size="sm" onClick={handleExport}>
+                  <Download className="h-4 w-4" />
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.1, rotate: -15 }} whileTap={{ scale: 0.9 }}>
+                <Button variant="outline" size="sm" onClick={handleShare}>
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              </motion.div>
+            </motion.div>
           </div>
 
           {/* 筛选器 */}
-          <div className="flex items-center gap-2 mt-4">
+          <motion.div
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="flex items-center gap-2 mt-4"
+          >
             <Filter className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">节点类型:</span>
-            {Object.entries(NODE_TYPE_CONFIG).map(([type, config]) => {
+            {Object.entries(NODE_TYPE_CONFIG).map(([type, config], index) => {
               const isActive = activeTypeFilters.has(type as NodeType);
               return (
-                <Button
+                <motion.div
                   key={type}
-                  variant={isActive ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => toggleTypeFilter(type as NodeType)}
-                  className="h-7"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.4 + index * 0.05 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  {config.label}
-                </Button>
+                  <Button
+                    variant={isActive ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleTypeFilter(type as NodeType)}
+                    className={cn(
+                      "h-7 transition-all",
+                      isActive && "bg-gradient-to-r from-primary to-accent shadow-md"
+                    )}
+                  >
+                    {config.label}
+                  </Button>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* 主内容区 */}
       <div className="flex-1 flex relative">

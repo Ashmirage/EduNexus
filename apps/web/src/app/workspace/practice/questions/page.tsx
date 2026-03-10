@@ -154,27 +154,32 @@ export default function QuestionBanksPage() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-rose-50/30 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">题库管理</h1>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-rose-500">
+              <BookOpen className="h-6 w-6 text-white" />
+            </div>
+            题库管理
+          </h1>
           <p className="text-muted-foreground">
-            创建和管理你的练习题库，支持多种题型
+            创建和管理你的练习题库，支持多种题型和智能组卷
           </p>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-4 mb-6">
+        <div className="flex gap-4 mb-8">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="搜索题库..."
+              placeholder="搜索题库名称、描述或标签..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 input-enhanced"
             />
           </div>
           <Button
             onClick={() => setIsCreateDialogOpen(true)}
-            className="bg-gradient-to-br from-orange-500 to-rose-500"
+            className="bg-gradient-to-br from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600"
           >
             <Plus className="h-4 w-4 mr-2" />
             创建题库
@@ -184,33 +189,44 @@ export default function QuestionBanksPage() {
         {/* Banks Grid */}
         {isLoading ? (
           <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4" />
             <p className="text-muted-foreground">加载中...</p>
           </div>
         ) : filteredBanks.length === 0 ? (
           <div className="text-center py-12">
-            <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-500/10 flex items-center justify-center">
+              <BookOpen className="h-8 w-8 text-orange-500 opacity-50" />
+            </div>
             <p className="text-muted-foreground mb-4">
               {searchQuery ? "没有找到匹配的题库" : "还没有题库"}
             </p>
             {!searchQuery && (
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Button
+                onClick={() => setIsCreateDialogOpen(true)}
+                className="bg-gradient-to-br from-orange-500 to-rose-500"
+              >
                 创建第一个题库
               </Button>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredBanks.map((bank) => (
               <Card
                 key={bank.id}
-                className="hover:shadow-lg transition-shadow cursor-pointer"
+                className="card-hover group border-l-4 border-l-orange-500"
                 onClick={() =>
                   router.push(`/workspace/practice/questions/${bank.id}`)
                 }
               >
                 <CardHeader>
                   <CardTitle className="flex items-start justify-between">
-                    <span className="flex-1">{bank.name}</span>
+                    <div className="flex items-center gap-2 flex-1">
+                      <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500/10 to-rose-500/10 group-hover:from-orange-500/20 group-hover:to-rose-500/20 transition-colors">
+                        <BookOpen className="h-5 w-5 text-orange-500" />
+                      </div>
+                      <span className="flex-1">{bank.name}</span>
+                    </div>
                     <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                       <Button
                         variant="ghost"
@@ -234,14 +250,20 @@ export default function QuestionBanksPage() {
                     {bank.description || "暂无描述"}
                   </p>
 
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                    <div className="flex items-center gap-1">
-                      <BookOpen className="h-4 w-4" />
-                      <span>{bank.questionCount} 题</span>
+                  <div className="flex items-center gap-4 text-sm mb-3 p-3 rounded-lg bg-gradient-to-br from-orange-50/50 to-rose-50/50">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-orange-500/10">
+                        <BookOpen className="h-4 w-4 text-orange-500" />
+                      </div>
+                      <span className="font-semibold">{bank.questionCount} 题</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
-                      <span>{bank.updatedAt.toLocaleDateString()}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-blue-500/10">
+                        <Calendar className="h-4 w-4 text-blue-500" />
+                      </div>
+                      <span className="text-muted-foreground">
+                        {bank.updatedAt.toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
 

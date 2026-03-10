@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
   Search,
@@ -32,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Timestamp } from "@/components/ui/timestamp";
+import { cn } from "@/lib/utils";
 
 type PathStatus = "not_started" | "in_progress" | "completed";
 type TaskStatus = "not_started" | "in_progress" | "completed";
@@ -225,26 +227,55 @@ export default function PathPage() {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-yellow-50/30">
       {/* 左侧面板 */}
-      <div className="w-80 border-r bg-white/80 backdrop-blur-sm flex flex-col">
+      <motion.div
+        initial={{ x: -20, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="w-80 border-r bg-white/80 backdrop-blur-sm flex flex-col"
+      >
         <div className="p-4 border-b space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">🎮 成长地图</h2>
-            <Button size="sm" className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600" onClick={handleCreatePath}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
+          <motion.div
+            initial={{ y: -10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="flex items-center justify-between"
+          >
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <span className="text-2xl">🎮</span>
+              成长地图
+            </h2>
+            <motion.div whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }}>
+              <Button
+                size="sm"
+                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg hover:shadow-xl transition-all"
+                onClick={handleCreatePath}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </motion.div>
+          </motion.div>
 
-          <div className="relative">
+          <motion.div
+            initial={{ y: -10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="relative"
+          >
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               placeholder="搜索成长地图..."
-              className="pl-9"
+              className="pl-9 focus:ring-2 focus:ring-orange-400 transition-all"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
+          </motion.div>
 
-          <div className="flex gap-2">
+          <motion.div
+            initial={{ y: -10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="flex gap-2"
+          >
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="flex-1">
                 <SelectValue placeholder="状态" />
@@ -256,92 +287,156 @@ export default function PathPage() {
                 <SelectItem value="completed">已完成</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="icon">
-              <Filter className="h-4 w-4" />
-            </Button>
-          </div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button variant="outline" size="icon">
+                <Filter className="h-4 w-4" />
+              </Button>
+            </motion.div>
+          </motion.div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {filteredPaths.map((path) => (
-            <Card
-              key={path.id}
-              className={`cursor-pointer transition-all hover:shadow-md ${
-                selectedPath.id === path.id ? "ring-2 ring-orange-500 bg-orange-50/50" : ""
-              }`}
-              onClick={() => {
-                setSelectedPath(path);
-                setSelectedTask(path.tasks[0] || null);
-              }}
-            >
-              <CardHeader className="p-4 pb-2">
-                <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-sm font-medium">{path.title}</CardTitle>
-                  {getStatusBadge(path.status)}
-                </div>
-                <CardDescription className="text-xs mt-1">{path.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 pt-2 space-y-2">
-                <Timestamp date={path.createdAt} showIcon={true} className="text-gray-600" />
-                <Progress value={path.progress} className="h-1.5" />
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-600">{path.progress}% 完成</span>
-                  <div className="flex gap-1">
-                    {path.tags.map((tag) => (
-                      <Badge key={tag} variant="outline" className="text-xs px-1.5 py-0">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
+          <AnimatePresence mode="popLayout">
+            {filteredPaths.map((path, index) => (
+              <motion.div
+                key={path.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Card
+                  className={cn(
+                    "cursor-pointer transition-all hover:shadow-lg",
+                    selectedPath.id === path.id
+                      ? "ring-2 ring-orange-500 bg-gradient-to-br from-orange-50 to-amber-50 shadow-md"
+                      : "hover:border-orange-300"
+                  )}
+                  onClick={() => {
+                    setSelectedPath(path);
+                    setSelectedTask(path.tasks[0] || null);
+                  }}
+                >
+                  <CardHeader className="p-4 pb-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <CardTitle className="text-sm font-medium">{path.title}</CardTitle>
+                      {getStatusBadge(path.status)}
+                    </div>
+                    <CardDescription className="text-xs mt-1">{path.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-2 space-y-2">
+                    <Timestamp date={path.createdAt} showIcon={true} className="text-gray-600" />
+                    <Progress value={path.progress} className="h-1.5" />
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600 font-medium">{path.progress}% 完成</span>
+                      <div className="flex gap-1">
+                        {path.tags.map((tag) => (
+                          <Badge key={tag} variant="outline" className="text-xs px-1.5 py-0 border-orange-300">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
-      </div>
+      </motion.div>
 
       {/* 主区域 */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="flex-1 overflow-y-auto p-6 scrollbar-thin"
+      >
         <div className="max-w-4xl mx-auto space-y-6">
           {/* 路径头部 */}
-          <div className="space-y-4">
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="space-y-4"
+          >
             <div className="flex items-start justify-between">
               <div className="space-y-2">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
+                <motion.h1
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent"
+                >
                   {selectedPath.title}
-                </h1>
-                <p className="text-gray-600">{selectedPath.description}</p>
+                </motion.h1>
+                <motion.p
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="text-gray-600"
+                >
+                  {selectedPath.description}
+                </motion.p>
               </div>
-              <Button variant="outline" size="icon">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
+              <motion.div whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }}>
+                <Button variant="outline" size="icon">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </motion.div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <motion.div
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="flex items-center gap-4 flex-wrap"
+            >
               {getStatusBadge(selectedPath.status)}
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Target className="h-4 w-4" />
+                <Target className="h-4 w-4 text-orange-500" />
                 <span>{selectedPath.tasks.length} 个任务</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Flag className="h-4 w-4" />
+                <Flag className="h-4 w-4 text-amber-500" />
                 <span>{selectedPath.milestones.length} 个里程碑</span>
               </div>
-            </div>
+            </motion.div>
 
-            <Card className="bg-gradient-to-r from-orange-500/10 to-amber-500/10 border-orange-200">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">总体进度</span>
-                  <span className="text-2xl font-bold text-orange-600">{selectedPath.progress}%</span>
-                </div>
-                <Progress value={selectedPath.progress} className="h-2" />
-              </CardContent>
-            </Card>
-          </div>
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              whileHover={{ scale: 1.01 }}
+            >
+              <Card className="bg-gradient-to-r from-orange-500/10 to-amber-500/10 border-orange-200 shadow-md hover:shadow-lg transition-all">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">总体进度</span>
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.8, type: "spring" }}
+                      className="text-2xl font-bold text-orange-600"
+                    >
+                      {selectedPath.progress}%
+                    </motion.span>
+                  </div>
+                  <Progress value={selectedPath.progress} className="h-2" />
+                </CardContent>
+              </Card>
+            </motion.div>
+          </motion.div>
 
           {/* 时间线 */}
-          <div className="space-y-4">
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            className="space-y-4"
+          >
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-orange-500" />
               成长路线
@@ -349,16 +444,33 @@ export default function PathPage() {
 
             <div className="relative">
               {/* 垂直连线 */}
-              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-orange-200 via-amber-200 to-yellow-200" />
+              <motion.div
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: 1 }}
+                transition={{ duration: 1, delay: 0.9 }}
+                className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-orange-200 via-amber-200 to-yellow-200 origin-top"
+              />
 
               <div className="space-y-6">
-                {selectedPath.milestones.map((milestone) => (
-                  <div key={milestone.id} className="space-y-4">
+                {selectedPath.milestones.map((milestone, mIndex) => (
+                  <motion.div
+                    key={milestone.id}
+                    initial={{ opacity: 0, x: -30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 1 + mIndex * 0.2 }}
+                    className="space-y-4"
+                  >
                     {/* 里程碑标记 */}
                     <div className="flex items-center gap-4">
-                      <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-amber-500 shadow-lg">
+                      <motion.div
+                        initial={{ scale: 0, rotate: -180 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ delay: 1.1 + mIndex * 0.2, type: "spring", stiffness: 200 }}
+                        whileHover={{ scale: 1.1, rotate: 10 }}
+                        className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-amber-500 shadow-lg cursor-pointer"
+                      >
                         <Flag className="h-5 w-5 text-white" />
-                      </div>
+                      </motion.div>
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg">{milestone.title}</h3>
                         <p className="text-sm text-gray-600">
@@ -370,17 +482,32 @@ export default function PathPage() {
                     {/* 任务卡片 */}
                     {selectedPath.tasks
                       .filter((task) => milestone.taskIds.includes(task.id))
-                      .map((task) => (
-                        <div key={task.id} className="ml-6 pl-10 relative">
+                      .map((task, tIndex) => (
+                        <motion.div
+                          key={task.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 1.2 + mIndex * 0.2 + tIndex * 0.1 }}
+                          whileHover={{ scale: 1.02, x: 4 }}
+                          className="ml-6 pl-10 relative"
+                        >
                           {/* 任务节点 */}
-                          <div className="absolute left-0 top-6 z-10">
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: 1.3 + mIndex * 0.2 + tIndex * 0.1, type: "spring" }}
+                            className="absolute left-0 top-6 z-10"
+                          >
                             {getStatusIcon(task.status)}
-                          </div>
+                          </motion.div>
 
                           <Card
-                            className={`cursor-pointer transition-all hover:shadow-lg ${
-                              selectedTask?.id === task.id ? "ring-2 ring-orange-500 bg-orange-50/30" : ""
-                            }`}
+                            className={cn(
+                              "cursor-pointer transition-all hover:shadow-xl",
+                              selectedTask?.id === task.id
+                                ? "ring-2 ring-orange-500 bg-gradient-to-br from-orange-50 to-amber-50 shadow-lg"
+                                : "hover:border-orange-300"
+                            )}
                             onClick={() => setSelectedTask(task)}
                           >
                             <CardHeader className="pb-3">
@@ -389,31 +516,35 @@ export default function PathPage() {
                                   <CardTitle className="text-base">{task.title}</CardTitle>
                                   <CardDescription className="mt-1">{task.description}</CardDescription>
                                 </div>
-                                <ChevronRight className="h-5 w-5 text-gray-400" />
+                                <motion.div whileHover={{ x: 4 }}>
+                                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                                </motion.div>
                               </div>
                             </CardHeader>
                             <CardContent className="space-y-3">
                               <div className="flex items-center gap-4 text-sm text-gray-600">
                                 <div className="flex items-center gap-1">
-                                  <Clock className="h-4 w-4" />
+                                  <Clock className="h-4 w-4 text-orange-500" />
                                   <span>{task.estimatedTime}</span>
                                 </div>
                                 <div className="flex items-center gap-1">
-                                  <BookOpen className="h-4 w-4" />
+                                  <BookOpen className="h-4 w-4 text-blue-500" />
                                   <span>{task.resources.length} 个资源</span>
                                 </div>
                               </div>
                               <div className="space-y-1">
                                 <div className="flex items-center justify-between text-sm">
                                   <span className="text-gray-600">完成度</span>
-                                  <span className="font-medium">{task.progress}%</span>
+                                  <span className="font-medium text-orange-600">{task.progress}%</span>
                                 </div>
                                 <Progress value={task.progress} className="h-1.5" />
                               </div>
                             </CardContent>
                           </Card>
-                        </div>
+                        </motion.div>
                       ))}
+                  </motion.div>
+                ))}
                   </div>
                 ))}
 
@@ -452,100 +583,176 @@ export default function PathPage() {
                   ))}
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* 右侧面板 */}
-      {selectedTask && (
-        <div className="w-96 border-l bg-white/80 backdrop-blur-sm overflow-y-auto">
-          <div className="p-6 space-y-6">
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold">任务详情</h3>
-              <div className="flex items-center gap-2">
-                {getStatusIcon(selectedTask.status)}
-                <span className="text-sm text-gray-600">
-                  {selectedTask.status === "completed"
-                    ? "已完成"
-                    : selectedTask.status === "in_progress"
-                    ? "进行中"
-                    : "未开始"}
-                </span>
-              </div>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">{selectedTask.title}</CardTitle>
-                <CardDescription>{selectedTask.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">预计时间</span>
-                    <span className="font-medium">{selectedTask.estimatedTime}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">完成进度</span>
-                    <span className="font-medium">{selectedTask.progress}%</span>
-                  </div>
+      <AnimatePresence>
+        {selectedTask && (
+          <motion.div
+            initial={{ x: 400, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 400, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="w-96 border-l bg-white/80 backdrop-blur-sm overflow-y-auto scrollbar-thin"
+          >
+            <div className="p-6 space-y-6">
+              <motion.div
+                initial={{ y: -10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">任务详情</h3>
+                  <motion.button
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setSelectedTask(null)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    ✕
+                  </motion.button>
                 </div>
-                <Progress value={selectedTask.progress} className="h-2" />
-              </CardContent>
-            </Card>
-
-            {selectedTask.resources.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="font-medium flex items-center gap-2">
-                  <Link2 className="h-4 w-4" />
-                  相关资源
-                </h4>
-                <div className="space-y-2">
-                  {selectedTask.resources.map((resource) => (
-                    <Card key={resource.id} className="hover:shadow-md transition-shadow cursor-pointer">
-                      <CardContent className="p-3 flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100">
-                          <FileText className="h-4 w-4 text-orange-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{resource.title}</p>
-                          <p className="text-xs text-gray-500">{resource.type}</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                <div className="flex items-center gap-2">
+                  {getStatusIcon(selectedTask.status)}
+                  <span className="text-sm text-gray-600">
+                    {selectedTask.status === "completed"
+                      ? "已完成"
+                      : selectedTask.status === "in_progress"
+                      ? "进行中"
+                      : "未开始"}
+                  </span>
                 </div>
-              </div>
-            )}
+              </motion.div>
 
-            {selectedTask.notes && (
-              <div className="space-y-3">
-                <h4 className="font-medium flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  笔记
-                </h4>
-                <Card>
-                  <CardContent className="p-4">
-                    <p className="text-sm text-gray-700">{selectedTask.notes}</p>
+              <motion.div
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                whileHover={{ scale: 1.01 }}
+              >
+                <Card className="shadow-md hover:shadow-lg transition-all border-orange-100">
+                  <CardHeader>
+                    <CardTitle className="text-base">{selectedTask.title}</CardTitle>
+                    <CardDescription>{selectedTask.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <motion.div
+                        whileHover={{ x: 2 }}
+                        className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-orange-50 transition-colors"
+                      >
+                        <span className="text-gray-600">预计时间</span>
+                        <span className="font-medium">{selectedTask.estimatedTime}</span>
+                      </motion.div>
+                      <motion.div
+                        whileHover={{ x: 2 }}
+                        className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-orange-50 transition-colors"
+                      >
+                        <span className="text-gray-600">完成进度</span>
+                        <span className="font-medium text-orange-600">{selectedTask.progress}%</span>
+                      </motion.div>
+                    </div>
+                    <Progress value={selectedTask.progress} className="h-2" />
                   </CardContent>
                 </Card>
-              </div>
-            )}
+              </motion.div>
 
-            <div className="space-y-2 pt-4 border-t">
-              <Button className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600" onClick={handleStartTask}>
-                开始学习
-              </Button>
-              <Button variant="outline" className="w-full" onClick={handleCompleteTask}>
-                标记为完成
-              </Button>
-              <Button variant="ghost" className="w-full" onClick={handleEditTask}>
-                编辑任务
-              </Button>
+              {selectedTask.resources.length > 0 && (
+                <motion.div
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="space-y-3"
+                >
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Link2 className="h-4 w-4 text-blue-500" />
+                    相关资源
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedTask.resources.map((resource, index) => (
+                      <motion.div
+                        key={resource.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.5 + index * 0.05 }}
+                        whileHover={{ scale: 1.02, x: 4 }}
+                      >
+                        <Card className="hover:shadow-md transition-all cursor-pointer border-blue-100">
+                          <CardContent className="p-3 flex items-center gap-3">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-100 to-amber-100">
+                              <FileText className="h-4 w-4 text-orange-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{resource.title}</p>
+                              <p className="text-xs text-gray-500">{resource.type}</p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {selectedTask.notes && (
+                <motion.div
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="space-y-3"
+                >
+                  <h4 className="font-medium flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-purple-500" />
+                    笔记
+                  </h4>
+                  <Card className="border-purple-100">
+                    <CardContent className="p-4">
+                      <p className="text-sm text-gray-700">{selectedTask.notes}</p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+
+              <motion.div
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.7 }}
+                className="space-y-2 pt-4 border-t"
+              >
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg hover:shadow-xl transition-all"
+                    onClick={handleStartTask}
+                  >
+                    开始学习
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    variant="outline"
+                    className="w-full border-orange-300 hover:bg-orange-50"
+                    onClick={handleCompleteTask}
+                  >
+                    标记为完成
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    variant="ghost"
+                    className="w-full hover:bg-orange-50"
+                    onClick={handleEditTask}
+                  >
+                    编辑任务
+                  </Button>
+                </motion.div>
+              </motion.div>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

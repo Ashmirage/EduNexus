@@ -48,6 +48,8 @@ const config: Config = {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        xl: 'calc(var(--radius) + 4px)',
+        '2xl': 'calc(var(--radius) + 8px)',
       },
       // 移动端优化：添加触摸目标最小尺寸
       minHeight: {
@@ -63,6 +65,7 @@ const config: Config = {
         'safe-left': 'env(safe-area-inset-left)',
         'safe-right': 'env(safe-area-inset-right)',
       },
+      // 增强的动画系统
       keyframes: {
         'accordion-down': {
           from: { height: '0' },
@@ -72,7 +75,6 @@ const config: Config = {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' },
         },
-        // 移动端动画
         'slide-up': {
           from: { transform: 'translateY(100%)' },
           to: { transform: 'translateY(0)' },
@@ -89,6 +91,22 @@ const config: Config = {
           from: { transform: 'translateX(-100%)' },
           to: { transform: 'translateX(0)' },
         },
+        'fade-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        'fade-out': {
+          from: { opacity: '1' },
+          to: { opacity: '0' },
+        },
+        'zoom-in': {
+          from: { transform: 'scale(0.95)', opacity: '0' },
+          to: { transform: 'scale(1)', opacity: '1' },
+        },
+        'zoom-out': {
+          from: { transform: 'scale(1)', opacity: '1' },
+          to: { transform: 'scale(0.95)', opacity: '0' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -97,6 +115,22 @@ const config: Config = {
         'slide-down': 'slide-down 0.3s ease-out',
         'slide-left': 'slide-left 0.3s ease-out',
         'slide-right': 'slide-right 0.3s ease-out',
+        'fade-in': 'fade-in 0.2s ease-out',
+        'fade-out': 'fade-out 0.2s ease-out',
+        'zoom-in': 'zoom-in 0.2s ease-out',
+        'zoom-out': 'zoom-out 0.2s ease-out',
+      },
+      // 增强的过渡时长
+      transitionDuration: {
+        '0': '0ms',
+        '75': '75ms',
+        '100': '100ms',
+        '150': '150ms',
+        '200': '200ms',
+        '300': '300ms',
+        '500': '500ms',
+        '700': '700ms',
+        '1000': '1000ms',
       },
     },
   },

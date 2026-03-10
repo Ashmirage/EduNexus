@@ -66,7 +66,7 @@ ${report.suggestions.map((s) => `• ${s}`).join("\n")}
       <div className="page-container">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-rose-500">
@@ -75,7 +75,7 @@ ${report.suggestions.map((s) => `• ${s}`).join("\n")}
                 学习分析
               </h1>
               <p className="text-muted-foreground mt-2">
-                追踪你的学习进度，发现提升空间
+                追踪你的学习进度，发现提升空间，获取 AI 智能洞察
               </p>
             </div>
             <div className="flex gap-2">
@@ -92,74 +92,87 @@ ${report.suggestions.map((s) => `• ${s}`).join("\n")}
         </div>
 
         {/* 统计卡片 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="card-hover">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="card-hover border-l-4 border-l-orange-500">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 总学习时长
               </CardTitle>
-              <Clock className="h-4 w-4 text-orange-500" />
+              <div className="p-2 rounded-lg bg-orange-500/10">
+                <Clock className="h-5 w-5 text-orange-500" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-3xl font-bold">
                 {formatStudyTime(stats.totalStudyTime)}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3 text-green-500" />
                 近30天累计
               </p>
             </CardContent>
           </Card>
 
-          <Card className="card-hover">
+          <Card className="card-hover border-l-4 border-l-blue-500">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 文档统计
               </CardTitle>
-              <FileText className="h-4 w-4 text-blue-500" />
+              <div className="p-2 rounded-lg bg-blue-500/10">
+                <FileText className="h-5 w-5 text-blue-500" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-3xl font-bold">
                 {stats.documentsCreated + stats.documentsEdited}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-2">
                 创建 {stats.documentsCreated} · 编辑 {stats.documentsEdited}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="card-hover">
+          <Card className="card-hover border-l-4 border-l-green-500">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 练习完成
               </CardTitle>
-              <Target className="h-4 w-4 text-green-500" />
+              <div className="p-2 rounded-lg bg-green-500/10">
+                <Target className="h-5 w-5 text-green-500" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.quizzesCompleted}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <div className="text-3xl font-bold">{stats.quizzesCompleted}</div>
+              <p className="text-xs text-muted-foreground mt-2">
                 正确率{" "}
-                {Math.round((stats.quizzesCorrect / stats.quizzesCompleted) * 100)}%
+                <span className="text-green-600 font-semibold">
+                  {Math.round((stats.quizzesCorrect / stats.quizzesCompleted) * 100)}%
+                </span>
               </p>
             </CardContent>
           </Card>
 
-          <Card className="card-hover">
+          <Card className="card-hover border-l-4 border-l-purple-500">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 知识点
               </CardTitle>
-              <Award className="h-4 w-4 text-purple-500" />
+              <div className="p-2 rounded-lg bg-purple-500/10">
+                <Award className="h-5 w-5 text-purple-500" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-3xl font-bold">
                 {stats.knowledgePoints.length}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-2">
                 平均掌握度{" "}
-                {Math.round(
-                  stats.knowledgePoints.reduce((sum, kp) => sum + kp.mastery, 0) /
-                    stats.knowledgePoints.length
-                )}%
+                <span className="text-purple-600 font-semibold">
+                  {Math.round(
+                    stats.knowledgePoints.reduce((sum, kp) => sum + kp.mastery, 0) /
+                      stats.knowledgePoints.length
+                  )}%
+                </span>
               </p>
             </CardContent>
           </Card>
@@ -168,13 +181,13 @@ ${report.suggestions.map((s) => `• ${s}`).join("\n")}
         {/* 周期选择 */}
         <div className="mb-6">
           <Tabs value={period} onValueChange={(v) => setPeriod(v as "week" | "month")}>
-            <TabsList>
-              <TabsTrigger value="week">
-                <Calendar className="h-4 w-4 mr-2" />
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsTrigger value="week" className="gap-2">
+                <Calendar className="h-4 w-4" />
                 本周
               </TabsTrigger>
-              <TabsTrigger value="month">
-                <Calendar className="h-4 w-4 mr-2" />
+              <TabsTrigger value="month" className="gap-2">
+                <Calendar className="h-4 w-4" />
                 本月
               </TabsTrigger>
             </TabsList>
@@ -189,10 +202,12 @@ ${report.suggestions.map((s) => `• ${s}`).join("\n")}
 
           <div className="space-y-6">
             {/* 周报卡片 */}
-            <Card>
+            <Card className="border-l-4 border-l-orange-500">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
+                  <div className="p-1.5 rounded-lg bg-orange-500/10">
+                    <TrendingUp className="h-4 w-4 text-orange-500" />
+                  </div>
                   本周总结
                 </CardTitle>
               </CardHeader>
@@ -258,9 +273,14 @@ ${report.suggestions.map((s) => `• ${s}`).join("\n")}
             </Card>
 
             {/* 知识点排行 */}
-            <Card>
+            <Card className="border-l-4 border-l-purple-500">
               <CardHeader>
-                <CardTitle className="text-base">知识点掌握排行</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-purple-500/10">
+                    <Award className="h-4 w-4 text-purple-500" />
+                  </div>
+                  知识点掌握排行
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">

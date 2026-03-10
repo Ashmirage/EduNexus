@@ -550,207 +550,319 @@ export default function WorkspacePage() {
       </div>
 
       {/* Right Sidebar - Info Panel */}
-      <div className={cn(
-        "border-l bg-white/50 backdrop-blur-sm overflow-y-auto flex flex-col",
-        activeTab === "lab" ? "w-[800px]" : "w-80"
-      )}>
+      <motion.div
+        initial={{ x: 20, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+        className={cn(
+          "border-l bg-white/50 backdrop-blur-sm overflow-hidden flex flex-col transition-all duration-300",
+          activeTab === "lab" ? "w-[800px]" : "w-80"
+        )}
+      >
         {/* Tabs */}
-        <div className="border-b bg-white/80 p-2 flex gap-1 overflow-x-auto">
-          <Button
-            variant={activeTab === "status" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setActiveTab("status")}
-            className="flex-shrink-0 text-xs"
-          >
-            <Settings className="h-3 w-3 mr-1" />
-            状态
-          </Button>
-          <Button
-            variant={activeTab === "tools" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setActiveTab("tools")}
-            className="flex-shrink-0 text-xs"
-          >
-            <Code className="h-3 w-3 mr-1" />
-            工具
-          </Button>
-          <Button
-            variant={activeTab === "lab" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setActiveTab("lab")}
-            className="flex-shrink-0 text-xs"
-          >
-            <Code className="h-3 w-3 mr-1" />
-            实验室
-          </Button>
-          <Button
-            variant={activeTab === "notes" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setActiveTab("notes")}
-            className="flex-shrink-0 text-xs"
-          >
-            <FileText className="h-3 w-3 mr-1" />
-            笔记
-          </Button>
-          <Button
-            variant={activeTab === "quiz" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setActiveTab("quiz")}
-            className="flex-shrink-0 text-xs"
-          >
-            <Target className="h-3 w-3 mr-1" />
-            练习
-          </Button>
-          <Button
-            variant={activeTab === "plan" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setActiveTab("plan")}
-            className="flex-shrink-0 text-xs"
-          >
-            <Sparkles className="h-3 w-3 mr-1" />
-            计划
-          </Button>
-          <Button
-            variant={activeTab === "kb-qa" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setActiveTab("kb-qa")}
-            className="flex-shrink-0 text-xs"
-          >
-            <Brain className="h-3 w-3 mr-1" />
-            问答
-          </Button>
+        <div className="border-b bg-white/80 p-2 flex gap-1 overflow-x-auto scrollbar-thin">
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant={activeTab === "status" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveTab("status")}
+              className={cn(
+                "flex-shrink-0 text-xs transition-all",
+                activeTab === "status" && "bg-gradient-to-r from-orange-500 to-rose-500 text-white"
+              )}
+            >
+              <Settings className="h-3 w-3 mr-1" />
+              状态
+            </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant={activeTab === "tools" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveTab("tools")}
+              className={cn(
+                "flex-shrink-0 text-xs transition-all",
+                activeTab === "tools" && "bg-gradient-to-r from-orange-500 to-rose-500 text-white"
+              )}
+            >
+              <Code className="h-3 w-3 mr-1" />
+              工具
+            </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant={activeTab === "lab" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveTab("lab")}
+              className={cn(
+                "flex-shrink-0 text-xs transition-all",
+                activeTab === "lab" && "bg-gradient-to-r from-orange-500 to-rose-500 text-white"
+              )}
+            >
+              <Code className="h-3 w-3 mr-1" />
+              实验室
+            </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant={activeTab === "notes" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveTab("notes")}
+              className={cn(
+                "flex-shrink-0 text-xs transition-all",
+                activeTab === "notes" && "bg-gradient-to-r from-orange-500 to-rose-500 text-white"
+              )}
+            >
+              <FileText className="h-3 w-3 mr-1" />
+              笔记
+            </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant={activeTab === "quiz" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveTab("quiz")}
+              className={cn(
+                "flex-shrink-0 text-xs transition-all",
+                activeTab === "quiz" && "bg-gradient-to-r from-orange-500 to-rose-500 text-white"
+              )}
+            >
+              <Target className="h-3 w-3 mr-1" />
+              练习
+            </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant={activeTab === "plan" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveTab("plan")}
+              className={cn(
+                "flex-shrink-0 text-xs transition-all",
+                activeTab === "plan" && "bg-gradient-to-r from-orange-500 to-rose-500 text-white"
+              )}
+            >
+              <Sparkles className="h-3 w-3 mr-1" />
+              计划
+            </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant={activeTab === "kb-qa" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveTab("kb-qa")}
+              className={cn(
+                "flex-shrink-0 text-xs transition-all",
+                activeTab === "kb-qa" && "bg-gradient-to-r from-orange-500 to-rose-500 text-white"
+              )}
+            >
+              <Brain className="h-3 w-3 mr-1" />
+              问答
+            </Button>
+          </motion.div>
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 p-4 overflow-y-auto">
-          {activeTab === "status" && (
-            <>
-              <CompactLevelDisplay className="mb-4" />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="flex-1 p-4 overflow-y-auto scrollbar-thin"
+          >
+            {activeTab === "status" && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ staggerChildren: 0.1 }}
+              >
+                <CompactLevelDisplay className="mb-4" />
 
-              <Card className="shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Settings className="h-4 w-4" />
-                    助手状态
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">工作模式</span>
-                    <Badge variant={socraticMode ? "default" : "secondary"}>
-                      {socraticMode ? "苏格拉底" : "直接教学"}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">对话轮数</span>
-                    <Badge variant="outline">{messages.length}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">状态</span>
-                    <Badge variant={isLoading ? "default" : "secondary"}>
-                      {isLoading ? "思考中" : "就绪"}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  <Card className="shadow-sm hover:shadow-md transition-all duration-300 border-orange-100">
+                    <CardHeader>
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Settings className="h-4 w-4 text-orange-500" />
+                        助手状态
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      <motion.div
+                        whileHover={{ x: 2 }}
+                        className="flex items-center justify-between p-2 rounded-lg hover:bg-orange-50/50 transition-colors"
+                      >
+                        <span className="text-muted-foreground">工作模式</span>
+                        <Badge variant={socraticMode ? "default" : "secondary"} className={socraticMode ? "bg-gradient-to-r from-orange-500 to-rose-500" : ""}>
+                          {socraticMode ? "苏格拉底" : "直接教学"}
+                        </Badge>
+                      </motion.div>
+                      <motion.div
+                        whileHover={{ x: 2 }}
+                        className="flex items-center justify-between p-2 rounded-lg hover:bg-orange-50/50 transition-colors"
+                      >
+                        <span className="text-muted-foreground">对话轮数</span>
+                        <Badge variant="outline" className="border-orange-300">{messages.length}</Badge>
+                      </motion.div>
+                      <motion.div
+                        whileHover={{ x: 2 }}
+                        className="flex items-center justify-between p-2 rounded-lg hover:bg-orange-50/50 transition-colors"
+                      >
+                        <span className="text-muted-foreground">状态</span>
+                        <Badge variant={isLoading ? "default" : "secondary"} className={isLoading ? "bg-gradient-to-r from-orange-500 to-rose-500 animate-pulse" : ""}>
+                          {isLoading ? "思考中" : "就绪"}
+                        </Badge>
+                      </motion.div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
 
-              <Card className="mt-4 shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-sm">可用工具</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-xs">
-                  <div className="flex items-start gap-2">
-                    <div className="p-1 rounded bg-blue-100">
-                      <BookOpen className="h-3 w-3 text-blue-600" />
-                    </div>
-                    <div>
-                      <div className="font-medium">搜索知识宝库</div>
-                      <div className="text-muted-foreground">查找相关文档</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="p-1 rounded bg-purple-100">
-                      <Brain className="h-3 w-3 text-purple-600" />
-                    </div>
-                    <div>
-                      <div className="font-medium">查询知识星图</div>
-                      <div className="text-muted-foreground">获取知识关系</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="p-1 rounded bg-green-100">
-                      <Target className="h-3 w-3 text-green-600" />
-                    </div>
-                    <div>
-                      <div className="font-medium">生成练习</div>
-                      <div className="text-muted-foreground">个性化题目</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="p-1 rounded bg-orange-100">
-                      <Lightbulb className="h-3 w-3 text-orange-600" />
-                    </div>
-                    <div>
-                      <div className="font-medium">成长地图</div>
-                      <div className="text-muted-foreground">智能规划</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="p-1 rounded bg-pink-100">
-                      <ImageIcon className="h-3 w-3 text-pink-600" />
-                    </div>
-                    <div>
-                      <div className="font-medium">图片分析</div>
-                      <div className="text-muted-foreground">多模态理解</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <Card className="mt-4 shadow-sm hover:shadow-md transition-all duration-300 border-blue-100">
+                    <CardHeader>
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-blue-500" />
+                        可用工具
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-xs">
+                      {[
+                        { icon: BookOpen, label: "搜索知识宝库", desc: "查找相关文档", color: "blue" },
+                        { icon: Brain, label: "查询知识星图", desc: "获取知识关系", color: "purple" },
+                        { icon: Target, label: "生成练习", desc: "个性化题目", color: "green" },
+                        { icon: Lightbulb, label: "成长地图", desc: "智能规划", color: "orange" },
+                        { icon: ImageIcon, label: "图片分析", desc: "多模态理解", color: "pink" },
+                      ].map((tool, idx) => {
+                        const Icon = tool.icon;
+                        return (
+                          <motion.div
+                            key={tool.label}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3 + idx * 0.05 }}
+                            whileHover={{ x: 4, scale: 1.02 }}
+                            className="flex items-start gap-2 p-2 rounded-lg hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50 transition-all cursor-pointer"
+                          >
+                            <div className={`p-1 rounded bg-${tool.color}-100`}>
+                              <Icon className={`h-3 w-3 text-${tool.color}-600`} />
+                            </div>
+                            <div>
+                              <div className="font-medium">{tool.label}</div>
+                              <div className="text-muted-foreground">{tool.desc}</div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                </motion.div>
 
-              <Card className="mt-4 shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-sm">使用提示</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-xs text-muted-foreground">
-                  <p>• 苏格拉底模式会引导你思考</p>
-                  <p>• 可以查看助手的思考过程</p>
-                  <p>• 支持上传图片进行分析</p>
-                  <p>• 使用快捷按钮快速开始</p>
-                  <p>• Shift+Enter 换行，Enter 发送</p>
-                </CardContent>
-              </Card>
-            </>
-          )}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <Card className="mt-4 shadow-sm hover:shadow-md transition-all duration-300 border-purple-100">
+                    <CardHeader>
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Lightbulb className="h-4 w-4 text-purple-500" />
+                        使用提示
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-xs text-muted-foreground">
+                      {[
+                        "苏格拉底模式会引导你思考",
+                        "可以查看助手的思考过程",
+                        "支持上传图片进行分析",
+                        "使用快捷按钮快速开始",
+                        "Shift+Enter 换行，Enter 发送",
+                      ].map((tip, idx) => (
+                        <motion.p
+                          key={idx}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.5 + idx * 0.05 }}
+                          whileHover={{ x: 4 }}
+                          className="flex items-center gap-2 hover:text-foreground transition-colors"
+                        >
+                          <span className="text-orange-500">•</span>
+                          {tip}
+                        </motion.p>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </motion.div>
+            )}
 
-          {activeTab === "tools" && (
-            <div className="space-y-4">
-              <CodeExecutor />
-            </div>
-          )}
+            {activeTab === "tools" && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-4"
+              >
+                <CodeExecutor />
+              </motion.div>
+            )}
 
-          {activeTab === "lab" && (
-            <div className="h-full">
-              <ProgrammingLab />
-            </div>
-          )}
+            {activeTab === "lab" && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="h-full"
+              >
+                <ProgrammingLab />
+              </motion.div>
+            )}
 
-          {activeTab === "notes" && <LearningNotes />}
+            {activeTab === "notes" && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <LearningNotes />
+              </motion.div>
+            )}
 
-          {activeTab === "quiz" && <QuizGenerator />}
+            {activeTab === "quiz" && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <QuizGenerator />
+              </motion.div>
+            )}
 
-          {activeTab === "plan" && (
-            <div className="space-y-4">
-              <LearningPlanner documents={kbDocuments} />
-            </div>
-          )}
+            {activeTab === "plan" && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-4"
+              >
+                <LearningPlanner documents={kbDocuments} />
+              </motion.div>
+            )}
 
-          {activeTab === "kb-qa" && (
-            <div className="h-full">
-              <KBQAAssistant documents={kbDocuments} />
-            </div>
-          )}
-        </div>
-      </div>
+            {activeTab === "kb-qa" && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="h-full"
+              >
+                <KBQAAssistant documents={kbDocuments} />
+              </motion.div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }

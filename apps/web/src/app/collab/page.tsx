@@ -99,22 +99,30 @@ export default function CollabPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">协作编辑</h1>
-          <p className="text-muted-foreground">
-            实时协作编辑文档和代码
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-rose-50/30">
+      <div className="page-container">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold flex items-center gap-3 mb-2">
+                <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-rose-500">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
+                协作编辑
+              </h1>
+              <p className="text-muted-foreground">
+                实时协作编辑文档和代码，与团队成员高效协同
+              </p>
+            </div>
 
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              新建会话
-            </Button>
-          </DialogTrigger>
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-to-br from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600">
+                  <Plus className="w-4 h-4 mr-2" />
+                  新建会话
+                </Button>
+              </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>创建协作会话</DialogTitle>
@@ -188,77 +196,145 @@ export default function CollabPage() {
               </Button>
             </div>
           </DialogContent>
-        </Dialog>
-      </div>
-
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="搜索会话..."
-            className="pl-10"
-          />
+          </div>
         </div>
-      </div>
+
+        {/* 统计卡片 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card className="card-hover">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">全部会话</p>
+                  <p className="text-3xl font-bold">{sessions.length}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-orange-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="card-hover">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">活跃会话</p>
+                  <p className="text-3xl font-bold">
+                    {sessions.filter(s => s.users.length > 1).length}
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-blue-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="card-hover">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">公开会话</p>
+                  <p className="text-3xl font-bold">
+                    {sessions.filter(s => s.isPublic).length}
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <Code className="w-6 h-6 text-green-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 搜索栏 */}
+          {/* 搜索栏 */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="搜索会话标题、描述或标签..."
+              className="pl-10 input-enhanced"
+            />
+          </div>
+        </div>
 
       {loading ? (
         <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4" />
           <p className="text-muted-foreground">加载中...</p>
         </div>
       ) : filteredSessions.length === 0 ? (
         <div className="text-center py-12">
-          <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-500/10 flex items-center justify-center">
+            <FileText className="w-8 h-8 text-orange-500 opacity-50" />
+          </div>
           <p className="text-muted-foreground mb-4">
             {searchQuery ? "未找到匹配的会话" : "还没有协作会话"}
           </p>
           {!searchQuery && (
-            <Button onClick={() => setCreateDialogOpen(true)}>
+            <Button
+              onClick={() => setCreateDialogOpen(true)}
+              className="bg-gradient-to-br from-orange-500 to-rose-500"
+            >
               <Plus className="w-4 h-4 mr-2" />
               创建第一个会话
             </Button>
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredSessions.map((session) => (
             <Card
               key={session.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow"
+              className="card-hover group"
               onClick={() => router.push(`/collab/${session.id}`)}
             >
               <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    {getDocumentIcon(session.documentType)}
-                    <CardTitle className="text-lg">{session.title}</CardTitle>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500/10 to-rose-500/10 group-hover:from-orange-500/20 group-hover:to-rose-500/20 transition-colors">
+                      {getDocumentIcon(session.documentType)}
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{session.title}</CardTitle>
+                      {session.isPublic && (
+                        <Badge variant="secondary" className="mt-1">
+                          公开
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  {session.isPublic && (
-                    <Badge variant="secondary">公开</Badge>
-                  )}
                 </div>
                 {session.description && (
-                  <CardDescription>{session.description}</CardDescription>
+                  <CardDescription className="line-clamp-2">
+                    {session.description}
+                  </CardDescription>
                 )}
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    <span>{session.users.length} 位用户</span>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Users className="w-4 h-4" />
+                      <span>{session.users.length} 位用户</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Clock className="w-4 h-4" />
+                      <span>
+                        {formatDistanceToNow(new Date(session.updatedAt), {
+                          addSuffix: true,
+                          locale: zhCN,
+                        })}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    <span>
-                      {formatDistanceToNow(new Date(session.updatedAt), {
-                        addSuffix: true,
-                        locale: zhCN,
-                      })}
-                    </span>
-                  </div>
+
                   {session.tags && session.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
+                    <div className="flex flex-wrap gap-1 pt-2 border-t">
                       {session.tags.map((tag) => (
                         <Badge key={tag} variant="outline" className="text-xs">
                           {tag}
@@ -272,6 +348,7 @@ export default function CollabPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

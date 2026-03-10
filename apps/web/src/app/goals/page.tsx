@@ -93,14 +93,23 @@ export default function GoalsPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">目标管理</h1>
-        <p className="text-muted-foreground">设定目标，追踪进度，养成习惯</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-rose-50/30">
+      <div className="page-container">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-rose-500">
+              <Target className="h-6 w-6 text-white" />
+            </div>
+            目标管理
+          </h1>
+          <p className="text-muted-foreground">
+            设定目标，追踪进度，养成习惯，成就更好的自己
+          </p>
+        </div>
 
       <Tabs defaultValue="goals" className="space-y-6">
-        <TabsList>
+        <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="goals" className="flex items-center gap-2">
             <Target className="w-4 h-4" />
             我的目标
@@ -114,7 +123,10 @@ export default function GoalsPage() {
         <TabsContent value="goals" className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-semibold">目标列表</h2>
-            <Button onClick={() => setShowWizard(true)}>
+            <Button
+              onClick={() => setShowWizard(true)}
+              className="bg-gradient-to-br from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600"
+            >
               <Plus className="w-4 h-4 mr-2" />
               创建新目标
             </Button>
@@ -128,9 +140,13 @@ export default function GoalsPage() {
           )}
 
           {goals.length === 0 && !showWizard && (
-            <div className="text-center py-12 text-muted-foreground">
-              <Target className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p>还没有目标，点击上方按钮创建你的第一个目标</p>
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-500/10 flex items-center justify-center">
+                <Target className="w-8 h-8 text-orange-500 opacity-50" />
+              </div>
+              <p className="text-muted-foreground mb-4">
+                还没有目标，点击上方按钮创建你的第一个目标
+              </p>
             </div>
           )}
 
@@ -152,7 +168,7 @@ export default function GoalsPage() {
             <h2 className="text-2xl font-semibold">习惯追踪</h2>
             <Dialog open={showHabitDialog} onOpenChange={setShowHabitDialog}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="bg-gradient-to-br from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600">
                   <Plus className="w-4 h-4 mr-2" />
                   创建新习惯
                 </Button>
@@ -193,9 +209,13 @@ export default function GoalsPage() {
           </div>
 
           {habits.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p>还没有习惯，点击上方按钮创建你的第一个习惯</p>
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-500/10 flex items-center justify-center">
+                <Calendar className="w-8 h-8 text-orange-500 opacity-50" />
+              </div>
+              <p className="text-muted-foreground mb-4">
+                还没有习惯，点击上方按钮创建你的第一个习惯
+              </p>
             </div>
           )}
 

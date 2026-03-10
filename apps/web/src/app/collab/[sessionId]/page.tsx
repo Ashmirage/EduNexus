@@ -174,42 +174,55 @@ export default function CollabSessionPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-muted-foreground">加载中...</p>
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-rose-50/30">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4" />
+          <p className="text-muted-foreground">加载中...</p>
+        </div>
       </div>
     );
   }
 
   if (!session) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-muted-foreground">会话不存在</p>
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-rose-50/30">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-500/10 flex items-center justify-center">
+            <Users className="w-8 h-8 text-orange-500 opacity-50" />
+          </div>
+          <p className="text-muted-foreground">会话不存在</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-rose-50/30">
       {/* Header */}
-      <div className="border-b px-4 py-3">
+      <div className="border-b bg-white/80 backdrop-blur-sm px-6 py-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => router.push("/collab")}
+              className="hover:bg-orange-500/10"
             >
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
-              <h1 className="text-lg font-semibold">{session.title}</h1>
+              <h1 className="text-xl font-bold flex items-center gap-2">
+                {session.title}
+                <Badge variant="secondary" className="ml-2">
+                  {session.documentType}
+                </Badge>
+              </h1>
               {session.description && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mt-1">
                   {session.description}
                 </p>
               )}
             </div>
-            <Badge variant="secondary">{session.documentType}</Badge>
           </div>
 
           <div className="flex items-center gap-2">
@@ -218,8 +231,9 @@ export default function CollabSessionPage() {
               size="sm"
               onClick={handleSave}
               disabled={saving}
+              className="gap-2"
             >
-              <Save className="w-4 h-4 mr-2" />
+              <Save className="w-4 h-4" />
               {saving ? "保存中..." : "保存"}
             </Button>
             <ShareDialog
@@ -234,9 +248,9 @@ export default function CollabSessionPage() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Editor */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col bg-white/50 backdrop-blur-sm">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <TabsList className="w-full justify-start rounded-none border-b">
+            <TabsList className="w-full justify-start rounded-none border-b bg-white/80">
               <TabsTrigger value="editor">编辑器</TabsTrigger>
               <TabsTrigger value="preview">预览</TabsTrigger>
             </TabsList>
@@ -248,28 +262,30 @@ export default function CollabSessionPage() {
                 onEdit={handleEdit}
               />
             </TabsContent>
-            <TabsContent value="preview" className="flex-1 m-0 p-4 overflow-auto">
+            <TabsContent value="preview" className="flex-1 m-0 p-6 overflow-auto">
               <div className="prose dark:prose-invert max-w-none">
-                <pre className="whitespace-pre-wrap">{session.content}</pre>
+                <pre className="whitespace-pre-wrap bg-white/80 p-4 rounded-lg">
+                  {session.content}
+                </pre>
               </div>
             </TabsContent>
           </Tabs>
         </div>
 
         {/* Sidebar */}
-        <div className="w-80 border-l flex flex-col">
+        <div className="w-80 border-l flex flex-col bg-white/80 backdrop-blur-sm">
           <Tabs defaultValue="users" className="flex-1 flex flex-col">
-            <TabsList className="w-full justify-start rounded-none border-b">
-              <TabsTrigger value="users" className="flex-1">
-                <Users className="w-4 h-4 mr-2" />
+            <TabsList className="w-full justify-start rounded-none border-b grid grid-cols-3">
+              <TabsTrigger value="users" className="gap-2">
+                <Users className="w-4 h-4" />
                 用户
               </TabsTrigger>
-              <TabsTrigger value="chat" className="flex-1">
-                <MessageSquare className="w-4 h-4 mr-2" />
+              <TabsTrigger value="chat" className="gap-2">
+                <MessageSquare className="w-4 h-4" />
                 聊天
               </TabsTrigger>
-              <TabsTrigger value="history" className="flex-1">
-                <History className="w-4 h-4 mr-2" />
+              <TabsTrigger value="history" className="gap-2">
+                <History className="w-4 h-4" />
                 历史
               </TabsTrigger>
             </TabsList>
