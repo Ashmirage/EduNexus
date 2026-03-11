@@ -27,6 +27,7 @@ export function KBEditor({ document, onUpdate }: KBEditorProps) {
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         heading: {
