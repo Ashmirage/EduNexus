@@ -29,3 +29,6 @@ export { useKeyboardShortcut } from './use-keyboard-shortcut';
 
 // 拖拽
 export { useDraggable } from './use-draggable';
+
+// 可调整大小
+export { useResizable } from './use-resizable';
