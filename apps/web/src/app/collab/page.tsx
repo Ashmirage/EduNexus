@@ -196,6 +196,7 @@ export default function CollabPage() {
               </Button>
             </div>
           </DialogContent>
+        </Dialog>
           </div>
         </div>
 
