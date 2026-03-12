@@ -19,6 +19,7 @@ export interface AgentConfig {
   socraticMode?: boolean;
   apiKey?: string;
   apiEndpoint?: string;
+  systemPrompt?: string;
 }
 
 /**
@@ -52,6 +53,7 @@ export async function runAgentConversation(
       socraticMode = true,
       apiKey = process.env.MODELSCOPE_API_KEY,
       apiEndpoint = process.env.MODELSCOPE_BASE_URL || "https://api-inference.modelscope.cn/v1",
+      systemPrompt: customSystemPrompt,
     } = config;
 
     if (!apiKey) {
@@ -66,8 +68,8 @@ export async function runAgentConversation(
 
     const toolsDesc = getToolsDescription();
 
-    // 构建系统提示词
-    const systemPrompt = `你是 EduNexus 的智能学习助手。
+    // 使用自定义系统提示词，如果没有则使用默认的
+    const systemPrompt = customSystemPrompt || `你是 EduNexus 的智能学习助手。
 
 ## 你的角色
 - 学习引导者：通过提问引导学生思考

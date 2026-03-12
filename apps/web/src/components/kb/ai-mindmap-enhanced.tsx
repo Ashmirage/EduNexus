@@ -71,23 +71,61 @@ export function AIMindMapEnhanced({ document }: AIMindMapEnhancedProps) {
 
       const data = await response.json();
 
+      // 层级布局算法
+      const layoutNodes = (nodes: any[], edges: any[]) => {
+        // 按层级分组
+        const levelGroups: { [key: number]: any[] } = {};
+        nodes.forEach(node => {
+          if (!levelGroups[node.level]) {
+            levelGroups[node.level] = [];
+          }
+          levelGroups[node.level].push(node);
+        });
+
+        const levels = Object.keys(levelGroups).map(Number).sort((a, b) => a - b);
+        const layoutedNodes: Node[] = [];
+
+        levels.forEach((level, levelIndex) => {
+          const nodesInLevel = levelGroups[level];
+          const levelY = levelIndex * 150; // 垂直间距
+          const totalWidth = nodesInLevel.length * 200; // 每个节点占用宽度
+          const startX = -totalWidth / 2 + 400; // 居中起始位置
+
+          nodesInLevel.forEach((node, index) => {
+            const nodeSize = level === 0 ? 120 : level === 1 ? 100 : 80;
+            const fontSize = level === 0 ? '16px' : level === 1 ? '14px' : '12px';
+            const bgColor = level === 0 ? '#6366f1' : level === 1 ? '#8b5cf6' : '#a78bfa';
+
+            layoutedNodes.push({
+              id: node.id,
+              type: 'default',
+              data: {
+                label: node.label,
+              },
+              position: {
+                x: startX + index * 200,
+                y: levelY,
+              },
+              style: {
+                background: bgColor,
+                color: '#fff',
+                border: '2px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '12px',
+                padding: '12px 16px',
+                fontSize,
+                fontWeight: level === 0 ? '600' : '500',
+                minWidth: `${nodeSize}px`,
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+              },
+            });
+          });
+        });
+
+        return layoutedNodes;
+      };
+
       // 转换为 ReactFlow 节点和边
-      const newNodes: Node[] = data.nodes.map((node: any, index: number) => ({
-        id: node.id,
-        type: "default",
-        data: { label: node.label },
-        position: {
-          x: Math.cos((index * 2 * Math.PI) / data.nodes.length) * 200 + 250,
-          y: Math.sin((index * 2 * Math.PI) / data.nodes.length) * 200 + 250,
-        },
-        style: {
-          background: node.level === 0 ? "#6366f1" : "#e0e7ff",
-          color: node.level === 0 ? "#fff" : "#000",
-          border: "1px solid #6366f1",
-          borderRadius: "8px",
-          padding: "10px",
-        },
-      }));
+      const newNodes = layoutNodes(data.nodes, data.edges);
 
       const newEdges: Edge[] = data.edges.map((edge: any) => ({
         id: `${edge.source}-${edge.target}`,
@@ -95,6 +133,14 @@ export function AIMindMapEnhanced({ document }: AIMindMapEnhancedProps) {
         target: edge.target,
         type: "smoothstep",
         animated: true,
+        style: {
+          stroke: '#8b5cf6',
+          strokeWidth: 2,
+        },
+        markerEnd: {
+          type: 'arrowclosed' as const,
+          color: '#8b5cf6',
+        },
       }));
 
       setNodes(newNodes);
