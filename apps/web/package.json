@@ -7,7 +7,7 @@
     "build": "next build",
     "build:analyze": "ANALYZE=true next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "next lint --dir src",
     "typecheck": "tsc --noEmit",
     "test": "pnpm test:smoke",
     "test:smoke": "node ./scripts/api-smoke.mjs",
