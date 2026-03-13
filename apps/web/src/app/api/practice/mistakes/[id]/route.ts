@@ -7,12 +7,13 @@ import { wrongQuestionNoteSchema } from "@/lib/server/schema";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   return NextResponse.json({
     success: true,
     message: "请使用客户端 IndexedDB 标记为已掌握",
-    questionId: params.id,
+    questionId: id,
   });
 }
 
@@ -22,8 +23,9 @@ export async function POST(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   try {
     const body = await request.json();
     const validated = wrongQuestionNoteSchema.parse(body);
@@ -31,7 +33,7 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       message: "请使用客户端 IndexedDB 更新错题笔记",
-      questionId: params.id,
+      questionId: id,
       data: validated,
     });
   } catch (error: any) {
@@ -51,11 +53,12 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   return NextResponse.json({
     success: true,
     message: "请使用客户端 IndexedDB 删除错题记录",
-    questionId: params.id,
+    questionId: id,
   });
 }

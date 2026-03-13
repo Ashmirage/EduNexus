@@ -7,12 +7,13 @@ import { updateQuestionBankSchema } from "@/lib/server/schema";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   return NextResponse.json({
     success: true,
     message: "请使用客户端 IndexedDB 获取题库",
-    bankId: params.id,
+    bankId: id,
   });
 }
 
@@ -22,8 +23,9 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   try {
     const body = await request.json();
     const validated = updateQuestionBankSchema.parse(body);
@@ -31,7 +33,7 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       message: "请使用客户端 IndexedDB 更新题库",
-      bankId: params.id,
+      bankId: id,
       data: validated,
     });
   } catch (error: any) {
@@ -51,11 +53,12 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   return NextResponse.json({
     success: true,
     message: "请使用客户端 IndexedDB 删除题库",
-    bankId: params.id,
+    bankId: id,
   });
 }

@@ -7,12 +7,13 @@ import { updateQuestionSchema } from "@/lib/server/schema";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   return NextResponse.json({
     success: true,
     message: "请使用客户端 IndexedDB 获取题目",
-    questionId: params.id,
+    questionId: id,
   });
 }
 
@@ -22,8 +23,9 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   try {
     const body = await request.json();
     const validated = updateQuestionSchema.parse(body);
@@ -31,7 +33,7 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       message: "请使用客户端 IndexedDB 更新题目",
-      questionId: params.id,
+      questionId: id,
       data: validated,
     });
   } catch (error: any) {
@@ -51,11 +53,12 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   return NextResponse.json({
     success: true,
     message: "请使用客户端 IndexedDB 删除题目",
-    questionId: params.id,
+    questionId: id,
   });
 }
