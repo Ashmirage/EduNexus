@@ -1,6 +1,15 @@
 // 资源存储管理
 
 import { getDataSyncEventManager, SyncEventType } from '../sync/data-sync-events';
+import type {
+  Resource,
+  Bookmark,
+  BookmarkFolder,
+  ResourceNote,
+  ResourceType,
+  ResourceStatus,
+} from "./resource-types";
+
 export type {
   Resource,
   Bookmark,
