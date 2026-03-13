@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import PathEditor from '@/components/path/path-editor';
 import PathExecutor from '@/components/path/path-executor';
@@ -8,10 +8,10 @@ import LearningPathMarket from '@/components/path/learning-path-market';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LearningPath } from '@/lib/path/path-types';
-import { getPath, getAllPaths } from '@/lib/path/path-storage';
+import { getPath } from '@/lib/path/path-storage';
 import { ArrowLeft, Plus } from 'lucide-react';
 
-export default function PathEditorPage() {
+function PathEditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathId = searchParams.get('id');
@@ -138,5 +138,13 @@ export default function PathEditorPage() {
         </Tabs>
       </div>
     </div>
+  );
+}
+
+export default function PathEditorPage() {
+  return (
+    <Suspense>
+      <PathEditorContent />
+    </Suspense>
   );
 }
