@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { AppSidebar } from './AppSidebar'
 import { MobileNav } from '@/components/mobile/mobile-nav'
 import { MobileMenu } from '@/components/mobile/mobile-menu'
+import { Footer } from './Footer'
 import { useIsMobile } from '@/lib/hooks/use-media-query'
 
 interface AppShellProps {
@@ -15,8 +16,9 @@ export function AppShell({ children }: AppShellProps) {
   const isMobile = useIsMobile()
 
   return (
-    <>
-      <div className="flex h-screen">
+    <div className="flex flex-col h-screen">
+      {/* 主体容器 */}
+      <div className="flex flex-1 min-h-0">
         {/* 桌面端侧边栏 */}
         <div className="hidden md:block">
           <AppSidebar />
@@ -28,6 +30,9 @@ export function AppShell({ children }: AppShellProps) {
         </main>
       </div>
 
+      {/* 页脚 */}
+      <Footer />
+
       {/* 移动端导航 */}
       {isMobile && (
         <>
@@ -38,6 +43,6 @@ export function AppShell({ children }: AppShellProps) {
           />
         </>
       )}
-    </>
+    </div>
   )
 }
