@@ -37,3 +37,6 @@ temp/
 
 # AI config
 GEMINI.md
+
+# Auto deploy scripts
+deploy.sh
