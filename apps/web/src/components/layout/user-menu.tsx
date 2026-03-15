@@ -27,17 +27,16 @@ export function UserMenu() {
 
   if (status === 'unauthenticated') {
     return (
-      <Button
-        variant="ghost"
-        size="sm"
-        asChild
-        className="w-full justify-start"
-      >
-        <a href="/login">
+      <a href="/login" className="w-full">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start"
+        >
           <UserIcon className="h-4 w-4 mr-2" />
           登录
-        </a>
-      </Button>
+        </Button>
+      </a>
     );
   }
 
