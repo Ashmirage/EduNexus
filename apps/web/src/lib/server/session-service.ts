@@ -1,13 +1,14 @@
 import { createTraceId } from "./trace";
 import { loadDb, saveDb } from "./store";
 
-export async function createSession(input: { title?: string }) {
+export async function createSession(input: { title?: string }, userId?: string) {
   const db = await loadDb();
   const now = new Date().toISOString();
+  const resolvedUserId = userId || 'demo_user';
   const session = {
     id: `ws_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
     title: input.title ?? "未命名学习会话",
-    userId: "demo_user",
+    userId: resolvedUserId,
     createdAt: now,
     updatedAt: now,
     lastLevel: 1,
