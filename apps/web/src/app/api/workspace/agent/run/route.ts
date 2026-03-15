@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     }
 
     const sessionId = parsed.data.sessionId?.trim();
+    let userId = 'demo_user';
     if (sessionId) {
       const session = await getSession(sessionId);
       if (!session) {
@@ -34,10 +35,12 @@ export async function POST(request: Request) {
           404
         );
       }
+      userId = session.userId;
     }
 
     const result = await runLangGraphAgent({
       sessionId,
+      userId,
       userInput: parsed.data.userInput,
       currentLevel: parsed.data.currentLevel ?? 1
     });

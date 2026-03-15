@@ -379,6 +379,79 @@ export class KBStorageManager {
   }
 }
 
+// ==================== Server API Methods ====================
+
+export type ServerDocument = {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+};
+
+/**
+ * 从服务器获取当前用户的文档列表
+ */
+export async function fetchDocumentsFromServer(): Promise<ServerDocument[]> {
+  const response = await fetch('/api/kb/docs', {
+    credentials: 'include'
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      console.warn('User not logged in, cannot fetch documents from server');
+      return [];
+    }
+    throw new Error(`Failed to fetch documents: ${response.status}`);
+  }
+  
+  const data = await response.json();
+  return data.documents || [];
+}
+
+/**
+ * 在服务器上创建文档
+ */
+export async function createDocumentOnServer(
+  title: string, 
+  content: string
+): Promise<ServerDocument> {
+  const response = await fetch('/api/kb/docs', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({ title, content })
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to create document: ${response.status}`);
+  }
+  
+  const data = await response.json();
+  return data.document;
+}
+
+/**
+ * 获取服务器上的单个文档
+ */
+export async function getDocumentFromServer(id: string): Promise<ServerDocument | null> {
+  const response = await fetch(`/api/kb/doc/${id}`, {
+    credentials: 'include'
+  });
+  
+  if (!response.ok) {
+    if (response.status === 404) {
+      return null;
+    }
+    throw new Error(`Failed to fetch document: ${response.status}`);
+  }
+  
+  const data = await response.json();
+  return data;
+}
+
 // 单例实例
 let storageInstance: KBStorageManager | null = null;
 

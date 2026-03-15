@@ -1,5 +1,6 @@
 import { fail } from "@/lib/server/response";
 import { getSession, mockSseStream } from "@/lib/server/session-service";
+import { getCurrentUserId } from "@/lib/server/auth-utils";
 
 export const runtime = "nodejs";
 
@@ -9,7 +10,8 @@ export async function GET(
 ) {
   try {
     const { id: sessionId } = await context.params;
-    const session = await getSession(sessionId);
+    const userId = await getCurrentUserId();
+    const session = await getSession(sessionId, userId ?? undefined);
     if (!session) {
       return fail(
         {

@@ -1,7 +1,8 @@
+import { auth } from "@/auth";
 import { fail, ok } from "@/lib/server/response";
 import { unlockFinalSchema } from "@/lib/server/schema";
 import { shouldUnlockFinal } from "@/lib/server/socratic";
-import { searchVault } from "@/lib/server/kb-lite";
+import { searchDocuments } from "@/lib/server/document-service";
 import { appendSessionMessage } from "@/lib/server/session-service";
 
 export const runtime = "nodejs";
@@ -17,6 +18,12 @@ export async function POST(request: Request) {
         details: parsed.error.flatten()
       });
     }
+
+    const session = await auth();
+    if (!session?.user?.id) {
+      return fail({ code: "UNAUTHORIZED", message: "用户未登录。" }, 401);
+    }
+    const userId = session.user.id;
 
     const decision = shouldUnlockFinal(parsed.data.reflection);
     if (parsed.data.reflection) {
@@ -37,7 +44,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const kb = await searchVault("等差数列 公式");
+    const kb = await searchDocuments(userId, "等差数列 公式");
     const finalAnswer =
       "示例答案：先列出已知条件，再代入等差数列求和公式 S_n = n(a_1 + a_n)/2，并在结尾做结果检验。";
 
@@ -49,7 +56,7 @@ export async function POST(request: Request) {
     return ok({
       unlocked: true,
       finalAnswer,
-      citations: kb.candidates.slice(0, 2).map((candidate, index) => ({
+      citations: kb.slice(0, 2).map((candidate, index) => ({
         sourceId: candidate.docId,
         chunkRef: `final_${index + 1}`
       }))

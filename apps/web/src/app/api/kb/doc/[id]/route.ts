@@ -1,5 +1,6 @@
-import { getVaultDocById } from "@/lib/server/kb-lite";
 import { fail, ok } from "@/lib/server/response";
+import { getCurrentUserId } from "@/lib/server/auth-utils";
+import { getDocument } from "@/lib/server/document-service";
 
 export const runtime = "nodejs";
 
@@ -8,13 +9,25 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return fail(
+        {
+          code: "UNAUTHORIZED",
+          message: "用户未登录。"
+        },
+        401
+      );
+    }
+    
     const { id } = await context.params;
-    const doc = await getVaultDocById(id);
+    const doc = await getDocument(id, userId);
+
     if (!doc) {
       return fail(
         {
           code: "DOC_NOT_FOUND",
-          message: "未找到对应知识文档。"
+          message: "未找到对应知识文档，或无权访问。"
         },
         404
       );
@@ -23,15 +36,15 @@ export async function GET(
     return ok({
       id: doc.id,
       title: doc.title,
-      type: doc.type,
-      domain: doc.domain,
-      tags: doc.tags,
-      links: doc.links,
-      sourceRefs: doc.sourceRefs,
-      owner: doc.owner,
+      content: doc.content,
       updatedAt: doc.updatedAt,
-      backlinks: doc.backlinks,
-      content: doc.content
+      type: 'note', 
+      domain: 'general',
+      tags: [],
+      links: [],
+      sourceRefs: [],
+      owner: doc.authorId,
+      backlinks: []
     });
   } catch (error) {
     return fail(

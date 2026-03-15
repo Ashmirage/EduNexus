@@ -37,16 +37,22 @@ export async function updateSessionLevel(sessionId: string, level: number) {
   return target;
 }
 
-export async function getSession(sessionId: string) {
+export async function getSession(sessionId: string, userId?: string) {
   const db = await loadDb();
-  return db.sessions.find((item) => item.id === sessionId) ?? null;
+  const session = db.sessions.find((item) => item.id === sessionId) ?? null;
+  if (!session) return null;
+  const resolvedUserId = userId || 'demo_user';
+  if (session.userId !== resolvedUserId) return null;
+  return session;
 }
 
-export async function listSessions(query?: string) {
+export async function listSessions(query?: string, userId?: string) {
   const db = await loadDb();
   const normalized = query?.trim().toLowerCase();
+  const resolvedUserId = userId || 'demo_user';
   const sessions = db.sessions
     .filter((session) => {
+      if (session.userId !== resolvedUserId) return false;
       if (!normalized) return true;
       return (
         session.title.toLowerCase().includes(normalized) ||
@@ -72,11 +78,16 @@ export async function appendSessionMessage(
   input: {
     role: "user" | "assistant" | "system";
     content: string;
-  }
+  },
+  userId?: string
 ) {
   const db = await loadDb();
   const target = db.sessions.find((item) => item.id === sessionId);
   if (!target) {
+    return null;
+  }
+  const resolvedUserId = userId || 'demo_user';
+  if (target.userId !== resolvedUserId) {
     return null;
   }
 
@@ -106,10 +117,14 @@ export async function getSessionDetail(sessionId: string) {
   };
 }
 
-export async function renameSession(sessionId: string, title: string) {
+export async function renameSession(sessionId: string, title: string, userId?: string) {
   const db = await loadDb();
   const target = db.sessions.find((item) => item.id === sessionId);
   if (!target) {
+    return null;
+  }
+  const resolvedUserId = userId || 'demo_user';
+  if (target.userId !== resolvedUserId) {
     return null;
   }
   target.title = title;
@@ -118,8 +133,16 @@ export async function renameSession(sessionId: string, title: string) {
   return target;
 }
 
-export async function deleteSession(sessionId: string) {
+export async function deleteSession(sessionId: string, userId?: string) {
   const db = await loadDb();
+  const target = db.sessions.find((item) => item.id === sessionId);
+  if (!target) {
+    return false;
+  }
+  const resolvedUserId = userId || 'demo_user';
+  if (target.userId !== resolvedUserId) {
+    return false;
+  }
   const index = db.sessions.findIndex((item) => item.id === sessionId);
   if (index < 0) {
     return false;

@@ -2,9 +2,10 @@ import { fail, ok } from "@/lib/server/response";
 import { updateSessionSchema } from "@/lib/server/schema";
 import {
   deleteSession,
-  getSessionDetail,
+  getSession,
   renameSession
 } from "@/lib/server/session-service";
+import { getCurrentUserId } from "@/lib/server/auth-utils";
 
 export const runtime = "nodejs";
 
@@ -14,8 +15,9 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
-    const detail = await getSessionDetail(id);
-    if (!detail) {
+    const userId = await getCurrentUserId();
+    const session = await getSession(id, userId ?? undefined);
+    if (!session) {
       return fail(
         {
           code: "SESSION_NOT_FOUND",
@@ -24,7 +26,15 @@ export async function GET(
         404
       );
     }
-    return ok(detail);
+    return ok({
+      id: session.id,
+      title: session.title,
+      userId: session.userId,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+      lastLevel: session.lastLevel,
+      messages: session.messages
+    });
   } catch (error) {
     return fail(
       {
@@ -53,7 +63,8 @@ export async function PATCH(
       });
     }
 
-    const renamed = await renameSession(id, parsed.data.title);
+    const userId = await getCurrentUserId();
+    const renamed = await renameSession(id, parsed.data.title, userId ?? undefined);
     if (!renamed) {
       return fail(
         {
@@ -87,7 +98,8 @@ export async function DELETE(
 ) {
   try {
     const { id } = await context.params;
-    const removed = await deleteSession(id);
+    const userId = await getCurrentUserId();
+    const removed = await deleteSession(id, userId ?? undefined);
     if (!removed) {
       return fail(
         {

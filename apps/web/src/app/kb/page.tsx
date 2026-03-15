@@ -2,130 +2,97 @@
 
 import { useState, useEffect } from "react";
 import { KBLayout } from "@/components/kb/kb-layout";
-import { getKBStorage, type KBDocument, type KBVault } from "@/lib/client/kb-storage";
+import { type KBDocument, fetchDocumentsFromServer, createDocumentOnServer } from "@/lib/client/kb-storage";
 import { useDocument } from "@/lib/ai/document-context";
+import { useSession } from "next-auth/react";
 
 export default function KnowledgeBasePage() {
   const { setCurrentDocument } = useDocument();
-  const [vaults, setVaults] = useState<KBVault[]>([]);
-  const [currentVault, setCurrentVault] = useState<KBVault | null>(null);
+  const { status } = useSession();
+  
   const [documents, setDocuments] = useState<KBDocument[]>([]);
   const [currentDoc, setCurrentDoc] = useState<KBDocument | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 当文档切换时，更新全局文档上下文
   useEffect(() => {
     setCurrentDocument(currentDoc);
   }, [currentDoc, setCurrentDocument]);
 
-  // 初始化数据
   useEffect(() => {
     const initializeData = async () => {
-      try {
-        const storage = getKBStorage();
-        await storage.initialize();
+      setIsLoading(true);
+      setDocuments([]); 
 
-        // 加载知识库列表
-        const allVaults = await storage.getAllVaults();
-
-        // 如果没有知识库，创建默认知识库
-        if (allVaults.length === 0) {
-          const defaultVault = await storage.createVault("我的知识库", "/default");
-          setVaults([defaultVault]);
-          setCurrentVault(defaultVault);
-          storage.setCurrentVault(defaultVault.id);
-        } else {
-          setVaults(allVaults);
-
-          // 获取当前知识库
-          const currentVaultId = storage.getCurrentVaultId();
-          const vault = allVaults.find(v => v.id === currentVaultId) || allVaults[0];
-          setCurrentVault(vault);
-
-          // 加载文档列表
-          const docs = await storage.getDocumentsByVault(vault.id);
-          setDocuments(docs);
+      if (status === 'authenticated') {
+        try {
+          const serverDocs = await fetchDocumentsFromServer();
+          const docsFromServer: KBDocument[] = serverDocs.map((d: any) => ({
+            id: d.id,
+            title: d.title,
+            content: d.content,
+            tags: d.tags || [],
+            createdAt: new Date(d.createdAt),
+            updatedAt: new Date(d.updatedAt),
+            vaultId: 'server-vault',
+          }));
+          setDocuments(docsFromServer);
+        } catch (error) {
+          console.error("Failed to fetch documents from server:", error);
         }
-      } catch (error) {
-        console.error("Failed to initialize knowledge base:", error);
-      } finally {
-        setIsLoading(false);
       }
+      setIsLoading(false);
     };
 
     initializeData();
-  }, []);
+  }, [status]);
 
-  // 切换知识库
-  const handleVaultChange = async (vaultId: string) => {
-    const vault = vaults.find(v => v.id === vaultId);
-    if (!vault) return;
-
-    setCurrentVault(vault);
-    const storage = getKBStorage();
-    storage.setCurrentVault(vaultId);
-
-    // 加载该知识库的文档
-    const docs = await storage.getDocumentsByVault(vaultId);
-    setDocuments(docs);
-    setCurrentDoc(null);
-  };
-
-  // 创建新文档
   const handleCreateDocument = async (title: string) => {
-    if (!currentVault) return;
-
-    const storage = getKBStorage();
-    const newDoc = await storage.createDocument(currentVault.id, title);
-    setDocuments([...documents, newDoc]);
-    setCurrentDoc(newDoc);
-  };
-
-  // 更新文档
-  const handleUpdateDocument = async (doc: KBDocument) => {
-    const storage = getKBStorage();
-    await storage.updateDocument(doc);
-    setDocuments(documents.map(d => d.id === doc.id ? doc : d));
-    setCurrentDoc(doc);
-  };
-
-  // 删除文档
-  const handleDeleteDocument = async (docId: string) => {
-    const storage = getKBStorage();
-    await storage.deleteDocument(docId);
-    setDocuments(documents.filter(d => d.id !== docId));
-    if (currentDoc?.id === docId) {
-      setCurrentDoc(null);
+    if (status !== 'authenticated') {
+      alert('请先登录！');
+      return;
+    }
+    try {
+      const newDocFromServer = await createDocumentOnServer(title, '');
+      const newDoc: KBDocument = {
+        id: newDocFromServer.id,
+        title: newDocFromServer.title,
+        content: newDocFromServer.content,
+        tags: [],
+        createdAt: new Date(newDocFromServer.createdAt),
+        updatedAt: new Date(newDocFromServer.updatedAt),
+        vaultId: 'server-vault',
+      };
+      setDocuments(prev => [...prev, newDoc]);
+      setCurrentDoc(newDoc);
+    } catch (error) {
+      console.error("Failed to create document on server:", error);
+      alert('创建文档失败！');
     }
   };
-
-  // 选择文档
+  
   const handleSelectDocument = (doc: KBDocument) => {
     setCurrentDoc(doc);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">加载知识库...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleVaultChange = (vaultId: string) => console.log("Vault change not implemented:", vaultId);
+  const handleDeleteDocument = async (docId: string) => console.log("Delete:", docId);
+  const handleUpdateDocument = async (doc: KBDocument) => console.log("Update:", doc.id);
 
+  if (status === 'loading') {
+    return <div>Loading Authentication...</div>;
+  }
+  
   return (
     <KBLayout
-      vaults={vaults}
-      currentVault={currentVault}
+      vaults={[]}
+      currentVault={null}
       documents={documents}
       currentDoc={currentDoc}
       onVaultChange={handleVaultChange}
       onCreateDocument={handleCreateDocument}
-      onUpdateDocument={handleUpdateDocument}
-      onDeleteDocument={handleDeleteDocument}
       onSelectDocument={handleSelectDocument}
+      onDeleteDocument={handleDeleteDocument}
+      onUpdateDocument={handleUpdateDocument}
     />
   );
 }
