@@ -169,10 +169,10 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="text-4xl mb-4">⏳</div>
-          <p className="text-gray-600 dark:text-gray-400">加载中...</p>
+          <p className="text-muted-foreground">加载中...</p>
         </div>
       </div>
     );
@@ -180,13 +180,13 @@ export default function ProfilePage() {
 
   if (!profile || !socialStats || !userLevel || !userStats) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="p-12 text-center">
           <div className="text-6xl mb-4">😕</div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-2xl font-bold text-foreground mb-2">
             用户不存在
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
+          <p className="text-muted-foreground mb-6">
             找不到用户名为 @{username} 的用户
           </p>
           <Button onClick={() => router.push('/')}>
@@ -204,7 +204,7 @@ export default function ProfilePage() {
   const calendarData = getLearningCalendar(profile.userId, 365);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="space-y-6">
           <ProfileHeader

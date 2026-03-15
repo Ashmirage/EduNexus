@@ -75,30 +75,30 @@ export function InstallPrompt() {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-in slide-in-from-bottom-5">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-card border rounded-lg shadow-2xl p-4">
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-            <Download className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <div className="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+            <Download className="w-5 h-5 text-primary" />
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+            <h3 className="text-sm font-semibold text-foreground mb-1">
               安装 EduNexus 应用
             </h3>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+            <p className="text-xs text-muted-foreground mb-3">
               安装到主屏幕，获得更好的体验和离线访问功能
             </p>
 
             <div className="flex gap-2">
               <button
                 onClick={handleInstall}
-                className="flex-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md transition-colors"
+                className="flex-1 px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium rounded-md transition-colors"
               >
                 安装
               </button>
               <button
                 onClick={handleDismiss}
-                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-medium rounded-md transition-colors"
+                className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs font-medium rounded-md transition-colors"
               >
                 稍后
               </button>
@@ -107,7 +107,7 @@ export function InstallPrompt() {
 
           <button
             onClick={handleDismiss}
-            className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            className="flex-shrink-0 text-muted-foreground hover:text-foreground"
           >
             <X className="w-4 h-4" />
           </button>

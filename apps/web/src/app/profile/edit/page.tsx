@@ -162,20 +162,20 @@ export default function EditProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="text-4xl mb-4">⏳</div>
-          <p className="text-gray-600 dark:text-gray-400">加载中...</p>
+          <p className="text-muted-foreground">加载中...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-bold text-foreground">
             编辑个人资料
           </h1>
           <div className="flex space-x-3">
@@ -346,8 +346,8 @@ export default function EditProfilePage() {
                       onClick={() => setFormData({ ...formData, theme })}
                       className={`h-16 rounded-lg border-2 transition-all ${
                         formData.theme === theme
-                          ? 'border-blue-600 ring-2 ring-blue-200'
-                          : 'border-gray-300 dark:border-gray-600'
+                          ? 'border-primary ring-2 ring-primary/20'
+                          : 'border-input'
                       }`}
                     >
                       <div className={`h-full rounded-md bg-gradient-to-r ${
@@ -380,7 +380,7 @@ export default function EditProfilePage() {
               <div>
                 <Label htmlFor="github">GitHub 用户名</Label>
                 <div className="flex items-center mt-2">
-                  <span className="text-gray-500 dark:text-gray-400 mr-2">github.com/</span>
+                  <span className="text-muted-foreground mr-2">github.com/</span>
                   <Input
                     id="github"
                     value={formData.github}
@@ -393,7 +393,7 @@ export default function EditProfilePage() {
               <div>
                 <Label htmlFor="twitter">Twitter 用户名</Label>
                 <div className="flex items-center mt-2">
-                  <span className="text-gray-500 dark:text-gray-400 mr-2">twitter.com/</span>
+                  <span className="text-muted-foreground mr-2">twitter.com/</span>
                   <Input
                     id="twitter"
                     value={formData.twitter}
@@ -420,7 +420,7 @@ export default function EditProfilePage() {
             {privacy && (
               <Card className="p-6 space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  <h3 className="text-lg font-semibold text-foreground mb-4">
                     隐私设置
                   </h3>
                   <div className="space-y-4">
