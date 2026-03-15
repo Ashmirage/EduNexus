@@ -19,6 +19,7 @@ import {
   FolderOpen,
   GitBranch,
   Users,
+  Languages,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -31,6 +32,7 @@ const navigation = [
       { name: "知识宝库", href: "/kb", icon: BookOpen },
       { name: "成长地图", href: "/path", icon: Route },
       { name: "学习路径", href: "/learning-paths", icon: GitBranch },
+      { name: "单词学习", href: "/words", icon: Languages },
       { name: "目标管理", href: "/goals", icon: Target },
       { name: "资源中心", href: "/resources", icon: FolderOpen },
       { name: "学习小组", href: "/groups", icon: Users },
