@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { Providers } from "./providers";
 import { AppShell } from "@/components/layout/AppShell";
 import { QueryProvider } from "@/lib/providers/query-provider";
 import { PWAInit } from "@/components/pwa/pwa-init";
@@ -57,19 +58,21 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body>
-        <QueryProvider>
-          <DocumentProvider>
-            <PWAInit />
-            <KGSyncBootstrap />
-            <AppShell>{children}</AppShell>
-            <InstallPrompt />
-            <OfflineIndicator />
-            <NotificationPermission />
-            <UpdatePrompt />
-            <GlobalAIAssistant />
-            <Toaster />
-          </DocumentProvider>
-        </QueryProvider>
+        <Providers>
+          <QueryProvider>
+            <DocumentProvider>
+              <PWAInit />
+              <KGSyncBootstrap />
+              <AppShell>{children}</AppShell>
+              <InstallPrompt />
+              <OfflineIndicator />
+              <NotificationPermission />
+              <UpdatePrompt />
+              <GlobalAIAssistant />
+              <Toaster />
+            </DocumentProvider>
+          </QueryProvider>
+        </Providers>
       </body>
     </html>
   );
