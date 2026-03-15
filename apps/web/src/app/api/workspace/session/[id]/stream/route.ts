@@ -11,7 +11,10 @@ export async function GET(
   try {
     const { id: sessionId } = await context.params;
     const userId = await getCurrentUserId();
-    const session = await getSession(sessionId, userId ?? undefined);
+    if (!userId) {
+      return fail({ code: 'UNAUTHORIZED', message: '请先登录' }, 401);
+    }
+    const session = await getSession(sessionId, userId);
     if (!session) {
       return fail(
         {

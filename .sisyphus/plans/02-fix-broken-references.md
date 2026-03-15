@@ -71,7 +71,7 @@ This task groups the refactoring of workspace-related endpoints that previously 
 
 ### Task 5: Final Verification and Cleanup
 
-- **Status**: `[ ] Pending`
+- **Status**: `[x] Done`
 - **TDD Steps**:
     1.  **Verify**: Run a final, full `pnpm typecheck` to ensure no errors remain.
     2.  **Test**: Manually perform the end-to-end test flow: register a new user, create a document, log out, log in as another user, and confirm the document is not visible.

@@ -1,9 +1,10 @@
 {
-  "active_plan": "/Users/Ng/workspace/EduNexus-auth/.sisyphus/plans/02-fix-broken-references.md",
-  "started_at": "2026-03-15T12:10:38.438Z",
+  "active_plan": "/Users/Ng/workspace/EduNexus-auth/.sisyphus/plans/03-cleanup-demo-user-references.md",
+  "started_at": "2026-03-15T13:08:49.032Z",
   "session_ids": [
     "ses_312b2c0c3ffenUd7yyHkzRuIaI"
   ],
-  "plan_name": "02-fix-broken-references",
+  "plan_name": "03-cleanup-demo-user-references",
+  "agent": "atlas",
   "worktree_path": "/Users/Ng/workspace/EduNexus-auth"
 }

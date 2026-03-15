@@ -30,14 +30,14 @@ export async function POST(request: Request) {
       await appendSessionMessage(parsed.data.sessionId, {
         role: "user",
         content: `反思：${parsed.data.reflection}`
-      });
+      }, userId);
     }
 
     if (!decision.unlocked) {
       await appendSessionMessage(parsed.data.sessionId, {
         role: "assistant",
         content: decision.reason
-      });
+      }, userId);
       return ok({
         unlocked: false,
         reason: decision.reason
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     await appendSessionMessage(parsed.data.sessionId, {
       role: "assistant",
       content: finalAnswer
-    });
+    }, userId);
 
     return ok({
       unlocked: true,

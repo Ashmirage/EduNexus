@@ -18,9 +18,12 @@ export async function POST(request: Request) {
     }
 
     const userId = await getCurrentUserId();
+    if (!userId) {
+      return fail({ code: 'UNAUTHORIZED', message: '请先登录' }, 401);
+    }
     const session = await createSession({
       title: parsed.data.title
-    }, userId || 'demo_user');
+    }, userId);
 
     return ok({ session });
   } catch (error) {

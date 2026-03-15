@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { prisma } from '../apps/web/src/lib/server/prisma';
 
-const VAULT_DIR = path.join(process.cwd(), 'vault');
+const VAULT_DIR = '/Users/Ng/workspace/EduNexus/vault';
 
 async function readMarkdownFile(filePath: string) {
   const content = await fs.readFile(filePath, 'utf8');

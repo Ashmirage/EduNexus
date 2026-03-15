@@ -10,7 +10,10 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q")?.trim();
     const userId = await getCurrentUserId();
-    const sessions = await listSessions(q, userId ?? undefined);
+    if (!userId) {
+      return fail({ code: 'UNAUTHORIZED', message: '请先登录' }, 401);
+    }
+    const sessions = await listSessions(q, userId);
     return ok({ sessions });
   } catch (error) {
     return fail(

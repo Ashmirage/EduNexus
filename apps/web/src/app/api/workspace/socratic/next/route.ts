@@ -62,11 +62,11 @@ export async function POST(request: Request) {
     await appendSessionMessage(parsed.data.sessionId, {
       role: "user",
       content: parsed.data.userInput
-    });
+    }, userId);
     await appendSessionMessage(parsed.data.sessionId, {
       role: "assistant",
       content: finalGuidance
-    });
+    }, userId);
 
     return ok({
       nextLevel: guidance.nextLevel,

@@ -1,14 +1,14 @@
 import { createTraceId } from "./trace";
 import { loadDb, saveDb } from "./store";
 
-export async function createSession(input: { title?: string }, userId?: string) {
+export async function createSession(input: { title?: string }, userId: string) {
+  if (!userId) throw new Error('userId is required');
   const db = await loadDb();
   const now = new Date().toISOString();
-  const resolvedUserId = userId || 'demo_user';
   const session = {
     id: `ws_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
     title: input.title ?? "未命名学习会话",
-    userId: resolvedUserId,
+    userId: userId,
     createdAt: now,
     updatedAt: now,
     lastLevel: 1,
@@ -37,22 +37,22 @@ export async function updateSessionLevel(sessionId: string, level: number) {
   return target;
 }
 
-export async function getSession(sessionId: string, userId?: string) {
+export async function getSession(sessionId: string, userId: string) {
+  if (!userId) throw new Error('userId is required');
   const db = await loadDb();
   const session = db.sessions.find((item) => item.id === sessionId) ?? null;
   if (!session) return null;
-  const resolvedUserId = userId || 'demo_user';
-  if (session.userId !== resolvedUserId) return null;
+  if (session.userId !== userId) return null;
   return session;
 }
 
-export async function listSessions(query?: string, userId?: string) {
+export async function listSessions(query: string | undefined, userId: string) {
+  if (!userId) throw new Error('userId is required');
   const db = await loadDb();
   const normalized = query?.trim().toLowerCase();
-  const resolvedUserId = userId || 'demo_user';
   const sessions = db.sessions
     .filter((session) => {
-      if (session.userId !== resolvedUserId) return false;
+      if (session.userId !== userId) return false;
       if (!normalized) return true;
       return (
         session.title.toLowerCase().includes(normalized) ||
@@ -79,15 +79,15 @@ export async function appendSessionMessage(
     role: "user" | "assistant" | "system";
     content: string;
   },
-  userId?: string
+  userId: string
 ) {
+  if (!userId) throw new Error('userId is required');
   const db = await loadDb();
   const target = db.sessions.find((item) => item.id === sessionId);
   if (!target) {
     return null;
   }
-  const resolvedUserId = userId || 'demo_user';
-  if (target.userId !== resolvedUserId) {
+  if (target.userId !== userId) {
     return null;
   }
 
@@ -101,8 +101,9 @@ export async function appendSessionMessage(
   return target;
 }
 
-export async function getSessionDetail(sessionId: string) {
-  const session = await getSession(sessionId);
+export async function getSessionDetail(sessionId: string, userId: string) {
+  if (!userId) throw new Error('userId is required');
+  const session = await getSession(sessionId, userId);
   if (!session) {
     return null;
   }
@@ -117,14 +118,14 @@ export async function getSessionDetail(sessionId: string) {
   };
 }
 
-export async function renameSession(sessionId: string, title: string, userId?: string) {
+export async function renameSession(sessionId: string, title: string, userId: string) {
+  if (!userId) throw new Error('userId is required');
   const db = await loadDb();
   const target = db.sessions.find((item) => item.id === sessionId);
   if (!target) {
     return null;
   }
-  const resolvedUserId = userId || 'demo_user';
-  if (target.userId !== resolvedUserId) {
+  if (target.userId !== userId) {
     return null;
   }
   target.title = title;
@@ -133,14 +134,14 @@ export async function renameSession(sessionId: string, title: string, userId?: s
   return target;
 }
 
-export async function deleteSession(sessionId: string, userId?: string) {
+export async function deleteSession(sessionId: string, userId: string) {
+  if (!userId) throw new Error('userId is required');
   const db = await loadDb();
   const target = db.sessions.find((item) => item.id === sessionId);
   if (!target) {
     return false;
   }
-  const resolvedUserId = userId || 'demo_user';
-  if (target.userId !== resolvedUserId) {
+  if (target.userId !== userId) {
     return false;
   }
   const index = db.sessions.findIndex((item) => item.id === sessionId);

@@ -16,7 +16,10 @@ export async function GET(
   try {
     const { id } = await context.params;
     const userId = await getCurrentUserId();
-    const session = await getSession(id, userId ?? undefined);
+    if (!userId) {
+      return fail({ code: 'UNAUTHORIZED', message: '请先登录' }, 401);
+    }
+    const session = await getSession(id, userId);
     if (!session) {
       return fail(
         {
@@ -64,7 +67,10 @@ export async function PATCH(
     }
 
     const userId = await getCurrentUserId();
-    const renamed = await renameSession(id, parsed.data.title, userId ?? undefined);
+    if (!userId) {
+      return fail({ code: 'UNAUTHORIZED', message: '请先登录' }, 401);
+    }
+    const renamed = await renameSession(id, parsed.data.title, userId);
     if (!renamed) {
       return fail(
         {
@@ -99,7 +105,10 @@ export async function DELETE(
   try {
     const { id } = await context.params;
     const userId = await getCurrentUserId();
-    const removed = await deleteSession(id, userId ?? undefined);
+    if (!userId) {
+      return fail({ code: 'UNAUTHORIZED', message: '请先登录' }, 401);
+    }
+    const removed = await deleteSession(id, userId);
     if (!removed) {
       return fail(
         {
