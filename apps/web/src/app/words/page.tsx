@@ -11,13 +11,10 @@ import {
   StreakCalendar,
 } from "@/components/words";
 import { ensureWordsBootstrap } from "@/lib/words/bootstrap";
+import { getWordsDebugTodayKey, getWordsToday } from "@/lib/words/date";
 import { wordsStorage } from "@/lib/words/storage";
 import type { LearningRecord, WordBook } from "@/lib/words/types";
 import { countCompletedToday, syncWordsProgressToGoal } from "@/lib/words/integration";
-
-function getTodayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export default function WordsDashboardPage() {
   const router = useRouter();
@@ -26,7 +23,7 @@ export default function WordsDashboardPage() {
   const [records, setRecords] = useState<LearningRecord[]>([]);
   const [dueTodayWordIds, setDueTodayWordIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const today = getTodayIsoDate();
+  const [today, setToday] = useState(getWordsToday());
 
   useEffect(() => {
     let active = true;
@@ -61,6 +58,19 @@ export default function WordsDashboardPage() {
       active = false;
     };
   }, [today]);
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === getWordsDebugTodayKey()) {
+        setToday(getWordsToday());
+      }
+    };
+
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
 
   const progressByBook = useMemo(() => {
     return books.reduce<Record<string, number>>((acc, book) => {

@@ -24,9 +24,17 @@ export function calculateTodayProgress(
 }
 
 export function calculateStreakDays(activeDates: string[], today: string): number {
-  const set = new Set(activeDates);
+  const sorted = Array.from(new Set(activeDates)).sort();
+  if (sorted.length === 0) {
+    return 0;
+  }
+
+  const set = new Set(sorted);
+  const latestDate = sorted[sorted.length - 1];
+  const start = latestDate <= today ? latestDate : today;
+
   let streak = 0;
-  const cursor = new Date(`${today}T00:00:00.000Z`);
+  const cursor = new Date(`${start}T00:00:00.000Z`);
 
   while (true) {
     const iso = cursor.toISOString().split("T")[0];

@@ -8,16 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReviewButtons, WordCard } from "@/components/words";
 import { ensureWordsBootstrap } from "@/lib/words/bootstrap";
+import { getWordsToday } from "@/lib/words/date";
 import { syncWordsProgressToGoal } from "@/lib/words/integration";
 import { wordsStorage } from "@/lib/words/storage";
 import { updateWordStatus } from "@/lib/words/scheduler";
-import type { LearningRecord, Word } from "@/lib/words/types";
+import type { Word } from "@/lib/words/types";
 
 export default function ReviewWordsPage() {
   const router = useRouter();
-  const today = new Date().toISOString().slice(0, 10);
-  const [allWords, setAllWords] = useState<Word[]>([]);
-  const [learningRecords, setLearningRecords] = useState<LearningRecord[]>([]);
+  const today = getWordsToday();
+  const [sessionQueue, setSessionQueue] = useState<Word[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -28,8 +28,11 @@ export default function ReviewWordsPage() {
         wordsStorage.getAllLearningRecords(),
       ]);
       if (!active) return;
-      setAllWords(words);
-      setLearningRecords(records);
+      const dueWordIds = records
+        .filter((record) => record.nextReviewDate <= today)
+        .map((record) => record.wordId);
+      const dueWordIdSet = new Set(dueWordIds);
+      setSessionQueue(words.filter((word) => dueWordIdSet.has(word.id)));
     };
     void load();
     return () => {
@@ -37,29 +40,16 @@ export default function ReviewWordsPage() {
     };
   }, []);
 
-  const dueWordIds = useMemo(
-    () =>
-      learningRecords
-        .filter((record) => record.nextReviewDate <= today)
-        .map((record) => record.wordId),
-    [learningRecords, today]
-  );
-
-  const queue = useMemo(
-    () => allWords.filter((word) => dueWordIds.includes(word.id)),
-    [allWords, dueWordIds]
-  );
-
   const [quickRecallMode, setQuickRecallMode] = useState(false);
   const [index, setIndex] = useState(0);
   const [correct, setCorrect] = useState(0);
   const [incorrect, setIncorrect] = useState(0);
 
-  const current = queue[index];
-  const finished = queue.length > 0 && index >= queue.length;
+  const current = sessionQueue[index];
+  const finished = sessionQueue.length > 0 && index >= sessionQueue.length;
 
   const onAnswer = async (isCorrect: boolean) => {
-    const currentWord = queue[index];
+    const currentWord = sessionQueue[index];
     if (!currentWord) {
       return;
     }
@@ -74,7 +64,6 @@ export default function ReviewWordsPage() {
     setIndex((currentIndex) => currentIndex + 1);
 
     const records = await wordsStorage.getAllLearningRecords();
-    setLearningRecords(records);
     const completed = records.filter((record) => record.lastReviewedAt === today).length;
     syncWordsProgressToGoal(today, 20, completed);
   };
@@ -85,7 +74,7 @@ export default function ReviewWordsPage() {
     setIncorrect(0);
   };
 
-  if (queue.length === 0) {
+  if (sessionQueue.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
         <Card className="w-full max-w-md">
@@ -108,7 +97,7 @@ export default function ReviewWordsPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold text-slate-900">复习模式</h1>
-              <p className="text-sm text-slate-600">复习队列: {Math.max(queue.length - index, 0)} 个单词</p>
+              <p className="text-sm text-slate-600">复习队列: {Math.max(sessionQueue.length - index, 0)} 个单词</p>
             </div>
             <Button variant={quickRecallMode ? "default" : "outline"} onClick={() => setQuickRecallMode((value) => !value)} className="gap-2">
               <Timer className="h-4 w-4" />
@@ -126,10 +115,10 @@ export default function ReviewWordsPage() {
               <div className="flex flex-wrap gap-2">
                 <Badge className="bg-emerald-600">认识: {correct}</Badge>
                 <Badge className="bg-rose-600">不认识: {incorrect}</Badge>
-                <Badge variant="outline">总计: {queue.length}</Badge>
+                <Badge variant="outline">总计: {sessionQueue.length}</Badge>
               </div>
               <div className="text-sm text-slate-600">
-                准确率: {queue.length === 0 ? 0 : Math.round((correct / queue.length) * 100)}%
+                准确率: {sessionQueue.length === 0 ? 0 : Math.round((correct / sessionQueue.length) * 100)}%
               </div>
               <div className="flex gap-2">
                 <Button onClick={reset}>重新复习</Button>

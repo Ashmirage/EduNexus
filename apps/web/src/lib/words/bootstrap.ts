@@ -1,36 +1,36 @@
-import cet4Words from "@/data/words/cet4.json";
-import cet6Words from "@/data/words/cet6.json";
+import { LOCAL_WORD_BOOK_SOURCES } from "@/data/words";
 
 import { wordsStorage } from "./storage";
-import type { Word, WordBook } from "./types";
 
-const BUILTIN_BOOKS: WordBook[] = [
-  {
-    id: "cet4",
-    name: "CET-4 Core 2000",
-    description: "College English Test Band 4 core vocabulary",
-    wordCount: 2000,
-    category: "cet",
-  },
-  {
-    id: "cet6",
-    name: "CET-6 Core 2000",
-    description: "College English Test Band 6 core vocabulary",
-    wordCount: 2000,
-    category: "cet",
-  },
-];
+const WORDS_DATA_VERSION = "kylebing-cet4-cet6-v1";
+const WORDS_DATA_VERSION_KEY = "edunexus_words_data_version";
 
 export async function ensureWordsBootstrap(): Promise<void> {
-  const books = await wordsStorage.getWordBooks();
-  if (books.length > 0) {
-    return;
+  if (typeof window !== "undefined") {
+    try {
+      const currentVersion = localStorage.getItem(WORDS_DATA_VERSION_KEY);
+      if (currentVersion === WORDS_DATA_VERSION) {
+        return;
+      }
+    } catch {
+      // ignore localStorage read errors and continue sync
+    }
   }
 
-  for (const book of BUILTIN_BOOKS) {
+  for (const source of LOCAL_WORD_BOOK_SOURCES) {
+    const book = {
+      ...source.book,
+      wordCount: source.words.length,
+    };
     await wordsStorage.saveWordBook(book);
+    await wordsStorage.saveWords(source.words);
   }
 
-  await wordsStorage.saveWords(cet4Words as Word[]);
-  await wordsStorage.saveWords(cet6Words as Word[]);
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(WORDS_DATA_VERSION_KEY, WORDS_DATA_VERSION);
+    } catch {
+      // ignore localStorage write errors
+    }
+  }
 }

@@ -19,6 +19,8 @@ import { generateWordMnemonic } from "@/lib/words/ai";
 import { suggestRelatedWords, syncWordsProgressToGoal } from "@/lib/words/integration";
 import { wordsStorage } from "@/lib/words/storage";
 import { updateWordStatus } from "@/lib/words/scheduler";
+import { getWordsToday } from "@/lib/words/date";
+import { selectSessionWordIds } from "@/lib/words/session";
 import type { Word } from "@/lib/words/types";
 
 type LearnPageProps = {
@@ -38,6 +40,18 @@ function buildLearningQueue(words: Word[], size = 20): Word[] {
     queue.push(words[queue.length % words.length]);
   }
   return queue;
+}
+
+async function buildSmartLearningQueue(bookId: string): Promise<Word[]> {
+  const today = getWordsToday();
+  const [words, records] = await Promise.all([
+    wordsStorage.getWordsByBook(bookId),
+    wordsStorage.getAllLearningRecords(),
+  ]);
+
+  const sessionWordIds = selectSessionWordIds(words, records, today, 20);
+  const byId = new Map(words.map((word) => [word.id, word]));
+  return sessionWordIds.map((id) => byId.get(id)).filter((item): item is Word => Boolean(item));
 }
 
 export default function LearnWordsPage({ params }: LearnPageProps) {
@@ -62,9 +76,14 @@ export default function LearnWordsPage({ params }: LearnPageProps) {
 
     const load = async () => {
       await ensureWordsBootstrap();
-      const words = await wordsStorage.getWordsByBook(bookId);
+      const words = await buildSmartLearningQueue(bookId);
       if (!active) return;
       setBookWords(words);
+      setCurrentIndex(0);
+      setKnownCount(0);
+      setUnknownCount(0);
+      setFinished(false);
+      setMnemonic("");
     };
 
     void load();
@@ -107,7 +126,7 @@ export default function LearnWordsPage({ params }: LearnPageProps) {
     if (!currentWord) {
       return;
     }
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getWordsToday();
     await updateWordStatus(wordsStorage, bookId, currentWord.id, isKnown, today);
 
     if (isKnown) {
@@ -130,11 +149,15 @@ export default function LearnWordsPage({ params }: LearnPageProps) {
   };
 
   const restart = () => {
-    setCurrentIndex(0);
-    setKnownCount(0);
-    setUnknownCount(0);
-    setFinished(false);
-    setMnemonic("");
+    void (async () => {
+      const words = await buildSmartLearningQueue(bookId);
+      setBookWords(words);
+      setCurrentIndex(0);
+      setKnownCount(0);
+      setUnknownCount(0);
+      setFinished(false);
+      setMnemonic("");
+    })();
   };
 
   if (!currentWord) {
