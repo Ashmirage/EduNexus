@@ -7,6 +7,7 @@ import { getDataSyncEventManager, SyncEventType } from '../sync/data-sync-events
 
 // 文档类型定义
 export type KBDocument = {
+  userId?: string;           // 用户ID，用于数据隔离
   id: string;
   title: string;
   content: string;
