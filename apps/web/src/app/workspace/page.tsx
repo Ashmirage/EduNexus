@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -133,7 +133,7 @@ const teachingStyleLabels = {
   mixed: '混合式',
 };
 
-export default function WorkspacePage() {
+function WorkspacePageContent() {
   const searchParams = useSearchParams();
   const storage = getKBStorage();
   const [kbDocuments, setKbDocuments] = useState<any[]>([]);
@@ -1425,5 +1425,13 @@ export default function WorkspacePage() {
         </AnimatePresence>
       </motion.div>
     </div>
+  );
+}
+
+export default function WorkspacePage() {
+  return (
+    <Suspense fallback={<div className="h-screen flex items-center justify-center">加载中...</div>}>
+      <WorkspacePageContent />
+    </Suspense>
   );
 }
