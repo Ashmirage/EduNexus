@@ -30,11 +30,11 @@ export async function POST(request: Request) {
     const authorId = typeof json.authorId === "string" ? json.authorId.trim() : "";
     const authorName = typeof json.authorName === "string" ? json.authorName.trim() : "";
 
-    if (!title || !content || !authorId) {
+    if (!title || !content) {
       return fail(
         {
           code: "INVALID_REQUEST",
-          message: "帖子标题、正文和作者信息不能为空。"
+          message: "帖子标题和正文不能为空。"
         },
         400
       );
@@ -43,8 +43,8 @@ export async function POST(request: Request) {
     const post = await createPost({
       title,
       content,
-      authorId,
-      authorName: authorName || undefined
+      authorId: authorId || `guest_${Date.now()}`,
+      authorName: authorName || "匿名用户"
     });
 
     return NextResponse.json(

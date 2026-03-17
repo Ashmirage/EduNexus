@@ -39,14 +39,13 @@ export async function POST(req: Request) {
   const title = typeof payload.title === "string" ? payload.title.trim() : "";
   const createdBy = typeof payload.createdBy === "string" ? payload.createdBy.trim() : "";
 
-  if (!title || !createdBy) {
+  if (!title) {
     return fail(
       {
         code: "RESOURCES_CREATE_VALIDATION_FAILED",
-        message: "title 和 createdBy 为必填字段。",
+        message: "title 为必填字段。",
         details: {
-          title: Boolean(title),
-          createdBy: Boolean(createdBy)
+          title: Boolean(title)
         }
       },
       400
@@ -61,7 +60,7 @@ export async function POST(req: Request) {
       title,
       description,
       url,
-      createdBy
+      createdBy: createdBy || `guest_${Date.now()}`
     });
     return ok({ resource });
   } catch (error) {

@@ -40,21 +40,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!createdBy) {
-      return fail(
-        {
-          code: "INVALID_REQUEST",
-          message: "创建者不能为空。"
-        },
-        400
-      );
-    }
-
     void category;
     const group = await createGroup({
       name,
       description,
-      createdBy
+      createdBy: createdBy || `guest_${Date.now()}`
     });
 
     return NextResponse.json(
