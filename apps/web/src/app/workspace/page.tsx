@@ -49,10 +49,15 @@ import {
   deleteChatSession,
   exportChatSessionAsMarkdown,
   generateSessionTitle,
+  upsertChatSession,
   type ChatSession,
   type ChatMessage,
   type AgentToolStep,
 } from "@/lib/workspace/chat-history-storage";
+import {
+  buildDemoWorkspaceStarterSessions,
+  fetchDemoWorkspaceBootstrap,
+} from "@/lib/client/demo-bootstrap";
 import {
   getAllTeachers,
   type AITeacher,
@@ -135,7 +140,7 @@ const teachingStyleLabels = {
 };
 
 function WorkspacePageContent() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const storage = getKBStorage();
@@ -204,7 +209,18 @@ function WorkspacePageContent() {
 
     const loadRecentSessions = async () => {
       try {
-        const sessions = await getRecentChatSessions(5);
+        let sessions = await getRecentChatSessions(5);
+        if (
+          sessions.length === 0 &&
+          (session?.user as { isDemo?: boolean } | undefined)?.isDemo === true
+        ) {
+          const demoSessions = await fetchDemoWorkspaceBootstrap();
+          const starterSessions = buildDemoWorkspaceStarterSessions(demoSessions);
+          for (const starterSession of starterSessions) {
+            await upsertChatSession(starterSession);
+          }
+          sessions = await getRecentChatSessions(5);
+        }
         setRecentSessions(sessions);
       } catch (error) {
         console.error("加载历史会话失败:", error);
@@ -227,7 +243,7 @@ function WorkspacePageContent() {
     loadKBDocuments();
     loadRecentSessions();
     loadTeachers();
-  }, []);
+  }, [session?.user]);
 
   useEffect(() => {
     const source = searchParams.get("source") || "";
