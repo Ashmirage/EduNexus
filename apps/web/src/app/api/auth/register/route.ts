@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       return errorResponse(409, 'EMAIL_ALREADY_EXISTS', '该邮箱已被注册');
     }
 
-    const user = await createUser({ email, name, password });
+    const user = await createUser({ email, name, password, isDemo: false });
 
     return NextResponse.json({
       id: user.id,

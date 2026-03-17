@@ -66,4 +66,40 @@ describe("register api", () => {
     });
     expect(createUser).not.toHaveBeenCalled();
   });
+
+  it("creates a normal user even when the payload tries to self-elect demo access", async () => {
+    getUserByEmail.mockResolvedValueOnce(null);
+    createUser.mockResolvedValueOnce({
+      id: "user_123",
+      email: "user@example.com",
+      name: "User",
+      isDemo: false,
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: "user@example.com",
+          password: "123456",
+          name: "User",
+          isDemo: true,
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    expect(createUser).toHaveBeenCalledWith({
+      email: "user@example.com",
+      password: "123456",
+      name: "User",
+      isDemo: false,
+    });
+    await expect(response.json()).resolves.toEqual({
+      id: "user_123",
+      email: "user@example.com",
+      name: "User",
+    });
+  });
 });
