@@ -303,12 +303,16 @@ export function useWorkspaceSessionController({
     [deps, hydrateSession]
   );
 
-  const startNewConversation = useCallback(() => {
+  const startNewConversation = useCallback(async () => {
+    const createdSession = await deps.createSession({
+      title: "新对话",
+    });
+    setCurrentSession(createdSession);
+    currentSessionIdRef.current = createdSession.id;
+    setCurrentSessionId(createdSession.id);
     setMessages([buildWelcomeMessage()]);
-    setCurrentSession(null);
-    currentSessionIdRef.current = null;
-    setCurrentSessionId(null);
-  }, []);
+    await refreshSessions(createdSession.id);
+  }, [deps, refreshSessions]);
 
   const selectSession = useCallback(
     async (sessionId: string) => {

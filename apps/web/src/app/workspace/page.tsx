@@ -317,8 +317,8 @@ function WorkspacePageContent() {
     }
   }, [taskContext]);
 
-  const handleStartNewConversation = () => {
-    startNewConversation();
+  const handleStartNewConversation = async () => {
+    await startNewConversation();
     toast.success("已开始新对话");
   };
 
