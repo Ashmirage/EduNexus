@@ -1,5 +1,6 @@
 import type { Goal, GoalCategory, GoalType } from "@/lib/goals/goal-storage";
 import type { LearningPath, Task } from "@/lib/client/path-storage";
+import type { GraphEdge, GraphNode } from "@/lib/graph/types";
 import {
   QuestionDifficulty,
   QuestionStatus,
@@ -22,6 +23,68 @@ export type DemoPathBootstrap = {
   goalType: "exam" | "project" | "certificate";
   goal: string;
   tasks: DemoBootstrapTask[];
+};
+
+export type DemoGraphBootstrapNode = {
+  id: string;
+  label: string;
+  domain?: string;
+  mastery?: number;
+  risk?: number;
+};
+
+export type DemoGraphBootstrapEdge = {
+  id: string;
+  source: string;
+  target: string;
+  weight?: number;
+};
+
+export type DemoGraphBootstrap = {
+  nodes: DemoGraphBootstrapNode[];
+  edges: DemoGraphBootstrapEdge[];
+};
+
+export type DemoGoalBootstrap = {
+  id: string;
+  title: string;
+  description: string;
+  goalType: DemoPathBootstrap["goalType"];
+  category: GoalCategory;
+  linkedPathIds: string[];
+  smart: {
+    specific: string;
+    measurable: string;
+    achievable: string;
+    relevant: string;
+    timeBound: string;
+  };
+  startDate: string;
+  endDate: string;
+  progress: number;
+  status: Goal["status"];
+};
+
+export type DemoPathSeedBootstrap = {
+  id: string;
+  title: string;
+  description: string;
+  status: LearningPath["status"];
+  progress: number;
+  tags: string[];
+  goalId?: string;
+  tasks: Array<{
+    id: string;
+    title: string;
+    description: string;
+    estimatedTime: string;
+    progress: number;
+    status: Task["status"];
+    dependencies: string[];
+    resources: Task["resources"];
+    notes: string;
+  }>;
+  milestones: LearningPath["milestones"];
 };
 
 export type DemoWorkspaceBootstrapSession = {
@@ -59,6 +122,9 @@ export type DemoPracticeBootstrapBank = {
 export type DemoBootstrapPayload = {
   workspace: { sessions: DemoWorkspaceBootstrapSession[] };
   practice: { banks: DemoPracticeBootstrapBank[] };
+  graph: DemoGraphBootstrap;
+  goals: { items: DemoGoalBootstrap[] };
+  paths: { items: DemoPathSeedBootstrap[] };
   path: DemoPathBootstrap;
 };
 
@@ -85,6 +151,121 @@ function mapGoalCategory(goalType: DemoPathBootstrap["goalType"]): GoalCategory 
     return "project";
   }
   return "other";
+}
+
+function mapGraphNodeType(domain?: string): GraphNode["type"] {
+  if (domain === "resource") return "resource";
+  if (domain === "skill") return "skill";
+  if (domain === "topic") return "topic";
+  return "concept";
+}
+
+function mapGraphNodeStatus(mastery: number): GraphNode["status"] {
+  if (mastery >= 0.8) return "mastered";
+  if (mastery >= 0.4) return "learning";
+  return "unlearned";
+}
+
+function buildStarterTask(seed: DemoPathSeedBootstrap["tasks"][number]): Task {
+  return {
+    id: seed.id,
+    title: seed.title,
+    description: seed.description,
+    estimatedTime: seed.estimatedTime,
+    progress: seed.progress,
+    status: seed.status,
+    dependencies: seed.dependencies,
+    resources: seed.resources,
+    notes: seed.notes,
+    createdAt: new Date()
+  };
+}
+
+function buildStarterPath(seed: DemoPathSeedBootstrap, now: Date): LearningPath {
+  return {
+    id: seed.id,
+    title: seed.title,
+    description: seed.description,
+    status: seed.status,
+    progress: seed.progress,
+    tags: seed.tags,
+    goalId: seed.goalId,
+    createdAt: now,
+    updatedAt: now,
+    tasks: seed.tasks.map((task) => buildStarterTask(task)),
+    milestones: seed.milestones
+  };
+}
+
+function buildStarterGoal(seed: DemoGoalBootstrap, nowIso: string): Goal {
+  return {
+    id: seed.id,
+    title: seed.title,
+    description: seed.description,
+    type: mapGoalType(seed.goalType),
+    category: seed.category ?? mapGoalCategory(seed.goalType),
+    status: seed.status,
+    smart: seed.smart,
+    progress: seed.progress,
+    linkedPathIds: seed.linkedPathIds,
+    relatedKnowledge: [],
+    startDate: seed.startDate,
+    endDate: seed.endDate,
+    createdAt: nowIso,
+    updatedAt: nowIso
+  };
+}
+
+function buildStarterGraphNode(seed: DemoGraphBootstrapNode, now: Date): GraphNode {
+  const mastery = Math.max(0, Math.min(seed.mastery ?? 0.3, 1));
+  return {
+    id: seed.id,
+    name: seed.label,
+    type: mapGraphNodeType(seed.domain),
+    status: mapGraphNodeStatus(mastery),
+    importance: Math.max(0.3, 1 - (seed.risk ?? 0.5) * 0.5),
+    mastery,
+    connections: 0,
+    noteCount: 0,
+    practiceCount: 0,
+    practiceCompleted: 0,
+    createdAt: now,
+    updatedAt: now,
+    documentIds: []
+  };
+}
+
+function buildStarterGraphEdge(seed: DemoGraphBootstrapEdge): GraphEdge {
+  return {
+    source: seed.source,
+    target: seed.target,
+    type: "related",
+    strength: Math.max(0.1, Math.min(seed.weight ?? 0.5, 1))
+  };
+}
+
+export function buildDemoStarterBundle(
+  bootstrap: DemoBootstrapPayload,
+  nowIso: string = new Date().toISOString()
+): {
+  goals: Goal[];
+  paths: LearningPath[];
+  graph: { nodes: GraphNode[]; edges: Array<GraphEdge & { id: string }> };
+} {
+  const now = new Date(nowIso);
+  const goals = bootstrap.goals.items.map((goal) => buildStarterGoal(goal, nowIso));
+  const paths = bootstrap.paths.items.map((path) => buildStarterPath(path, now));
+  const graphNodes = bootstrap.graph.nodes.map((node) => buildStarterGraphNode(node, now));
+  const graphEdges = bootstrap.graph.edges.map((edge) => ({ ...buildStarterGraphEdge(edge), id: edge.id }));
+
+  return {
+    goals,
+    paths,
+    graph: {
+      nodes: graphNodes,
+      edges: graphEdges
+    }
+  };
 }
 
 export function buildDemoStarterContent(bootstrap: DemoPathBootstrap): {
@@ -168,10 +349,17 @@ export async function fetchDemoBootstrap(
     return null;
   }
 
+  const graph = payload.data.graph ?? { nodes: [], edges: [] };
+  const goals = payload.data.goals ?? { items: [] };
+  const paths = payload.data.paths ?? { items: [] };
+
   return {
     path: payload.data.path,
     workspace: payload.data.workspace,
-    practice: payload.data.practice
+    practice: payload.data.practice,
+    graph,
+    goals,
+    paths
   };
 }
 
@@ -192,21 +380,27 @@ export async function fetchDemoPracticeBootstrap(
 export function buildDemoWorkspaceStarterSessions(
   sessions: DemoWorkspaceBootstrapSession[]
 ): ChatSession[] {
-  return sessions.map((session) => ({
-    id: session.id,
-    title: session.title,
-    createdAt: new Date(session.messages[0]?.createdAt ?? Date.now()),
-    updatedAt: new Date(session.messages[session.messages.length - 1]?.createdAt ?? Date.now()),
-    socraticMode: true,
-    messages: session.messages.map(
-      (message, index): ChatMessage => ({
-        id: `${session.id}_${index}`,
-        role: message.role === "system" ? "assistant" : message.role,
-        content: message.content,
-        timestamp: new Date(message.createdAt ?? Date.now())
-      })
-    )
-  }));
+  return sessions.map((session) => {
+    const safeMessages = Array.isArray(session.messages) ? session.messages : [];
+    const firstCreatedAt = safeMessages[0]?.createdAt;
+    const lastCreatedAt = safeMessages[safeMessages.length - 1]?.createdAt;
+
+    return {
+      id: session.id,
+      title: session.title,
+      createdAt: new Date(firstCreatedAt ?? Date.now()),
+      updatedAt: new Date(lastCreatedAt ?? Date.now()),
+      socraticMode: true,
+      messages: safeMessages.map(
+        (message, index): ChatMessage => ({
+          id: `${session.id}_${index}`,
+          role: message.role === "system" ? "assistant" : message.role,
+          content: message.content,
+          timestamp: new Date(message.createdAt ?? Date.now())
+        })
+      )
+    };
+  });
 }
 
 function mapQuestionType(type: DemoPracticeBootstrapBank["questions"][number]["type"]): QuestionType {

@@ -273,7 +273,13 @@ export class PathStorageManager {
   /**
    * 创建新路径
    */
-  async createPath(data: Omit<LearningPath, 'id' | 'createdAt' | 'updatedAt'>): Promise<LearningPath> {
+  async createPath(
+    data: Omit<LearningPath, 'id' | 'createdAt' | 'updatedAt'> & {
+      id?: string;
+      createdAt?: Date;
+      updatedAt?: Date;
+    }
+  ): Promise<LearningPath> {
     if (!getDBName()) {
       throw new Error('Missing client user identity for path storage');
     }
@@ -293,9 +299,9 @@ export class PathStorageManager {
 
       const path: LearningPath = {
         ...data,
-        id: `path_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        id: data.id ?? `path_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        createdAt: data.createdAt ?? new Date(),
+        updatedAt: data.updatedAt ?? new Date(),
       };
 
       console.log('[PathStorage] 创建路径:', path.id, path.title);

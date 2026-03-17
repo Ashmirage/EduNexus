@@ -55,7 +55,13 @@ export class LocalStoragePathManager {
   /**
    * 创建新路径
    */
-  createPath(data: Omit<LearningPath, 'id' | 'createdAt' | 'updatedAt'>): LearningPath {
+  createPath(
+    data: Omit<LearningPath, 'id' | 'createdAt' | 'updatedAt'> & {
+      id?: string;
+      createdAt?: Date;
+      updatedAt?: Date;
+    }
+  ): LearningPath {
     const storageKey = this.getStorageKey();
     if (!storageKey) {
       throw new Error('Missing client user identity for path storage');
@@ -63,9 +69,9 @@ export class LocalStoragePathManager {
 
     const path: LearningPath = {
       ...data,
-      id: `path_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      id: data.id ?? `path_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: data.createdAt ?? new Date(),
+      updatedAt: data.updatedAt ?? new Date(),
     };
 
     const paths = this.getAllPaths();

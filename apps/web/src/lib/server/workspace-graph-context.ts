@@ -85,7 +85,10 @@ export async function buildWorkspaceGraphContext(input: {
   }
 
   if (!taskNode && normalizedTaskId) {
-    const syncedPathTask = db.syncedPaths
+    const scopedSyncedPaths = input.userId
+      ? db.syncedPaths.filter((path) => path.userId === input.userId)
+      : db.syncedPaths;
+    const syncedPathTask = scopedSyncedPaths
       .flatMap((path) => path.tasks)
       .find((task) => task.taskId === normalizedTaskId);
 

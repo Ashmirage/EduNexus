@@ -501,48 +501,68 @@ export const checkUnderstandingTool = new DynamicStructuredTool({
 /**
  * 查询学习进度工具
  */
-export const queryLearningProgressTool = new DynamicStructuredTool({
-  name: "query_learning_progress",
-  description: "查询学习进度和学习路径信息。当用户询问学习进度、学习路径、任务完成情况时使用。",
-  schema: z.object({
-    pathId: z.string().optional().describe("学习路径ID，不提供则返回所有路径"),
-  }),
-  func: async ({ pathId }) => {
-    try {
-      const db = await loadDb();
-      const paths = pathId
-        ? db.syncedPaths.filter(p => p.pathId === pathId)
-        : db.syncedPaths;
+function createQueryLearningProgressTool(userId?: string) {
+  return new DynamicStructuredTool({
+    name: "query_learning_progress",
+    description: "查询学习进度和学习路径信息。当用户询问学习进度、学习路径、任务完成情况时使用。",
+    schema: z.object({
+      pathId: z.string().optional().describe("学习路径ID，不提供则返回所有路径"),
+    }),
+    func: async ({ pathId }) => {
+      try {
+        const effectiveUserId = requireUserId(userId);
+        const normalizedPathId = typeof pathId === "string" ? pathId.trim() : "";
+        const shouldFilterByPathId = normalizedPathId.length > 0 && normalizedPathId !== "default";
+        const db = await loadDb();
+        const scopedPaths = db.syncedPaths.filter((path) => path.userId === effectiveUserId);
+        const paths = shouldFilterByPathId
+          ? scopedPaths.filter((path) => path.pathId === normalizedPathId)
+          : scopedPaths;
 
-      const result = paths.map(path => ({
-        pathId: path.pathId,
-        title: path.title,
-        description: path.description,
-        status: path.status,
-        progress: path.progress,
-        tags: path.tags,
-        totalTasks: path.tasks.length,
-        completedTasks: path.tasks.filter(t => t.status === 'completed').length,
-        tasks: path.tasks.map(task => ({
-          taskId: task.taskId,
-          title: task.title,
-          description: task.description,
-          status: task.status,
-          progress: task.progress,
-          estimatedTime: task.estimatedTime,
-          dependencies: task.dependencies,
-        })),
-      }));
+        const result = paths.map((path) => ({
+          pathId: path.pathId,
+          title: path.title,
+          description: path.description,
+          status: path.status,
+          progress: path.progress,
+          tags: path.tags,
+          totalTasks: path.tasks.length,
+          completedTasks: path.tasks.filter((task) => task.status === "completed").length,
+          tasks: path.tasks.map((task) => ({
+            taskId: task.taskId,
+            title: task.title,
+            description: task.description,
+            status: task.status,
+            progress: task.progress,
+            estimatedTime: task.estimatedTime,
+            dependencies: task.dependencies,
+          })),
+        }));
 
-      return JSON.stringify({ count: result.length, paths: result }, null, 2);
-    } catch (error) {
-      return JSON.stringify({
-        error: "查询学习进度失败",
-        message: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
-  },
-});
+        if (result.length === 0) {
+          return JSON.stringify(
+            {
+              count: 0,
+              paths: [],
+              reason: "NO_SYNCED_PATHS",
+              message: "当前用户还没有可用的服务端学习路径同步记录。",
+              nextAction: "先在学习路径页面创建/编辑路径，等待自动同步后再查询学习进度。",
+            },
+            null,
+            2
+          );
+        }
+
+        return JSON.stringify({ count: result.length, paths: result }, null, 2);
+      } catch (error) {
+        return JSON.stringify({
+          error: "查询学习进度失败",
+          message: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    },
+  });
+}
 
 /**
  * 获取所有工具
@@ -551,7 +571,7 @@ export function getAllTools(input?: { userId?: string }) {
   return [
     createSearchKnowledgeBaseTool(input?.userId),
     createQueryKnowledgeGraphTool(input?.userId),
-    queryLearningProgressTool,
+    createQueryLearningProgressTool(input?.userId),
     generateExerciseTool,
     recommendLearningPathTool,
     explainConceptTool,

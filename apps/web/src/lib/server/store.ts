@@ -48,6 +48,7 @@ type SyncedPathTaskRecord = {
 };
 
 type SyncedPathRecord = {
+  userId: string;
   pathId: string;
   title: string;
   description: string;
@@ -228,6 +229,7 @@ function normalizeSyncedPathTaskRecord(input: unknown): SyncedPathTaskRecord | n
 
 function normalizeSyncedPathRecord(input: unknown): SyncedPathRecord | null {
   if (!isRecord(input)) return null;
+  const userId = typeof input.userId === "string" ? input.userId.trim() : "";
   const pathId = typeof input.pathId === "string" ? input.pathId : "";
   const title = typeof input.title === "string" ? input.title : "";
   if (!pathId || !title) {
@@ -250,6 +252,7 @@ function normalizeSyncedPathRecord(input: unknown): SyncedPathRecord | null {
     .filter((task): task is SyncedPathTaskRecord => task !== null);
 
   return {
+    userId,
     pathId,
     title,
     description: typeof input.description === "string" ? input.description : "",

@@ -55,6 +55,10 @@ import {
   type AgentToolStep,
 } from "@/lib/workspace/chat-history-storage";
 import {
+  buildWelcomeMessage,
+  resolveWorkspaceBootstrapState,
+} from "@/lib/workspace/session-restoration";
+import {
   buildDemoWorkspaceStarterSessions,
   fetchDemoWorkspaceBootstrap,
 } from "@/lib/client/demo-bootstrap";
@@ -184,15 +188,6 @@ function WorkspacePageContent() {
   // 加载知识库文档、历史会话和老师列表
   useEffect(() => {
     setIsMounted(true);
-    setMessages([
-      {
-        id: "welcome",
-        role: "assistant",
-        content: "你好！我是你的智能学习伙伴。我可以帮你：\n\n- 🔍 搜索知识宝库和星图\n- 📝 生成个性化练习题\n- 🗺️ 规划成长地图\n- 💡 解释复杂概念\n- 🤔 通过提问引导思考\n- 🖼️ 分析图片和图表（支持多模态）\n- 💻 解释和调试代码\n\n有什么想学习或探讨的吗？",
-        timestamp: new Date(),
-        mode: "normal",
-      },
-    ]);
 
     const loadKBDocuments = async () => {
       try {
@@ -221,9 +216,32 @@ function WorkspacePageContent() {
           }
           sessions = await getRecentChatSessions(5);
         }
+
+        const bootstrapState = resolveWorkspaceBootstrapState({
+          sessions,
+          currentSessionId,
+        });
+
+        if (bootstrapState.type === "restore") {
+          const storedSession = await getChatSession(bootstrapState.session.id);
+          const sessionToUse = storedSession ?? bootstrapState.session;
+          setMessages(
+            sessionToUse.messages.map((message) => ({
+              ...message,
+              timestamp: new Date(message.timestamp),
+            }))
+          );
+          setCurrentSessionId(sessionToUse.id);
+          setSocraticMode(sessionToUse.socraticMode);
+        } else {
+          setMessages([buildWelcomeMessage()]);
+          setCurrentSessionId(null);
+        }
+
         setRecentSessions(sessions);
       } catch (error) {
         console.error("加载历史会话失败:", error);
+        setMessages([buildWelcomeMessage()]);
       }
     };
 
@@ -461,6 +479,20 @@ function WorkspacePageContent() {
     try {
       let assistantMessage: Message;
 
+      const resolveApiErrorMessage = (raw: unknown, status: number, fallback: string): string => {
+        const direct = typeof raw === "string" ? raw.trim() : "";
+        if (direct) {
+          return direct;
+        }
+        if (status === 401) {
+          return "你还未登录或登录已过期，请重新登录后再试。";
+        }
+        if (status === 502) {
+          return "模型服务鉴权失败：请检查 ModelScope API Key 是否有效。";
+        }
+        return fallback;
+      };
+
       if (kbQAMode) {
         // 知识库问答模式
         const response = await fetch("/api/kb/qa", {
@@ -501,7 +533,7 @@ function WorkspacePageContent() {
             mode: "kb-qa",
           };
         } else {
-          throw new Error(data.error || "Unknown error");
+          throw new Error(resolveApiErrorMessage(data?.error, response.status, "知识库问答失败"));
         }
       } else {
         // 普通对话模式
@@ -545,7 +577,7 @@ function WorkspacePageContent() {
             mode: "normal",
           };
         } else {
-          throw new Error(data.error || "Unknown error");
+          throw new Error(resolveApiErrorMessage(data?.error, response.status, "Agent 对话失败"));
         }
       }
 

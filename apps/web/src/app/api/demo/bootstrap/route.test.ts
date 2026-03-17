@@ -5,6 +5,7 @@ const listDocuments = vi.fn();
 const createDocument = vi.fn();
 const loadDb = vi.fn();
 const saveDb = vi.fn();
+const seedDemoContentBundle = vi.fn();
 
 vi.mock("@/auth", () => ({
   auth
@@ -20,13 +21,17 @@ vi.mock("@/lib/server/store", () => ({
   saveDb
 }));
 
+vi.mock("@/lib/client/demo-seeding", () => ({
+  seedDemoContentBundle
+}));
+
 const { POST: bootstrapDemo } = await import("./route");
 
 describe("demo bootstrap api", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     auth.mockResolvedValue({ user: { id: "demo-user", isDemo: true } });
-    loadDb.mockResolvedValue({ sessions: [], plans: [], masteryByNode: {} });
+    loadDb.mockResolvedValue({ sessions: [], plans: [], masteryByNode: {}, syncedPaths: [] });
     listDocuments.mockResolvedValue([]);
     createDocument.mockImplementation(async ({ title, content, authorId }) => ({
       id: `doc-${title}`,
@@ -34,6 +39,7 @@ describe("demo bootstrap api", () => {
       content,
       authorId
     }));
+    seedDemoContentBundle.mockResolvedValue(undefined);
   });
 
   it("returns 403 for authenticated non-demo users", async () => {
@@ -83,6 +89,9 @@ describe("demo bootstrap api", () => {
         kb: { documents: Array<{ title: string }> };
         workspace: { sessions: Array<{ title: string }> };
         practice: { banks: Array<{ name: string; questions: Array<{ title: string }> }> };
+        graph: { nodes: Array<{ id: string }>; edges: Array<{ id: string }> };
+        goals: { items: Array<{ id: string; linkedPathIds: string[] }> };
+        paths: { items: Array<{ id: string; title: string }> };
         path: { goal: string };
       };
     };
@@ -100,7 +109,11 @@ describe("demo bootstrap api", () => {
       "先判断数列类型",
       "定义域先行检查"
     ]);
-    expect(payload.data.path.goal).toContain("函数与数列");
+    expect(payload.data.goals.items).toHaveLength(3);
+    expect(payload.data.paths.items.length).toBeGreaterThan(1);
+    expect(payload.data.graph.nodes.length).toBeGreaterThan(1);
+    expect(payload.data.path.goal).toBe(payload.data.paths.items[0]?.title);
+    expect(seedDemoContentBundle).toHaveBeenCalledTimes(1);
   });
 
   it("is idempotent when demo content already exists", async () => {
@@ -140,13 +153,14 @@ describe("demo bootstrap api", () => {
         }
       ],
       plans: [],
-      masteryByNode: {}
+      masteryByNode: {},
+      syncedPaths: []
     });
 
     const response = await bootstrapDemo();
 
     expect(response.status).toBe(200);
     expect(createDocument).not.toHaveBeenCalled();
-    expect(saveDb).not.toHaveBeenCalled();
+    expect(saveDb).toHaveBeenCalled();
   });
 });

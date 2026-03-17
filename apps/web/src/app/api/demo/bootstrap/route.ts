@@ -1,11 +1,16 @@
 import { auth } from "@/auth";
 import { createDocument, listDocuments } from "@/lib/server/document-service";
 import {
+  DEMO_GOAL_SEEDS,
+  DEMO_GRAPH_BOOTSTRAP,
   DEMO_KB_DOCUMENTS,
   DEMO_PATH_BOOTSTRAP,
+  DEMO_PATH_SEEDS,
   DEMO_PRACTICE_BANKS,
   DEMO_WORKSPACE_SESSIONS
 } from "@/lib/server/demo-content";
+import { buildDemoStarterBundle } from "@/lib/client/demo-bootstrap";
+import { seedDemoContentBundle } from "@/lib/client/demo-seeding";
 import { fail, ok } from "@/lib/server/response";
 import { loadDb, saveDb } from "@/lib/server/store";
 
@@ -45,6 +50,188 @@ function buildDemoSession(
   };
 }
 
+/**
+ * Explicitly seed all demo paths to db.syncedPaths (idempotent)
+ */
+function seedDemoPathsToDb(
+  db: {
+    syncedPaths: Array<{
+      userId: string;
+      pathId: string;
+      title: string;
+      description: string;
+      status: string;
+      progress: number;
+      tags: string[];
+      tasks: Array<{
+        taskId: string;
+        title: string;
+        description?: string;
+        estimatedTime?: string;
+        status?: string;
+        progress?: number;
+        dependencies?: string[];
+      }>;
+      updatedAt: string;
+    }>;
+  },
+  userId: string,
+  now: string
+): void {
+  for (const pathSeed of DEMO_PATH_SEEDS) {
+    // Check if path already exists (idempotency)
+    const existingIndex = db.syncedPaths.findIndex(
+      (p) => p.userId === userId && p.pathId === pathSeed.id
+    );
+
+    const pathRecord = {
+      userId,
+      pathId: pathSeed.id,
+      title: pathSeed.title,
+      description: pathSeed.description,
+      status: pathSeed.status,
+      progress: pathSeed.progress,
+      tags: pathSeed.tags,
+      tasks: pathSeed.tasks.map((task) => ({
+        taskId: task.id,
+        title: task.title,
+        description: task.description,
+        estimatedTime: task.estimatedTime,
+        status: task.status,
+        progress: task.progress,
+        dependencies: task.dependencies
+      })),
+      updatedAt: now
+    };
+
+    if (existingIndex >= 0) {
+      // Update existing path
+      db.syncedPaths[existingIndex] = pathRecord;
+    } else {
+      // Add new path
+      db.syncedPaths.push(pathRecord);
+    }
+  }
+}
+
+/**
+ * Explicitly seed all demo goals to db.plans (idempotent)
+ */
+function seedDemoGoalsToDb(
+  db: {
+    plans: Array<{
+      planId: string;
+      goalType: "exam" | "project" | "certificate";
+      goal: string;
+      relatedNodes?: string[];
+      tasks: Array<{
+        taskId: string;
+        title: string;
+        priority: number;
+        reason: string;
+        dueDate: string;
+      }>;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+  },
+  userId: string,
+  now: string
+): void {
+  for (const goalSeed of DEMO_GOAL_SEEDS) {
+    // Check if goal already exists (idempotency)
+    const existingIndex = db.plans.findIndex((p) => p.planId === goalSeed.id);
+
+    const goalRecord = {
+      planId: goalSeed.id,
+      goalType: goalSeed.goalType,
+      goal: goalSeed.title,
+      relatedNodes: goalSeed.linkedPathIds,
+      tasks: [],
+      createdAt: goalSeed.startDate,
+      updatedAt: goalSeed.endDate
+    };
+
+    if (existingIndex >= 0) {
+      // Update existing goal
+      db.plans[existingIndex] = { ...db.plans[existingIndex], ...goalRecord };
+    } else {
+      // Add new goal
+      db.plans.push(goalRecord);
+    }
+  }
+}
+
+/**
+ * Explicitly seed all demo graph nodes to db.masteryByNode (idempotent)
+ */
+function seedDemoGraphNodesToDb(
+  db: {
+    masteryByNode: Record<string, number>;
+  },
+  now: string
+): void {
+  for (const nodeSeed of DEMO_GRAPH_BOOTSTRAP.nodes) {
+    // Check if node already exists (idempotency)
+    if (!(nodeSeed.id in db.masteryByNode)) {
+      db.masteryByNode[nodeSeed.id] = nodeSeed.mastery;
+    }
+  }
+}
+
+/**
+ * Explicitly seed all demo graph edges to db.plans (idempotent)
+ */
+function seedDemoGraphEdgesToDb(
+  db: {
+    plans: Array<{
+      planId: string;
+      goalType: "exam" | "project" | "certificate";
+      goal: string;
+      focusNodeId?: string | null;
+      focusNodeLabel?: string | null;
+      focusNodeRisk?: number | null;
+      tasks: Array<{
+        taskId: string;
+        title: string;
+        priority: number;
+        reason: string;
+        dueDate: string;
+      }>;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+  },
+  now: string
+): void {
+  for (const edgeSeed of DEMO_GRAPH_BOOTSTRAP.edges) {
+    const planId = `demo_graph_edge::${edgeSeed.id}`;
+    
+    // Check if edge already exists (idempotency)
+    const existingIndex = db.plans.findIndex((p) => p.planId === planId);
+
+    const edgeRecord = {
+      planId,
+      goalType: "project" as const,
+      goal: `demo edge ${edgeSeed.id}`,
+      focusNodeId: edgeSeed.source,
+      focusNodeLabel: edgeSeed.target,
+      focusNodeRisk: edgeSeed.weight,
+      tasks: [],
+      createdAt: now,
+      updatedAt: now
+    };
+
+    if (existingIndex >= 0) {
+      // Update existing edge
+      db.plans[existingIndex] = { ...db.plans[existingIndex], ...edgeRecord };
+    } else {
+      // Add new edge
+      db.plans.push(edgeRecord);
+    }
+  }
+}
+
 export async function POST() {
   try {
     const session = await auth();
@@ -76,6 +263,7 @@ export async function POST() {
     }
 
     const db = await loadDb();
+    const beforeSnapshot = JSON.stringify(db);
     const existingUserSessions = db.sessions.filter((item) => item.userId === userId);
     const existingSessionTitles = new Set(existingUserSessions.map((item) => item.title));
     const now = new Date().toISOString();
@@ -85,24 +273,246 @@ export async function POST() {
 
     if (seededSessions.length > 0) {
       db.sessions.unshift(...seededSessions);
-      await saveDb(db);
     }
 
     const workspaceSessions = DEMO_WORKSPACE_SESSIONS.map((seed) => {
       const persisted =
         db.sessions.find((item) => item.userId === userId && item.title === seed.title) ??
         seededSessions.find((item) => item.title === seed.title);
+
+      const persistedMessages = Array.isArray(persisted?.messages) ? persisted.messages : [];
+      const messages =
+        persistedMessages.length > 0
+          ? persistedMessages
+          : seed.messages.map((message) => ({
+              role: message.role,
+              content: message.content,
+              createdAt: now
+            }));
+
       return {
         id: persisted?.id ?? seed.id,
-        title: seed.title
+        title: seed.title,
+        lastLevel: persisted?.lastLevel ?? seed.lastLevel,
+        messages
       };
     });
+
+    const bundle = buildDemoStarterBundle(
+      {
+        workspace: { sessions: workspaceSessions },
+        practice: { banks: DEMO_PRACTICE_BANKS },
+        graph: DEMO_GRAPH_BOOTSTRAP,
+        goals: { items: DEMO_GOAL_SEEDS },
+        paths: { items: DEMO_PATH_SEEDS },
+        path: DEMO_PATH_BOOTSTRAP
+      },
+      now
+    );
+
+    // First, use the seedDemoContentBundle for initial seeding via adapters
+    await seedDemoContentBundle(userId, bundle, {
+      getGoals: () =>
+        db.plans
+          .filter((plan) => plan.planId.startsWith("demo_goal_"))
+          .map((plan) => ({
+            id: plan.planId,
+            title: plan.goal,
+            description: "演示目标",
+            type: "mid-term" as const,
+            category: "project" as const,
+            status: "active" as const,
+            smart: {
+              specific: plan.goal,
+              measurable: "完成演示任务",
+              achievable: "按路径推进",
+              relevant: "体验平台流程",
+              timeBound: plan.updatedAt
+            },
+            progress: 0,
+            linkedPathIds: plan.relatedNodes ?? [],
+            relatedKnowledge: [],
+            startDate: plan.createdAt,
+            endDate: plan.updatedAt,
+            createdAt: plan.createdAt,
+            updatedAt: plan.updatedAt
+          })),
+      saveGoal: (_seedUserId, goal) => {
+        const index = db.plans.findIndex((plan) => plan.planId === goal.id);
+        const record = {
+          planId: goal.id,
+          goalType: "project" as const,
+          goal: goal.title,
+          relatedNodes: goal.linkedPathIds,
+          tasks: [],
+          createdAt: goal.createdAt,
+          updatedAt: goal.updatedAt
+        };
+
+        if (index >= 0) {
+          db.plans[index] = { ...db.plans[index], ...record };
+        } else {
+          db.plans.push(record);
+        }
+      },
+      getPaths: async () =>
+        db.syncedPaths
+          .filter((path) => path.userId === userId && path.pathId.startsWith("demo_path_"))
+          .map((path) => ({
+            id: path.pathId,
+            title: path.title,
+            description: path.description,
+            status: path.status,
+            progress: path.progress,
+            tags: path.tags,
+            createdAt: new Date(path.updatedAt),
+            updatedAt: new Date(path.updatedAt),
+            tasks: path.tasks.map((task) => ({
+              id: task.taskId,
+              title: task.title,
+              description: task.description ?? "",
+              estimatedTime: task.estimatedTime ?? "1小时",
+              progress: task.progress ?? 0,
+              status: task.status ?? "not_started",
+              dependencies: task.dependencies ?? [],
+              resources: [],
+              notes: "",
+              createdAt: new Date(path.updatedAt)
+            })),
+            milestones: []
+          })),
+      createPath: async (_seedUserId, path) => {
+        db.syncedPaths.push({
+          userId,
+          pathId: path.id,
+          title: path.title,
+          description: path.description,
+          status: path.status,
+          progress: path.progress,
+          tags: path.tags,
+          tasks: path.tasks.map((task) => ({
+            taskId: task.id,
+            title: task.title,
+            description: task.description,
+            estimatedTime: task.estimatedTime,
+            status: task.status,
+            progress: task.progress,
+            dependencies: task.dependencies
+          })),
+          updatedAt: path.updatedAt.toISOString()
+        });
+      },
+      updatePath: async (_seedUserId, id, path) => {
+        const index = db.syncedPaths.findIndex((record) => record.userId === userId && record.pathId === id);
+        const next = {
+          userId,
+          pathId: path.id,
+          title: path.title,
+          description: path.description,
+          status: path.status,
+          progress: path.progress,
+          tags: path.tags,
+          tasks: path.tasks.map((task) => ({
+            taskId: task.id,
+            title: task.title,
+            description: task.description,
+            estimatedTime: task.estimatedTime,
+            status: task.status,
+            progress: task.progress,
+            dependencies: task.dependencies
+          })),
+          updatedAt: path.updatedAt.toISOString()
+        };
+        if (index >= 0) {
+          db.syncedPaths[index] = next;
+        } else {
+          db.syncedPaths.push(next);
+        }
+      },
+      getGraphNodes: async () =>
+        Object.entries(db.masteryByNode)
+          .filter(([nodeId]) => nodeId.startsWith("demo_node_"))
+          .map(([nodeId, mastery]) => ({
+            id: nodeId,
+            name: nodeId,
+            type: "concept" as const,
+            status: "learning" as const,
+            importance: 0.5,
+            mastery,
+            connections: 0,
+            noteCount: 0,
+            practiceCount: 0,
+            practiceCompleted: 0,
+            createdAt: new Date(now),
+            updatedAt: new Date(now),
+            documentIds: []
+          })),
+      upsertGraphNode: async (_seedUserId, node) => {
+        db.masteryByNode[node.id] = node.mastery;
+      },
+      getGraphEdges: async () =>
+        db.plans
+          .filter((plan) => plan.planId.startsWith("demo_graph_edge::"))
+          .map((plan) => ({
+            id: plan.planId.replace("demo_graph_edge::", ""),
+            source: plan.focusNodeId ?? "",
+            target: plan.focusNodeLabel ?? "",
+            type: "related" as const,
+            strength: plan.focusNodeRisk ?? 0.5
+          })),
+      upsertGraphEdge: async (_seedUserId, edge) => {
+        const planId = `demo_graph_edge::${edge.id}`;
+        const index = db.plans.findIndex((plan) => plan.planId === planId);
+        const record = {
+          planId,
+          goalType: "project" as const,
+          goal: `demo edge ${edge.id}`,
+          focusNodeId: typeof edge.source === "string" ? edge.source : edge.source.id,
+          focusNodeLabel: typeof edge.target === "string" ? edge.target : edge.target.id,
+          focusNodeRisk: edge.strength,
+          tasks: [],
+          createdAt: now,
+          updatedAt: now
+        };
+        if (index >= 0) {
+          db.plans[index] = { ...db.plans[index], ...record };
+        } else {
+          db.plans.push(record);
+        }
+      }
+    });
+
+    // EXPLICIT SEEDING: Ensure all demo data is seeded directly to db
+    // This guarantees the data is saved even if seedDemoContentBundle has issues
+    // 1. Seed all 3 paths to db.syncedPaths (idempotent)
+    seedDemoPathsToDb(db, userId, now);
+    
+    // 2. Seed all 3 goals to db.plans (idempotent)
+    seedDemoGoalsToDb(db, userId, now);
+    
+    // 3. Seed graph nodes to db.masteryByNode (idempotent)
+    seedDemoGraphNodesToDb(db, now);
+    
+    // 4. Seed graph edges to db.plans (idempotent)
+    seedDemoGraphEdgesToDb(db, now);
+
+    // Always save after seeding (even if no changes, ensures data is persisted)
+    await saveDb(db);
 
     return ok({
       kb: { documents: demoDocuments },
       workspace: { sessions: workspaceSessions },
       practice: { banks: DEMO_PRACTICE_BANKS },
-      path: DEMO_PATH_BOOTSTRAP
+      graph: DEMO_GRAPH_BOOTSTRAP,
+      goals: { items: DEMO_GOAL_SEEDS },
+      paths: { items: DEMO_PATH_SEEDS },
+      path: DEMO_PATH_BOOTSTRAP,
+      seeded: {
+        paths: DEMO_PATH_SEEDS.map(p => p.id),
+        goals: DEMO_GOAL_SEEDS.map(g => g.id),
+        graphNodes: DEMO_GRAPH_BOOTSTRAP.nodes.map(n => n.id),
+        graphEdges: DEMO_GRAPH_BOOTSTRAP.edges.map(e => e.id)
+      }
     });
   } catch (error) {
     return fail(
