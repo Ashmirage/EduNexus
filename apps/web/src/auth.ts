@@ -34,6 +34,7 @@ export const authConfig = {
           id: user.id,
           email: user.email,
           name: user.name,
+          isDemo: user.isDemo,
         };
       },
     }),
@@ -49,11 +50,18 @@ export const authConfig = {
         token.id = token.sub;
       }
 
+      if (user && typeof user.isDemo === "boolean") {
+        token.isDemo = user.isDemo;
+      } else if (typeof token.isDemo !== "boolean") {
+        token.isDemo = false;
+      }
+
       return token;
     },
     session({ session, token }) {
       if (session.user && typeof token.id === "string") {
         session.user.id = token.id;
+        session.user.isDemo = token.isDemo === true;
       }
 
       return session;
