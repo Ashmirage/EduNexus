@@ -93,6 +93,7 @@ function WorkspacePageContent() {
   const taskFeedbackSyncedRef = useRef(new Set<string>());
   const {
     currentSessionId,
+    currentSession,
     recentSessions,
     messages,
     isLoading,
@@ -249,13 +250,13 @@ function WorkspacePageContent() {
     }
 
     try {
-      const activeSession = recentSessions.find((session) => session.id === currentSessionId);
+      const activeSession = currentSession;
       const exportSession: ChatSession = {
         id: currentSessionId,
-        title: activeSession?.title || "学习对话",
+        title: activeSession?.title || recentSessions.find((session) => session.id === currentSessionId)?.title || "学习对话",
         messages,
-        createdAt: messages[0]?.timestamp ?? new Date(),
-        updatedAt: messages[messages.length - 1]?.timestamp ?? new Date(),
+        createdAt: activeSession ? new Date(activeSession.createdAt) : (messages[0]?.timestamp ?? new Date()),
+        updatedAt: activeSession ? new Date(activeSession.updatedAt) : (messages[messages.length - 1]?.timestamp ?? new Date()),
         socraticMode: socraticMode ?? false,
       };
       const markdown = exportChatSessionAsMarkdown(exportSession);

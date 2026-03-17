@@ -28,6 +28,69 @@ function createDependencies(
 }
 
 describe("useWorkspaceSessionController", () => {
+  it("exposes the loaded server session for export flows", async () => {
+    const detail = {
+      id: "ws_export",
+      title: "Exported Session",
+      userId: "user-1",
+      createdAt: "2026-03-17T08:00:00.000Z",
+      updatedAt: "2026-03-17T09:00:00.000Z",
+      lastLevel: 2,
+      messages: [
+        {
+          role: "user" as const,
+          content: "Need a saved session",
+          createdAt: "2026-03-17T08:05:00.000Z",
+        },
+        {
+          role: "assistant" as const,
+          content: "Server-backed transcript",
+          createdAt: "2026-03-17T08:06:00.000Z",
+        },
+      ],
+    };
+
+    const deps = createDependencies({
+      listSessions: vi.fn().mockResolvedValue([
+        {
+          id: detail.id,
+          title: detail.title,
+          createdAt: detail.createdAt,
+          updatedAt: detail.updatedAt,
+          lastLevel: detail.lastLevel,
+          messageCount: detail.messages.length,
+        },
+      ]),
+      getSession: vi.fn().mockResolvedValue(detail),
+    });
+
+    const { result } = renderHook(() =>
+      useWorkspaceSessionController({
+        enabled: true,
+        isDemoUser: false,
+        dependencies: deps,
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.currentSessionId).toBe(detail.id);
+    });
+
+    const currentSession = (result.current as typeof result.current & {
+      currentSession?: {
+        id: string;
+        title: string;
+        messages: Array<{ content: string }>;
+      };
+    }).currentSession;
+
+    expect(currentSession).toMatchObject({
+      id: detail.id,
+      title: detail.title,
+      messages: [{ content: "Need a saved session" }, { content: "Server-backed transcript" }],
+    });
+  });
+
   it("refresh restores the latest session from the server", async () => {
     const newerDetail = {
       id: "ws_newer",
@@ -144,5 +207,60 @@ describe("useWorkspaceSessionController", () => {
     expect(result.current.currentSessionId).toBeNull();
     expect(result.current.recentSessions).toEqual([]);
     expect(result.current.messages.at(-1)?.content).toBe("Agent unavailable");
+  });
+
+  it("restores seeded demo sessions from the server for demo users", async () => {
+    const demoDetail = {
+      id: "ws_demo_frontend_intro",
+      title: "前端开发入门会话",
+      userId: "demo-user",
+      createdAt: "2026-03-17T08:00:00.000Z",
+      updatedAt: "2026-03-17T10:00:00.000Z",
+      lastLevel: 2,
+      messages: [
+        {
+          role: "system" as const,
+          content: "欢迎进入前端开发入门学习。",
+          createdAt: "2026-03-17T08:00:00.000Z",
+        },
+        {
+          role: "assistant" as const,
+          content: "先从 HTML 语义化结构开始。",
+          createdAt: "2026-03-17T08:01:00.000Z",
+        },
+      ],
+    };
+
+    const deps = createDependencies({
+      listSessions: vi.fn().mockResolvedValue([
+        {
+          id: demoDetail.id,
+          title: demoDetail.title,
+          createdAt: demoDetail.createdAt,
+          updatedAt: demoDetail.updatedAt,
+          lastLevel: demoDetail.lastLevel,
+          messageCount: demoDetail.messages.length,
+        },
+      ]),
+      getSession: vi.fn().mockResolvedValue(demoDetail),
+    });
+
+    const { result } = renderHook(() =>
+      useWorkspaceSessionController({
+        enabled: true,
+        isDemoUser: true,
+        dependencies: deps,
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.currentSessionId).toBe(demoDetail.id);
+    });
+
+    expect(result.current.messages.map((message) => message.content)).toEqual([
+      "欢迎进入前端开发入门学习。",
+      "先从 HTML 语义化结构开始。",
+    ]);
+    expect(deps.getSession).toHaveBeenCalledWith(demoDetail.id);
   });
 });

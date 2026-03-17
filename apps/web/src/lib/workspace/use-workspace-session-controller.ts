@@ -257,6 +257,7 @@ export function useWorkspaceSessionController({
     [dependencies]
   );
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [currentSession, setCurrentSession] = useState<WorkspaceSessionDetail | null>(null);
   const [recentSessions, setRecentSessions] = useState<WorkspaceSessionSummary[]>([]);
   const [messages, setMessages] = useState<WorkspaceMessage[]>([buildWelcomeMessage()]);
   const [isLoading, setIsLoading] = useState(false);
@@ -270,6 +271,7 @@ export function useWorkspaceSessionController({
     async (sessionId: string) => {
       const detail = await deps.getSession(sessionId);
       setMessages(toUiMessages(detail));
+      setCurrentSession(detail);
       currentSessionIdRef.current = detail.id;
       setCurrentSessionId(detail.id);
       return detail;
@@ -293,6 +295,7 @@ export function useWorkspaceSessionController({
       }
 
       setMessages([buildWelcomeMessage()]);
+      setCurrentSession(null);
       currentSessionIdRef.current = null;
       setCurrentSessionId(null);
       return sessions;
@@ -302,6 +305,7 @@ export function useWorkspaceSessionController({
 
   const startNewConversation = useCallback(() => {
     setMessages([buildWelcomeMessage()]);
+    setCurrentSession(null);
     currentSessionIdRef.current = null;
     setCurrentSessionId(null);
   }, []);
@@ -350,20 +354,30 @@ export function useWorkspaceSessionController({
           });
           sessionId = createdSession.id;
           createdSessionId = createdSession.id;
+          setCurrentSession(createdSession);
           currentSessionIdRef.current = createdSession.id;
           setCurrentSessionId(createdSession.id);
         }
 
-        const assistantResult = input.kbQAMode
-          ? await deps.runKBQAChat(input)
-          : await deps.runAgentChat(input);
+        let assistantResult: AgentChatResult | KBQAChatResult;
+        let assistantThinking: string | undefined;
+        let assistantToolSteps: AgentToolStep[] | undefined;
+
+        if (input.kbQAMode) {
+          assistantResult = await deps.runKBQAChat(input);
+        } else {
+          const agentResult = await deps.runAgentChat(input);
+          assistantResult = agentResult;
+          assistantThinking = agentResult.thinking;
+          assistantToolSteps = agentResult.toolSteps;
+        }
 
         const assistantMessage: WorkspaceMessage = {
           id: generateMessageId("assistant"),
           role: "assistant",
           content: assistantResult.content,
-          thinking: "thinking" in assistantResult ? assistantResult.thinking : undefined,
-          toolSteps: "toolSteps" in assistantResult ? assistantResult.toolSteps : undefined,
+          thinking: assistantThinking,
+          toolSteps: assistantToolSteps,
           timestamp: new Date(),
           mode: input.kbQAMode ? "kb-qa" : "normal",
         };
@@ -387,6 +401,7 @@ export function useWorkspaceSessionController({
       } catch (error) {
         if (createdSessionId) {
           await deps.deleteSession(createdSessionId).catch(() => undefined);
+          setCurrentSession(null);
           currentSessionIdRef.current = null;
           setCurrentSessionId(null);
         }
@@ -420,6 +435,7 @@ export function useWorkspaceSessionController({
 
   return {
     currentSessionId,
+    currentSession,
     recentSessions,
     messages,
     isLoading,
