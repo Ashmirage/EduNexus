@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     await updateSessionLevel(parsed.data.sessionId, guidance.nextLevel);
     await increaseMasteryByKeywords(parsed.data.userInput);
 
-    const kb = await searchDocuments(userId, parsed.data.userInput);
+    const kb = await searchDocuments(parsed.data.userInput, userId);
     const citations = kb.slice(0, 2).map((candidate, index) => ({
       sourceId: candidate.docId,
       chunkRef: `match_${index + 1}`,

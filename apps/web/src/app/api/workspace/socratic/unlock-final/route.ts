@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const kb = await searchDocuments(userId, "等差数列 公式");
+    const kb = await searchDocuments("等差数列 公式", userId);
     const finalAnswer =
       "示例答案：先列出已知条件，再代入等差数列求和公式 S_n = n(a_1 + a_n)/2，并在结尾做结果检验。";
 
