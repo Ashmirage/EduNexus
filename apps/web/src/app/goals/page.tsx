@@ -19,6 +19,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Target, Calendar, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { fetchDemoPathBootstrap, buildDemoStarterContent } from '@/lib/client/demo-bootstrap';
+import { getGoalsPageState } from '@/lib/client/path-goal-view-state';
 
 export default function GoalsPage() {
   const router = useRouter();
@@ -37,11 +39,28 @@ export default function GoalsPage() {
   }, [status]);
 
   const loadData = async () => {
-    setGoals(goalStorage.getGoals());
+    let goals = goalStorage.getGoals();
+
+    const state = getGoalsPageState({
+      isLoading: false,
+      goalCount: goals.length,
+      isDemoUser: session?.user?.isDemo === true,
+    });
+
+    if (state.kind === 'bootstrap_demo') {
+      const bootstrap = await fetchDemoPathBootstrap();
+      if (bootstrap) {
+        const starter = buildDemoStarterContent(bootstrap);
+        goalStorage.saveGoal(starter.goal);
+        await pathStorage.createPath(starter.path);
+        goals = goalStorage.getGoals();
+      }
+    }
+
+    setGoals(goals);
     setHabits(habitStorage.getHabits());
 
     // 加载关联路径数据
-    const goals = goalStorage.getGoals();
     const pathsData: Record<string, { count: number; progress: number }> = {};
 
     for (const goal of goals) {
@@ -208,6 +227,14 @@ export default function GoalsPage() {
               <p className="text-muted-foreground mb-4">
                 还没有目标，点击上方按钮创建你的第一个目标
               </p>
+              <div className="flex items-center justify-center gap-3">
+                <Button onClick={() => setShowWizard(true)}>
+                  <Plus className="w-4 h-4 mr-2" />创建目标
+                </Button>
+                <Button variant="outline" onClick={() => setShowWizard(true)}>
+                  <Sparkles className="w-4 h-4 mr-2" />生成建议目标
+                </Button>
+              </div>
             </div>
           )}
 

@@ -43,7 +43,11 @@ export interface Habit {
 
 // 获取用户特定的存储键
 function getStorageKeys(userId: string | null) {
-  const suffix = userId ? `_${userId}` : '_anonymous';
+  if (!userId) {
+    return null;
+  }
+
+  const suffix = `_${userId}`;
   return {
     goals: `edunexus_goals${suffix}`,
     habits: `edunexus_habits${suffix}`,
@@ -55,6 +59,7 @@ export const goalStorage = {
     if (typeof window === 'undefined') return [];
     const userId = getClientUserIdentity();
     const keys = getStorageKeys(userId);
+    if (!keys) return [];
     const data = localStorage.getItem(keys.goals);
     return data ? JSON.parse(data) : [];
   },
@@ -62,6 +67,7 @@ export const goalStorage = {
   saveGoal(goal: Goal): void {
     const userId = getClientUserIdentity();
     const keys = getStorageKeys(userId);
+    if (!keys) return;
     const goals = this.getGoals();
     const index = goals.findIndex(g => g.id === goal.id);
     if (index >= 0) {
@@ -75,6 +81,7 @@ export const goalStorage = {
   deleteGoal(id: string): void {
     const userId = getClientUserIdentity();
     const keys = getStorageKeys(userId);
+    if (!keys) return;
     const goals = this.getGoals().filter(g => g.id !== id);
     localStorage.setItem(keys.goals, JSON.stringify(goals));
   },
@@ -82,6 +89,7 @@ export const goalStorage = {
   updateProgress(id: string, progress: number): void {
     const userId = getClientUserIdentity();
     const keys = getStorageKeys(userId);
+    if (!keys) return;
     const goals = this.getGoals();
     const goal = goals.find(g => g.id === id);
     if (goal) {
@@ -98,6 +106,7 @@ export const goalStorage = {
   migrateData(userId: string): void {
     if (typeof window === 'undefined') return;
     const keys = getStorageKeys(userId);
+    if (!keys) return;
     // 检查是否已经迁移过
     if (localStorage.getItem(keys.goals)) return;
     
@@ -119,6 +128,7 @@ export const habitStorage = {
     if (typeof window === 'undefined') return [];
     const userId = getClientUserIdentity();
     const keys = getStorageKeys(userId);
+    if (!keys) return [];
     const data = localStorage.getItem(keys.habits);
     return data ? JSON.parse(data) : [];
   },
@@ -126,6 +136,7 @@ export const habitStorage = {
   saveHabit(habit: Habit): void {
     const userId = getClientUserIdentity();
     const keys = getStorageKeys(userId);
+    if (!keys) return;
     const habits = this.getHabits();
     const index = habits.findIndex(h => h.id === habit.id);
     if (index >= 0) {
@@ -139,6 +150,7 @@ export const habitStorage = {
   checkIn(habitId: string, date: string): void {
     const userId = getClientUserIdentity();
     const keys = getStorageKeys(userId);
+    if (!keys) return;
     const habits = this.getHabits();
     const habit = habits.find(h => h.id === habitId);
     if (habit) {
@@ -168,6 +180,7 @@ export const habitStorage = {
   deleteHabit(id: string): void {
     const userId = getClientUserIdentity();
     const keys = getStorageKeys(userId);
+    if (!keys) return;
     const habits = this.getHabits().filter(h => h.id !== id);
     localStorage.setItem(keys.habits, JSON.stringify(habits));
   },
