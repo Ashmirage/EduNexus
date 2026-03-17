@@ -34,9 +34,14 @@ import { UserMenu } from './user-menu'
 
 const navigation = [
   {
-    title: '学习系统',
+    title: '',
     items: [
       { name: '总览', href: '/', icon: Home },
+    ],
+  },
+  {
+    title: '学习系统',
+    items: [
       { name: '🌌 知识星图', href: '/graph', icon: Network },
       { name: '📚 知识宝库', href: '/kb', icon: BookOpen },
       { name: '🎮 成长地图', href: '/path', icon: Route },
@@ -165,7 +170,7 @@ export function AppSidebar() {
               )}
               <div className="space-y-1">
                 <AnimatePresence>
-                  {!isCollapsed && (
+                  {!isCollapsed && section.title && (
                     <motion.h3
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
