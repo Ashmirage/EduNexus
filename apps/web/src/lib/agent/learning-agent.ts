@@ -18,6 +18,7 @@ import { loadDb } from "@/lib/server/store";
  */
 export interface AgentConfig {
   userId?: string;
+  isDemo?: boolean;
   modelName?: string;
   temperature?: number;
   maxIterations?: number;
@@ -453,7 +454,7 @@ ${toolsDesc}
       messages.push({ role: "user" as const, content: input });
     }
 
-    const tools = getAllTools({ userId: config.userId });
+    const tools = getAllTools({ userId: config.userId, isDemo: config.isDemo });
 
     const result = await runToolCallingLoop({
       client,

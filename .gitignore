@@ -42,6 +42,8 @@ temp/
 # Local Claude/Agent config
 .claude/
 
+# GEMINI 
+GEMINI.md
 # Use pnpm only
 package-lock.json
 apps/web/package-lock.json

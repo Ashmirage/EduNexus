@@ -60,11 +60,11 @@ describe("demo bootstrap api", () => {
     expect(createDocument).toHaveBeenCalledTimes(2);
     expect(createDocument).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ title: "数学序列基础", authorId: "demo-user" })
+      expect.objectContaining({ title: "前端开发入门路线", authorId: "demo-user" })
     );
     expect(createDocument).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({ title: "函数与映射", authorId: "demo-user" })
+      expect.objectContaining({ title: "React 项目实战清单", authorId: "demo-user" })
     );
 
     expect(saveDb).toHaveBeenCalledTimes(1);
@@ -74,11 +74,11 @@ describe("demo bootstrap api", () => {
     expect(savedDb.sessions).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          title: "数列专题起步会话",
+          title: "前端开发入门会话",
           userId: "demo-user"
         }),
         expect.objectContaining({
-          title: "函数映射诊断会话",
+          title: "React 项目推进会话",
           userId: "demo-user"
         })
       ])
@@ -96,18 +96,18 @@ describe("demo bootstrap api", () => {
       };
     };
     expect(payload.data.kb.documents.map((item) => item.title)).toEqual([
-      "数学序列基础",
-      "函数与映射"
+      "前端开发入门路线",
+      "React 项目实战清单"
     ]);
     expect(payload.data.workspace.sessions.map((item) => item.title)).toEqual([
-      "数列专题起步会话",
-      "函数映射诊断会话"
+      "前端开发入门会话",
+      "React 项目推进会话"
     ]);
     expect(payload.data.practice.banks).toHaveLength(1);
-    expect(payload.data.practice.banks[0]?.name).toBe("函数与数列演示题库");
+    expect(payload.data.practice.banks[0]?.name).toBe("前端与算法演示题库");
     expect(payload.data.practice.banks[0]?.questions.map((item) => item.title)).toEqual([
-      "先判断数列类型",
-      "定义域先行检查"
+      "语义化标签选择",
+      "为什么先复盘 JavaScript 再学 React？"
     ]);
     expect(payload.data.goals.items).toHaveLength(3);
     expect(payload.data.paths.items.length).toBeGreaterThan(1);
@@ -119,14 +119,14 @@ describe("demo bootstrap api", () => {
   it("is idempotent when demo content already exists", async () => {
     listDocuments.mockResolvedValue([
       {
-        id: "doc-seq",
-        title: "数学序列基础",
+        id: "doc-frontend",
+        title: "前端开发入门路线",
         content: "existing",
         authorId: "demo-user"
       },
       {
-        id: "doc-func",
-        title: "函数与映射",
+        id: "doc-react",
+        title: "React 项目实战清单",
         content: "existing",
         authorId: "demo-user"
       }
@@ -134,8 +134,8 @@ describe("demo bootstrap api", () => {
     loadDb.mockResolvedValue({
       sessions: [
         {
-          id: "ws_demo_seq_intro",
-          title: "数列专题起步会话",
+          id: "ws_demo_frontend_intro",
+          title: "前端开发入门会话",
           userId: "demo-user",
           createdAt: "2026-03-16T00:00:00.000Z",
           updatedAt: "2026-03-16T00:00:00.000Z",
@@ -143,8 +143,8 @@ describe("demo bootstrap api", () => {
           messages: []
         },
         {
-          id: "ws_demo_func_intro",
-          title: "函数映射诊断会话",
+          id: "ws_demo_react_intro",
+          title: "React 项目推进会话",
           userId: "demo-user",
           createdAt: "2026-03-16T00:00:00.000Z",
           updatedAt: "2026-03-16T00:00:00.000Z",

@@ -1,4 +1,6 @@
 import { prisma } from './prisma';
+import { loadDb } from './store';
+import { DEMO_GRAPH_BOOTSTRAP } from './demo-content';
 
 const MAX_NODES_PER_USER = 200;
 
@@ -32,6 +34,50 @@ export async function getGraphView(
 
   if (!userId) {
     return { nodes: [], edges: [] };
+  }
+
+  const db = await loadDb();
+  const hasDemoPaths = db.syncedPaths.some(
+    (path) => path.userId === userId && path.pathId.startsWith("demo_path_")
+  );
+
+  if (hasDemoPaths) {
+    const demoNodeMeta = new Map(
+      DEMO_GRAPH_BOOTSTRAP.nodes.map((node) => [node.id, node])
+    );
+
+    const demoNodes = Object.entries(db.masteryByNode)
+      .filter(([nodeId]) => nodeId.startsWith("demo_node_"))
+      .map(([nodeId, mastery]) => {
+        const meta = demoNodeMeta.get(nodeId);
+        return {
+          id: nodeId,
+          label: meta?.label ?? nodeId,
+          mastery,
+          risk: meta?.risk ?? 0.5,
+          domain: meta?.domain ?? "general",
+        } satisfies GraphNode;
+      });
+
+    const demoEdges = db.plans
+      .filter((plan) => plan.planId.startsWith("demo_graph_edge::"))
+      .map((plan) => ({
+        source: plan.focusNodeId ?? "",
+        target: plan.focusNodeLabel ?? "",
+        weight: plan.focusNodeRisk ?? 0.5,
+      }))
+      .filter((edge) => edge.source && edge.target);
+
+    const fallbackEdges = DEMO_GRAPH_BOOTSTRAP.edges.map((edge) => ({
+      source: edge.source,
+      target: edge.target,
+      weight: edge.weight,
+    }));
+
+    return {
+      nodes: domain ? demoNodes.filter((node) => node.domain === domain) : demoNodes,
+      edges: demoEdges.length > 0 ? demoEdges : fallbackEdges,
+    };
   }
 
   const documents = await prisma.document.findMany({

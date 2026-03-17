@@ -184,6 +184,18 @@ function normalizePlanRecord(input: unknown): PlanRecord | null {
         ? input.goalType
         : "project",
     goal: typeof input.goal === "string" ? input.goal : "",
+    focusNodeId:
+      typeof input.focusNodeId === "string" || input.focusNodeId === null
+        ? input.focusNodeId
+        : undefined,
+    focusNodeLabel:
+      typeof input.focusNodeLabel === "string" || input.focusNodeLabel === null
+        ? input.focusNodeLabel
+        : undefined,
+    focusNodeRisk: typeof input.focusNodeRisk === "number" ? input.focusNodeRisk : undefined,
+    relatedNodes: Array.isArray(input.relatedNodes)
+      ? input.relatedNodes.filter((item): item is string => typeof item === "string")
+      : undefined,
     tasks,
     createdAt: typeof input.createdAt === "string" ? input.createdAt : now,
     updatedAt: typeof input.updatedAt === "string" ? input.updatedAt : now

@@ -58,6 +58,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const userId = session.user.id;
+    const isDemo = session.user.isDemo === true;
 
     const graphContext = await buildWorkspaceGraphContext({
       userId,
@@ -80,6 +81,7 @@ export async function POST(request: Request) {
           ? config.modelName.trim()
           : process.env.MODELSCOPE_CHAT_MODEL ?? "Qwen/Qwen3.5-122B-A10B",
       userId,
+      isDemo,
       taskContext,
       graphContext,
     };

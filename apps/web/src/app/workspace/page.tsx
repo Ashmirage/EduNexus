@@ -170,21 +170,6 @@ function WorkspacePageContent() {
   const pathContextSentTaskRef = useRef<string | null>(null);
   const taskFeedbackSyncedRef = useRef(new Set<string>());
 
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">加载中...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (status === 'unauthenticated') {
-    return <LoginPrompt title="学习工作区" />;
-  }
-
   // 加载知识库文档、历史会话和老师列表
   useEffect(() => {
     setIsMounted(true);
@@ -637,6 +622,21 @@ function WorkspacePageContent() {
     { icon: BookOpen, label: "学习路径", prompt: "我想学习" },
     { icon: Target, label: "检查理解", prompt: "测试我对...的理解" },
   ];
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">加载中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return <LoginPrompt title="学习工作区" />;
+  }
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-rose-50/30">

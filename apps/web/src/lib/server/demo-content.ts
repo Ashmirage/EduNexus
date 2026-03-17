@@ -129,45 +129,45 @@ type DemoPracticeBankSeed = {
 
 export const DEMO_KB_DOCUMENTS: DemoDocumentSeed[] = [
   {
-    title: "数学序列基础",
+    title: "前端开发入门路线",
     content:
-      "等差数列与等比数列先判型再代公式。建议先从通项、前 n 项和、递推转化三个角度建立题型识别。"
+      "建议先完成 HTML 语义化，再进入 CSS 布局，最后用 JavaScript 串起交互流程。每个阶段都要有可交付练习页面。"
   },
   {
-    title: "函数与映射",
+    title: "React 项目实战清单",
     content:
-      "函数关注对应关系与定义域约束。映射题先检查单射/满射条件，再结合图像与代数表达统一分析。"
+      "React 路径建议按 JavaScript 复盘 -> 组件与 Hooks -> 最小可交付项目推进，并在每一步保留复盘笔记与代码提交。"
   }
 ];
 
 export const DEMO_WORKSPACE_SESSIONS: DemoSessionSeed[] = [
   {
-    id: "ws_demo_seq_intro",
-    title: "数列专题起步会话",
+    id: "ws_demo_frontend_intro",
+    title: "前端开发入门会话",
     lastLevel: 2,
     messages: [
       {
         role: "system",
-        content: "欢迎进入数列专题训练。"
+        content: "欢迎进入前端开发入门学习。"
       },
       {
         role: "assistant",
-        content: "先判断题目给的是通项、递推还是前 n 项和，再选择解题路径。"
+        content: "先从 HTML 语义化结构开始，再推进 CSS 布局和 JavaScript 基础，按任务逐步完成。"
       }
     ]
   },
   {
-    id: "ws_demo_func_intro",
-    title: "函数映射诊断会话",
+    id: "ws_demo_react_intro",
+    title: "React 项目推进会话",
     lastLevel: 2,
     messages: [
       {
         role: "system",
-        content: "欢迎进入函数与映射诊断。"
+        content: "欢迎进入 React 项目实战路径。"
       },
       {
         role: "assistant",
-        content: "先列出定义域和值域，再检查映射性质是否满足题目条件。"
+        content: "先复盘 JavaScript 核心，再拆分组件与 Hooks，最后完成可演示的 React 页面交付。"
       }
     ]
   }
@@ -366,56 +366,74 @@ export const DEMO_PATH_SEEDS: DemoPathSeed[] = [
     ]
   },
   {
-    id: "demo_path_exam_focus",
-    title: "数学函数与数列冲刺",
-    description: "针对函数与数列题型进行限时训练，提升考试稳定度。",
+    id: "demo_path_data_structures",
+    title: "数据结构与算法路径",
+    description: "从数组链表到树图与算法练习，建立系统化的算法基础。",
     status: "in_progress",
-    progress: 38,
-    tags: ["演示", "考试", "数学"],
+    progress: 35,
+    tags: ["演示", "算法", "进阶"],
     goalId: "demo_goal_3",
     tasks: [
       {
-        id: "demo_task_seq_pattern",
-        title: "数列判型与公式应用",
-        description: "在限定时间内完成数列判型与通项计算训练。",
-        estimatedTime: "2小时",
-        progress: 60,
+        id: "demo_task_array_list",
+        title: "数组与链表基础",
+        description: "掌握数组与链表的核心操作和适用场景。",
+        estimatedTime: "4小时",
+        progress: 80,
         status: "in_progress",
         dependencies: [],
         resources: [
           {
-            id: "demo_res_seq_doc",
-            title: "数学序列基础",
+            id: "demo_res_algo_array",
+            title: "数组与链表入门",
             type: "document",
-            url: "/kb"
+            url: "https://leetcode.cn/"
           }
         ],
-        notes: "高频错点已整理。"
+        notes: "双指针与链表遍历已完成一轮练习。"
       },
       {
-        id: "demo_task_function_mapping",
-        title: "函数映射与定义域",
-        description: "强化函数映射题中的定义域和值域分析。",
+        id: "demo_task_stack_queue",
+        title: "栈与队列",
+        description: "掌握 LIFO/FIFO 结构并能解决基础题型。",
         estimatedTime: "3小时",
-        progress: 15,
+        progress: 30,
         status: "in_progress",
-        dependencies: ["demo_task_seq_pattern"],
+        dependencies: ["demo_task_array_list"],
         resources: [
           {
-            id: "demo_res_func_doc",
-            title: "函数与映射",
+            id: "demo_res_algo_stack",
+            title: "栈队列专题",
             type: "document",
-            url: "/kb"
+            url: "https://leetcode.cn/"
           }
         ],
-        notes: "需要继续强化单射/满射判定。"
+        notes: "已完成基础实现，待补充单调栈题型。"
+      },
+      {
+        id: "demo_task_tree_graph",
+        title: "树与图遍历",
+        description: "练习 DFS/BFS 并建立图模型思维。",
+        estimatedTime: "5小时",
+        progress: 0,
+        status: "not_started",
+        dependencies: ["demo_task_stack_queue"],
+        resources: [
+          {
+            id: "demo_res_algo_tree",
+            title: "树与图基础",
+            type: "document",
+            url: "https://leetcode.cn/"
+          }
+        ],
+        notes: ""
       }
     ],
     milestones: [
       {
         id: "demo_milestone_exam_1",
-        title: "完成基础题型诊断",
-        taskIds: ["demo_task_seq_pattern", "demo_task_function_mapping"]
+        title: "完成基础结构训练",
+        taskIds: ["demo_task_array_list", "demo_task_stack_queue", "demo_task_tree_graph"]
       }
     ]
   }
@@ -462,21 +480,21 @@ export const DEMO_GOAL_SEEDS: DemoGoalSeed[] = [
   },
   {
     id: "demo_goal_3",
-    title: "函数与数列专题得分率提升到 80%",
-    description: "通过专题训练降低函数与数列题的失分率。",
-    goalType: "exam",
-    category: "exam",
-    linkedPathIds: ["demo_path_exam_focus"],
+    title: "在三周内完成算法基础路径",
+    description: "完成数据结构核心任务并建立基础题型解题习惯。",
+    goalType: "project",
+    category: "skill",
+    linkedPathIds: ["demo_path_data_structures"],
     smart: {
-      specific: "完成函数与数列的专项题型训练",
-      measurable: "近三次训练正确率达到 80%",
-      achievable: "利用演示题库与会话诊断",
-      relevant: "直接提升考试表现",
-      timeBound: "2026-03-28"
+      specific: "完成数组链表、栈队列、树图三个核心模块",
+      measurable: "完成 3 个任务并产出阶段性笔记",
+      achievable: "每天投入 1 小时练习",
+      relevant: "补齐前端工程中的算法基础能力",
+      timeBound: "2026-04-10"
     },
     startDate: "2026-03-17",
-    endDate: "2026-03-28",
-    progress: 38,
+    endDate: "2026-04-10",
+    progress: 35,
     status: "active"
   }
 ];
@@ -495,34 +513,34 @@ export const DEMO_PATH_BOOTSTRAP: DemoPathBootstrap = {
 
 export const DEMO_PRACTICE_BANKS: DemoPracticeBankSeed[] = [
   {
-    name: "函数与数列演示题库",
-    description: "演示账号预置题库，用于快速体验练习与错题流程。",
-    tags: ["演示", "数列", "函数"],
+    name: "前端与算法演示题库",
+    description: "演示账号预置题库，用于体验前端与算法练习流程。",
+    tags: ["演示", "前端", "算法"],
     questions: [
       {
         type: "multiple_choice",
-        title: "先判断数列类型",
-        content: "观察题目已知首项与公差时，优先识别为什么数列？",
+        title: "语义化标签选择",
+        content: "页面主导航区域应优先使用哪个语义化标签？",
         difficulty: "easy",
         status: "active",
-        tags: ["数列", "判型"],
+        tags: ["HTML", "语义化"],
         points: 5,
-        explanation: "首项和公差通常对应等差数列判型入口。",
+        explanation: "主导航语义化标签应优先使用 nav。",
         options: [
-          { id: "a", text: "等差数列", isCorrect: true },
-          { id: "b", text: "等比数列", isCorrect: false },
-          { id: "c", text: "随机数列", isCorrect: false }
+          { id: "a", text: "nav", isCorrect: true },
+          { id: "b", text: "aside", isCorrect: false },
+          { id: "c", text: "footer", isCorrect: false }
         ]
       },
       {
         type: "short_answer",
-        title: "定义域先行检查",
-        content: "分析函数映射题时，第一步为什么要先写出定义域和值域？",
+        title: "为什么先复盘 JavaScript 再学 React？",
+        content: "请说明在 React 路径中先复盘 JavaScript 核心概念的意义。",
         difficulty: "medium",
         status: "active",
-        tags: ["函数", "映射"],
+        tags: ["JavaScript", "React"],
         points: 10,
-        explanation: "先明确输入输出边界，才能继续判断单射、满射等性质。"
+        explanation: "React 的组件与 Hooks 依赖闭包、状态更新与异步机制的扎实基础。"
       }
     ]
   }

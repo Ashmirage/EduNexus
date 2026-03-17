@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Target, Calendar, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
-import { fetchDemoPathBootstrap, buildDemoStarterContent } from '@/lib/client/demo-bootstrap';
+import { syncDemoClientData } from '@/lib/client/demo-client-sync';
 import { getGoalsPageState } from '@/lib/client/path-goal-view-state';
 
 export default function GoalsPage() {
@@ -47,14 +47,9 @@ export default function GoalsPage() {
       isDemoUser: session?.user?.isDemo === true,
     });
 
-    if (state.kind === 'bootstrap_demo') {
-      const bootstrap = await fetchDemoPathBootstrap();
-      if (bootstrap) {
-        const starter = buildDemoStarterContent(bootstrap);
-        goalStorage.saveGoal(starter.goal);
-        await pathStorage.createPath(starter.path);
-        goals = goalStorage.getGoals();
-      }
+    if (session?.user?.isDemo === true && (state.kind === 'bootstrap_demo' || state.kind === 'content')) {
+      await syncDemoClientData(session?.user?.id ?? 'demo-user');
+      goals = goalStorage.getGoals();
     }
 
     setGoals(goals);

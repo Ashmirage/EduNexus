@@ -484,6 +484,12 @@ export async function POST() {
 
     // EXPLICIT SEEDING: Ensure all demo data is seeded directly to db
     // This guarantees the data is saved even if seedDemoContentBundle has issues
+    const demoPathIds = new Set(DEMO_PATH_SEEDS.map((item) => item.id));
+    db.syncedPaths = db.syncedPaths.filter(
+      (record) =>
+        !(record.userId === userId && record.pathId.startsWith("demo_path_") && !demoPathIds.has(record.pathId))
+    );
+
     // 1. Seed all 3 paths to db.syncedPaths (idempotent)
     seedDemoPathsToDb(db, userId, now);
     

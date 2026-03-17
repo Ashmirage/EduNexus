@@ -64,7 +64,7 @@ import {
   type PathStatus,
 } from "@/lib/client/path-storage";
 import { goalStorage } from "@/lib/goals/goal-storage";
-import { fetchDemoPathBootstrap, buildDemoStarterContent } from "@/lib/client/demo-bootstrap";
+import { syncDemoClientData } from "@/lib/client/demo-client-sync";
 import { getPathPageState } from "@/lib/client/path-goal-view-state";
 
 function PathPageContent() {
@@ -133,14 +133,9 @@ function PathPageContent() {
         isDemoUser: session?.user?.isDemo === true,
       });
 
-      if (state.kind === "bootstrap_demo") {
-        const bootstrap = await fetchDemoPathBootstrap();
-        if (bootstrap) {
-          const starter = buildDemoStarterContent(bootstrap);
-          goalStorage.saveGoal(starter.goal);
-          await pathStorage.createPath(starter.path);
-          loadedPaths = await pathStorage.getAllPaths();
-        }
+      if (session?.user?.isDemo === true && (state.kind === "bootstrap_demo" || state.kind === "content")) {
+        await syncDemoClientData(session?.user?.id ?? "demo-user");
+        loadedPaths = await pathStorage.getAllPaths();
       }
 
       console.log('[PathPage] 加载成功:', loadedPaths.length, '个路径');
