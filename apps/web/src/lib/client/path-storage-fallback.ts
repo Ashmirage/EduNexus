@@ -6,13 +6,20 @@
 import type { LearningPath, Task, Milestone, PathStatus, TaskStatus } from './path-storage';
 import { getClientUserIdentity } from '@/lib/auth/client-user-cache';
 
-function getStorageKey(): string {
+export function resolvePathLocalStorageKey(userId: string | null): string | null {
+  if (!userId) {
+    return null;
+  }
+  return `edunexus_learning_paths_${userId}`;
+}
+
+function getStorageKey(): string | null {
   const userId = getClientUserIdentity();
-  return userId ? `edunexus_learning_paths_${userId}` : 'edunexus_learning_paths_anonymous';
+  return resolvePathLocalStorageKey(userId);
 }
 
 export class LocalStoragePathManager {
-  private getStorageKey(): string {
+  private getStorageKey(): string | null {
     return getStorageKey();
   }
 
@@ -21,7 +28,12 @@ export class LocalStoragePathManager {
    */
   getAllPaths(): LearningPath[] {
     try {
-      const data = localStorage.getItem(this.getStorageKey());
+      const storageKey = this.getStorageKey();
+      if (!storageKey) {
+        return [];
+      }
+
+      const data = localStorage.getItem(storageKey);
       if (!data) return [];
 
       const paths = JSON.parse(data);
@@ -44,6 +56,11 @@ export class LocalStoragePathManager {
    * 创建新路径
    */
   createPath(data: Omit<LearningPath, 'id' | 'createdAt' | 'updatedAt'>): LearningPath {
+    const storageKey = this.getStorageKey();
+    if (!storageKey) {
+      throw new Error('Missing client user identity for path storage');
+    }
+
     const path: LearningPath = {
       ...data,
       id: `path_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -53,7 +70,7 @@ export class LocalStoragePathManager {
 
     const paths = this.getAllPaths();
     paths.push(path);
-    this.savePaths(paths);
+    this.savePaths(paths, storageKey);
 
     console.log('[LocalStorage] 路径创建成功:', path.id);
     return path;
@@ -63,6 +80,11 @@ export class LocalStoragePathManager {
    * 更新路径
    */
   updatePath(id: string, updates: Partial<LearningPath>): LearningPath {
+    const storageKey = this.getStorageKey();
+    if (!storageKey) {
+      throw new Error('Missing client user identity for path storage');
+    }
+
     const paths = this.getAllPaths();
     const index = paths.findIndex(p => p.id === id);
 
@@ -94,7 +116,7 @@ export class LocalStoragePathManager {
     }
 
     paths[index] = updated;
-    this.savePaths(paths);
+    this.savePaths(paths, storageKey);
 
     console.log('[LocalStorage] 路径更新成功:', id);
     return updated;
@@ -104,19 +126,24 @@ export class LocalStoragePathManager {
    * 删除路径
    */
   deletePath(id: string): void {
+    const storageKey = this.getStorageKey();
+    if (!storageKey) {
+      return;
+    }
+
     const paths = this.getAllPaths();
     const filtered = paths.filter(p => p.id !== id);
-    this.savePaths(filtered);
+    this.savePaths(filtered, storageKey);
     console.log('[LocalStorage] 路径删除成功:', id);
   }
 
   /**
    * 保存所有路径
    */
-  private savePaths(paths: LearningPath[]): void {
+  private savePaths(paths: LearningPath[], storageKey: string): void {
     try {
       const serialized = paths.map(this.serializePath);
-      localStorage.setItem(this.getStorageKey(), JSON.stringify(serialized));
+      localStorage.setItem(storageKey, JSON.stringify(serialized));
     } catch (error) {
       console.error('[LocalStorage] 保存失败:', error);
       throw error;
