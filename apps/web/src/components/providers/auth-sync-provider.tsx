@@ -15,6 +15,7 @@ export function AuthSyncProvider({ children }: { children: React.ReactNode }) {
       const user = {
         id: session.user.id,
         email: session.user.email || undefined,
+        isDemo: session.user.isDemo,
       };
       writeClientUserSnapshot(user);
     } else if (status === "unauthenticated") {
