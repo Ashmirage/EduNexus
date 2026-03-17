@@ -55,7 +55,8 @@ describe("server store", () => {
       "publicPosts",
       "publicResources",
       "publicTopics",
-      "sessions"
+      "sessions",
+      "syncedPaths"
     ]);
     expect(db.sessions[0]?.id).toBe("ws_legacy");
     expect(db.masteryByNode.seq).toBe(0.4);

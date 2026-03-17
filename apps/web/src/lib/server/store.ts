@@ -37,6 +37,27 @@ type PlanRecord = {
   updatedAt: string;
 };
 
+type SyncedPathTaskRecord = {
+  taskId: string;
+  title: string;
+  description?: string;
+  estimatedTime?: string;
+  status?: "not_started" | "in_progress" | "completed";
+  progress?: number;
+  dependencies?: string[];
+};
+
+type SyncedPathRecord = {
+  pathId: string;
+  title: string;
+  description: string;
+  status: "not_started" | "in_progress" | "completed";
+  progress: number;
+  tags: string[];
+  tasks: SyncedPathTaskRecord[];
+  updatedAt: string;
+};
+
 type PublicPostRecord = {
   id: string;
   title: string;
@@ -74,6 +95,7 @@ type PublicResourceRecord = {
 type DbSchema = {
   sessions: SessionRecord[];
   plans: PlanRecord[];
+  syncedPaths: SyncedPathRecord[];
   masteryByNode: Record<string, number>;
   publicPosts: PublicPostRecord[];
   publicTopics: PublicTopicRecord[];
@@ -84,6 +106,7 @@ type DbSchema = {
 const DEFAULT_DB: DbSchema = {
   sessions: [],
   plans: [],
+  syncedPaths: [],
   masteryByNode: {},
   publicPosts: [],
   publicTopics: [],
@@ -172,6 +195,70 @@ function normalizeMasteryByNode(input: unknown): Record<string, number> {
     .filter(([, value]) => typeof value === "number")
     .map(([key, value]) => [key, value]);
   return Object.fromEntries(entries);
+}
+
+function normalizeSyncedPathTaskRecord(input: unknown): SyncedPathTaskRecord | null {
+  if (!isRecord(input)) return null;
+  const taskId = typeof input.taskId === "string" ? input.taskId : "";
+  const title = typeof input.title === "string" ? input.title : "";
+  if (!taskId || !title) {
+    return null;
+  }
+
+  const status = input.status;
+  const normalizedStatus =
+    status === "not_started" || status === "in_progress" || status === "completed" ? status : undefined;
+
+  const dependenciesSource = Array.isArray(input.dependencies) ? input.dependencies : [];
+  const dependencies = dependenciesSource
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return {
+    taskId,
+    title,
+    description: typeof input.description === "string" ? input.description : undefined,
+    estimatedTime: typeof input.estimatedTime === "string" ? input.estimatedTime : undefined,
+    status: normalizedStatus,
+    progress: typeof input.progress === "number" ? input.progress : undefined,
+    dependencies: dependencies.length > 0 ? dependencies : undefined,
+  };
+}
+
+function normalizeSyncedPathRecord(input: unknown): SyncedPathRecord | null {
+  if (!isRecord(input)) return null;
+  const pathId = typeof input.pathId === "string" ? input.pathId : "";
+  const title = typeof input.title === "string" ? input.title : "";
+  if (!pathId || !title) {
+    return null;
+  }
+
+  const status = input.status;
+  const normalizedStatus =
+    status === "not_started" || status === "in_progress" || status === "completed" ? status : "not_started";
+
+  const tagsSource = Array.isArray(input.tags) ? input.tags : [];
+  const tags = tagsSource
+    .filter((tag): tag is string => typeof tag === "string")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
+  const tasksSource = Array.isArray(input.tasks) ? input.tasks : [];
+  const tasks = tasksSource
+    .map((task) => normalizeSyncedPathTaskRecord(task))
+    .filter((task): task is SyncedPathTaskRecord => task !== null);
+
+  return {
+    pathId,
+    title,
+    description: typeof input.description === "string" ? input.description : "",
+    status: normalizedStatus,
+    progress: typeof input.progress === "number" ? input.progress : 0,
+    tags,
+    tasks,
+    updatedAt: typeof input.updatedAt === "string" ? input.updatedAt : new Date().toISOString(),
+  };
 }
 
 function normalizePublicPostRecord(input: unknown): PublicPostRecord | null {
@@ -301,6 +388,10 @@ export async function loadDb(): Promise<DbSchema> {
     const plans = plansSource
       .map((plan) => normalizePlanRecord(plan))
       .filter((plan): plan is PlanRecord => plan !== null);
+    const syncedPathsSource = Array.isArray(parsed.syncedPaths) ? parsed.syncedPaths : [];
+    const syncedPaths = syncedPathsSource
+      .map((item) => normalizeSyncedPathRecord(item))
+      .filter((item): item is SyncedPathRecord => item !== null);
     const postsSource = Array.isArray(parsed.publicPosts) ? parsed.publicPosts : [];
     const topicsSource = Array.isArray(parsed.publicTopics) ? parsed.publicTopics : [];
     const groupsSource = Array.isArray(parsed.publicGroups) ? parsed.publicGroups : [];
@@ -311,6 +402,7 @@ export async function loadDb(): Promise<DbSchema> {
     return {
       sessions,
       plans,
+      syncedPaths,
       masteryByNode: normalizeMasteryByNode(parsed.masteryByNode),
       publicPosts: postsSource
         .map((post) => normalizePublicPostRecord(post))
