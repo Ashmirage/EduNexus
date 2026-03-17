@@ -6,6 +6,7 @@ import { LoginPrompt } from "@/components/ui/login-prompt";
 import { type KBDocument, fetchDocumentsFromServer, createDocumentOnServer } from "@/lib/client/kb-storage";
 import { useDocument } from "@/lib/ai/document-context";
 import { useSession } from "next-auth/react";
+import { getKnowledgeBaseViewState } from "./view-state";
 
 export default function KnowledgeBasePage() {
   const { setCurrentDocument } = useDocument();
@@ -85,6 +86,27 @@ export default function KnowledgeBasePage() {
   
   if (status === 'unauthenticated') {
     return <LoginPrompt title="知识宝库" />;
+  }
+
+  const viewState = getKnowledgeBaseViewState({
+    status,
+    isLoading,
+    documents,
+  });
+
+  if (viewState.kind === "loading") {
+    return <div>Loading Knowledge Base...</div>;
+  }
+
+  if (viewState.kind === "empty") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-6">
+        <div className="max-w-md rounded-3xl border bg-card p-10 text-center shadow-sm">
+          <h1 className="text-2xl font-semibold text-foreground">{viewState.title}</h1>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">{viewState.description}</p>
+        </div>
+      </div>
+    );
   }
   
   return (
