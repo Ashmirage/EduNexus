@@ -15,6 +15,7 @@ model User {
   email     String     @unique
   password  String
   name      String?
+  isDemo    Boolean    @default(false)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   documents Document[]
