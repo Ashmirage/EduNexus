@@ -16,13 +16,19 @@ export async function verifyPassword(plain: string, hashed: string): Promise<boo
   return bcrypt.compare(plain, hashed);
 }
 
-export async function createUser(data: { email: string; name?: string; password: string }): Promise<User> {
+export async function createUser(data: {
+  email: string;
+  name?: string;
+  password: string;
+  isDemo?: boolean;
+}): Promise<User> {
   const hashedPassword = await bcrypt.hash(data.password, 10);
   return prisma.user.create({
     data: {
       email: data.email,
       name: data.name ?? null,
       password: hashedPassword,
+      isDemo: data.isDemo ?? false,
     },
   });
 }

@@ -5,25 +5,25 @@ async function main() {
   const demoEmail = 'demo@edunexus.com';
   const demoPassword = 'demo123';
 
+  const hashedPassword = await bcrypt.hash(demoPassword, 10);
   const existingUser = await prisma.user.findUnique({
     where: { email: demoEmail },
   });
 
-  if (existingUser) {
-    console.log('Demo user already exists');
-    return;
-  }
-
-  const hashedPassword = await bcrypt.hash(demoPassword, 10);
-  await prisma.user.create({
-    data: {
+  await prisma.user.upsert({
+    where: { email: demoEmail },
+    update: {
+      isDemo: true,
+    },
+    create: {
       email: demoEmail,
       password: hashedPassword,
       name: 'Demo User',
+      isDemo: true,
     },
   });
 
-  console.log('Demo user created successfully');
+  console.log(existingUser ? 'Demo user already exists; demo flag ensured' : 'Demo user created successfully');
 }
 
 main()
