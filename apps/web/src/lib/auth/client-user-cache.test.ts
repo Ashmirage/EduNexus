@@ -40,11 +40,16 @@ describe("client-user-cache", () => {
   });
 
   it("writes and reads the current user snapshot", () => {
-    writeClientUserSnapshot({ id: "user_123", email: "user@example.com" });
+    writeClientUserSnapshot({
+      id: "user_123",
+      email: "user@example.com",
+      isDemo: true,
+    });
 
     expect(readClientUserSnapshot()).toEqual({
       id: "user_123",
       email: "user@example.com",
+      isDemo: true,
     });
   });
 
@@ -61,5 +66,18 @@ describe("client-user-cache", () => {
     localStorage.setItem("edunexus_current_user", "not-json");
     expect(readClientUserSnapshot()).toBeNull();
     expect(localStorage.getItem("edunexus_current_user")).toBeNull();
+  });
+
+  it("defaults old snapshots to a normal user when demo metadata is missing", () => {
+    localStorage.setItem(
+      "edunexus_current_user",
+      JSON.stringify({ id: "user_legacy", email: "legacy@example.com" })
+    );
+
+    expect(readClientUserSnapshot()).toEqual({
+      id: "user_legacy",
+      email: "legacy@example.com",
+      isDemo: false,
+    });
   });
 });
