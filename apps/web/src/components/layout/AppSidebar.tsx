@@ -34,7 +34,7 @@ import { UserMenu } from './user-menu'
 
 const navigation = [
   {
-    title: '核心功能',
+    title: '学习系统',
     items: [
       { name: '总览', href: '/', icon: Home },
       { name: '🌌 知识星图', href: '/graph', icon: Network },
@@ -42,6 +42,7 @@ const navigation = [
       { name: '🎮 成长地图', href: '/path', icon: Route },
       { name: '🛤️ 学习路径', href: '/learning-paths', icon: GitBranch },
       { name: '🎯 目标管理', href: '/goals', icon: Target },
+      { name: '📊 学习分析', href: '/analytics', icon: BarChart3 },
     ],
   },
   {
@@ -50,7 +51,6 @@ const navigation = [
       { name: '📁 资源中心', href: '/resources', icon: FolderOpen },
       { name: '👥 学习小组', href: '/groups', icon: Users },
       { name: '💬 学习社区', href: '/community', icon: MessageSquare },
-      { name: '📊 学习分析', href: '/analytics', icon: BarChart3 },
     ],
   },
   {
