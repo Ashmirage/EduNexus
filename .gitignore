@@ -37,3 +37,4 @@ temp/
 
 # AI config
 GEMINI.md
+.worktrees/

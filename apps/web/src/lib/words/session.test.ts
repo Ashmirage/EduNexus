@@ -3,73 +3,80 @@ import { describe, expect, it } from "vitest";
 import { selectSessionWordIds } from "./session";
 import type { LearningRecord, Word } from "./types";
 
-describe("selectSessionWordIds", () => {
-  it("fills session with unseen words and excludes already learned words", () => {
-    const words: Word[] = Array.from({ length: 25 }, (_, i) => ({
-      id: `w${i + 1}`,
-      word: `word${i + 1}`,
-      phonetic: "",
-      definition: "",
-      example: "",
-      bookId: "cet4",
-      difficulty: "easy",
-    }));
+const baseWord = (id: string): Word => ({
+  id,
+  word: id,
+  phonetic: "",
+  definition: "",
+  example: "",
+  bookId: "book",
+  difficulty: "easy",
+});
 
-    const records: LearningRecord[] = [
-      {
-        wordId: "w1",
-        bookId: "cet4",
-        learnDate: "2026-03-15",
-        status: "learning",
-        nextReviewDate: "2026-03-16",
-        interval: 1,
-        easeFactor: 2.5,
-        reviewCount: 1,
-        successCount: 1,
-        failureCount: 0,
-        lastReviewedAt: "2026-03-15",
-        retentionScore: 1,
-      },
+const record = (wordId: string, overrides: Partial<LearningRecord>): LearningRecord => ({
+  wordId,
+  bookId: "book",
+  learnDate: "2026-03-10",
+  status: "learning",
+  nextReviewDate: "2026-03-16",
+  interval: 1,
+  easeFactor: 2.5,
+  reviewCount: 1,
+  successCount: 0,
+  failureCount: 1,
+  lastReviewedAt: "2026-03-10",
+  retentionScore: 0,
+  ...overrides,
+});
+
+describe("selectSessionWordIds", () => {
+  it("prioritizes due review words before new words", () => {
+    const words: Word[] = [
+      baseWord("due-1"),
+      baseWord("due-2"),
+      baseWord("new-1"),
+      baseWord("new-2"),
+      baseWord("new-3"),
+      baseWord("extra"),
     ];
 
-    const session = selectSessionWordIds(words, records, "2026-03-15", 20);
+    const records: LearningRecord[] = [
+      record("due-1", { nextReviewDate: "2026-03-16" }),
+      record("due-2", { nextReviewDate: "2026-03-16" }),
+    ];
 
-    expect(session).toHaveLength(20);
-    expect(session.includes("w1")).toBe(false);
-    expect(session[0]).toBe("w2");
+    const session = selectSessionWordIds(words, records, "2026-03-17", 5);
+
+    expect(session).toEqual(["due-1", "due-2", "new-1", "new-2", "new-3"]);
   });
 
-  it("prioritizes due review words in current day session", () => {
-    const words: Word[] = Array.from({ length: 30 }, (_, i) => ({
-      id: `w${i + 1}`,
-      word: `word${i + 1}`,
-      phonetic: "",
-      definition: "",
-      example: "",
-      bookId: "cet4",
-      difficulty: "easy",
-    }));
+  it("does not duplicate words when pool smaller than session size", () => {
+    const words: Word[] = [baseWord("new-1"), baseWord("new-2")];
 
+    const session = selectSessionWordIds(words, [], "2026-03-17", 5);
+
+    expect(session).toEqual(["new-1", "new-2"]);
+  });
+
+  it("respects daily new limits and review priority settings", () => {
+    const words: Word[] = [
+      baseWord("due-1"),
+      baseWord("due-2"),
+      baseWord("new-1"),
+      baseWord("new-2"),
+      baseWord("new-3"),
+    ];
     const records: LearningRecord[] = [
-      {
-        wordId: "w5",
-        bookId: "cet4",
-        learnDate: "2026-03-14",
-        status: "reviewing",
-        nextReviewDate: "2026-03-15",
-        interval: 2,
-        easeFactor: 2.5,
-        reviewCount: 2,
-        successCount: 1,
-        failureCount: 1,
-        lastReviewedAt: "2026-03-14",
-        retentionScore: 0,
-      },
+      record("due-1", { nextReviewDate: "2026-03-17" }),
+      record("due-2", { nextReviewDate: "2026-03-17" }),
     ];
 
-    const session = selectSessionWordIds(words, records, "2026-03-15", 20);
+    const session = selectSessionWordIds(words, records, "2026-03-17", {
+      size: 6,
+      reviewFirst: false,
+      dailyNewLimit: 2,
+    });
 
-    expect(session.includes("w5")).toBe(false);
-    expect(session).toHaveLength(20);
+    expect(session).toEqual(["new-1", "new-2", "due-1", "due-2"]);
   });
 });

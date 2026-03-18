@@ -1,7 +1,7 @@
 import { goalStorage, type Goal } from "@/lib/goals/goal-storage";
 
 import { wordsStorage } from "./storage";
-import type { LearningRecord, Word } from "./types";
+import type { LearningRecord, Word, WordsTodaySummary } from "./types";
 
 type RelatedWordsStorage = {
   getWordsByBook: (bookId: string) => Promise<Word[]>;
@@ -121,4 +121,8 @@ export async function suggestRelatedWords(
 
 export function countCompletedToday(records: LearningRecord[], date: string): number {
   return records.filter((record) => record.lastReviewedAt === date).length;
+}
+
+export function getCompletedCountFromSummary(summary: WordsTodaySummary): number {
+  return summary.learned + summary.reviewed + summary.relearned;
 }

@@ -16,34 +16,26 @@ import {
 import { ReviewButtons, WordCard } from "@/components/words";
 import { ensureWordsBootstrap } from "@/lib/words/bootstrap";
 import { generateWordMnemonic } from "@/lib/words/ai";
-import { suggestRelatedWords, syncWordsProgressToGoal } from "@/lib/words/integration";
+import {
+  getCompletedCountFromSummary,
+  suggestRelatedWords,
+  syncWordsProgressToGoal,
+} from "@/lib/words/integration";
 import { wordsStorage } from "@/lib/words/storage";
 import { updateWordStatus } from "@/lib/words/scheduler";
-import { getWordsToday } from "@/lib/words/date";
+import { getWordsToday, listenForWordsTodayChange } from "@/lib/words/date";
 import { selectSessionWordIds } from "@/lib/words/session";
-import type { Word } from "@/lib/words/types";
+import type { Word, WordAnswerGrade } from "@/lib/words/types";
 
 type LearnPageProps = {
   params: Promise<{ bookId: string }>;
 };
 
 function buildLearningQueue(words: Word[], size = 20): Word[] {
-  if (words.length === 0) {
-    return [];
-  }
-  if (words.length >= size) {
-    return words.slice(0, size);
-  }
-
-  const queue: Word[] = [];
-  while (queue.length < size) {
-    queue.push(words[queue.length % words.length]);
-  }
-  return queue;
+  return words.slice(0, size);
 }
 
-async function buildSmartLearningQueue(bookId: string): Promise<Word[]> {
-  const today = getWordsToday();
+async function buildSmartLearningQueue(bookId: string, today: string): Promise<Word[]> {
   const [words, records] = await Promise.all([
     wordsStorage.getWordsByBook(bookId),
     wordsStorage.getAllLearningRecords(),
@@ -57,6 +49,7 @@ async function buildSmartLearningQueue(bookId: string): Promise<Word[]> {
 export default function LearnWordsPage({ params }: LearnPageProps) {
   const router = useRouter();
   const resolvedParams = use(params);
+  const [today, setToday] = useState(getWordsToday());
   const [currentIndex, setCurrentIndex] = useState(0);
   const [knownCount, setKnownCount] = useState(0);
   const [unknownCount, setUnknownCount] = useState(0);
@@ -65,6 +58,7 @@ export default function LearnWordsPage({ params }: LearnPageProps) {
   const [mnemonic, setMnemonic] = useState<string>("");
   const [mnemonicLoading, setMnemonicLoading] = useState(false);
   const [relatedWords, setRelatedWords] = useState<Word[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const bookId = resolvedParams?.bookId ?? "cet4";
   const queue = useMemo(() => buildLearningQueue(bookWords, 20), [bookWords]);
@@ -72,11 +66,19 @@ export default function LearnWordsPage({ params }: LearnPageProps) {
   const progress = queue.length === 0 ? 0 : ((currentIndex + 1) / queue.length) * 100;
 
   useEffect(() => {
+    const cleanup = listenForWordsTodayChange(() => {
+      setToday(getWordsToday());
+    });
+    return cleanup;
+  }, []);
+
+  useEffect(() => {
     let active = true;
+    setLoading(true);
 
     const load = async () => {
       await ensureWordsBootstrap();
-      const words = await buildSmartLearningQueue(bookId);
+      const words = await buildSmartLearningQueue(bookId, today);
       if (!active) return;
       setBookWords(words);
       setCurrentIndex(0);
@@ -84,13 +86,14 @@ export default function LearnWordsPage({ params }: LearnPageProps) {
       setUnknownCount(0);
       setFinished(false);
       setMnemonic("");
+      setLoading(false);
     };
 
     void load();
     return () => {
       active = false;
     };
-  }, [bookId]);
+  }, [bookId, today]);
 
   useEffect(() => {
     let active = true;
@@ -122,21 +125,21 @@ export default function LearnWordsPage({ params }: LearnPageProps) {
     setMnemonicLoading(false);
   };
 
-  const moveNext = async (isKnown: boolean) => {
+  const moveNext = async (grade: WordAnswerGrade) => {
     if (!currentWord) {
       return;
     }
-    const today = getWordsToday();
-    await updateWordStatus(wordsStorage, bookId, currentWord.id, isKnown, today);
+    await updateWordStatus(wordsStorage, bookId, currentWord.id, grade, today);
 
-    if (isKnown) {
+    const success = grade !== "again";
+    if (success) {
       setKnownCount((count) => count + 1);
     } else {
       setUnknownCount((count) => count + 1);
     }
 
-    const records = await wordsStorage.getAllLearningRecords();
-    const completed = records.filter((record) => record.lastReviewedAt === today).length;
+    const stats = await wordsStorage.getLearningStats(today);
+    const completed = getCompletedCountFromSummary(stats.todaySummary);
     syncWordsProgressToGoal(today, 20, completed);
 
     setMnemonic("");
@@ -150,15 +153,27 @@ export default function LearnWordsPage({ params }: LearnPageProps) {
 
   const restart = () => {
     void (async () => {
-      const words = await buildSmartLearningQueue(bookId);
+      setLoading(true);
+      const words = await buildSmartLearningQueue(bookId, today);
       setBookWords(words);
       setCurrentIndex(0);
       setKnownCount(0);
       setUnknownCount(0);
       setFinished(false);
       setMnemonic("");
+      setLoading(false);
     })();
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+        <div className="rounded-xl border bg-white px-8 py-6 text-center shadow-sm">
+          <p className="text-base font-medium text-slate-900">正在加载学习队列...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentWord) {
     return (
@@ -206,7 +221,7 @@ export default function LearnWordsPage({ params }: LearnPageProps) {
           </div>
         ) : null}
 
-        <ReviewButtons onKnow={() => void moveNext(true)} onDontKnow={() => void moveNext(false)} />
+        <ReviewButtons onGrade={(value) => void moveNext(value)} />
       </div>
 
       <Dialog open={finished} onOpenChange={setFinished}>

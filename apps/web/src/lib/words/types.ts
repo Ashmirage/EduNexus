@@ -2,6 +2,10 @@ export type WordDifficulty = "easy" | "medium" | "hard";
 
 export type LearningStatus = "new" | "learning" | "reviewing" | "mastered";
 
+export type WordAnswerGrade = "again" | "hard" | "good" | "easy";
+
+export type StudyEventType = "learn" | "review" | "relearn";
+
 export type WordBookCategory = "cet" | "exam" | "general";
 
 export type Word = {
@@ -36,6 +40,8 @@ export type LearningRecord = {
   failureCount: number;
   lastReviewedAt: string;
   retentionScore: 0 | 1;
+  lastStudyType?: StudyEventType;
+  lastGrade?: WordAnswerGrade;
 };
 
 export type ReviewSchedule = {
@@ -43,6 +49,19 @@ export type ReviewSchedule = {
   wordIds: string[];
   newCount: number;
   reviewCount: number;
+};
+
+export type WordsTodaySummary = {
+  learned: number;
+  reviewed: number;
+  relearned: number;
+  accuracy: number;
+};
+
+export type WordsPlanSettings = {
+  dailyNewLimit: number;
+  reviewFirst: boolean;
+  defaultRevealMode: "hidden" | "definition";
 };
 
 export type LearningStats = {
@@ -53,13 +72,15 @@ export type LearningStats = {
   dueToday: number;
   accuracy: number;
   streakDays: number;
+  todaySummary: WordsTodaySummary;
 };
 
 export type Stats = LearningStats;
 
 export type StudyEvent = {
   date: string;
-  type: "learn" | "review";
+  type: StudyEventType;
+  grade: WordAnswerGrade;
   success: boolean;
 };
 

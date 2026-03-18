@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest";
 import type {
   LearningRecord,
   ReviewSchedule,
+  StudyEvent,
   Word,
   WordBook,
 } from "./types";
 import { createWordsStorage } from "./storage";
+import { calculateTodayProgress } from "./stats";
 
 describe("words storage", () => {
   it("persists and reads books, words, records and stats", async () => {
@@ -91,5 +93,78 @@ describe("words storage", () => {
 
     expect(loaded).not.toBeNull();
     expect(loaded?.wordIds).toEqual(["w1", "w2"]);
+  });
+
+  it("counts today's learn, review, and relearn events without double-counting", async () => {
+    const memory = createWordsStorage({ mode: "memory" });
+    await memory.saveWordBook({
+      id: "cet4",
+      name: "CET4",
+      description: "",
+      wordCount: 3,
+      category: "cet",
+    });
+
+    await memory.saveWords([
+      { id: "w1", word: "a", phonetic: "", definition: "", example: "", bookId: "cet4", difficulty: "easy" },
+      { id: "w2", word: "b", phonetic: "", definition: "", example: "", bookId: "cet4", difficulty: "easy" },
+    ]);
+
+    await memory.saveLearningRecord({
+      wordId: "w1",
+      bookId: "cet4",
+      learnDate: "2026-03-16",
+      status: "reviewing",
+      nextReviewDate: "2026-03-17",
+      interval: 1,
+      easeFactor: 2.5,
+      reviewCount: 2,
+      successCount: 1,
+      failureCount: 1,
+      lastReviewedAt: "2026-03-17",
+      retentionScore: 0,
+    });
+
+    await memory.saveLearningRecord({
+      wordId: "w2",
+      bookId: "cet4",
+      learnDate: "2026-03-17",
+      status: "learning",
+      nextReviewDate: "2026-03-17",
+      interval: 1,
+      easeFactor: 2.5,
+      reviewCount: 1,
+      successCount: 1,
+      failureCount: 0,
+      lastReviewedAt: "2026-03-17",
+      retentionScore: 1,
+    });
+
+    const stats = await memory.getLearningStats("2026-03-17");
+    expect(stats.dueToday).toBe(2);
+
+    const events: StudyEvent[] = [
+      { date: "2026-03-17", type: "learn", grade: "good", success: true },
+      { date: "2026-03-17", type: "review", grade: "hard", success: true },
+      { date: "2026-03-17", type: "review", grade: "good", success: true },
+      { date: "2026-03-17", type: "relearn", grade: "again", success: false },
+    ];
+
+    expect(calculateTodayProgress(events, "2026-03-17")).toEqual({
+      learned: 1,
+      reviewed: 2,
+      relearned: 1,
+      accuracy: 2 / 3,
+    });
+  });
+
+  it("returns default study-plan settings when none are stored", async () => {
+    const memory = createWordsStorage({ mode: "memory" });
+
+    await expect(memory.getWordsPlanSettings()).resolves.toEqual({
+      dailyNewLimit: 20,
+      reviewFirst: true,
+      defaultRevealMode: "hidden",
+    });
   });
 });

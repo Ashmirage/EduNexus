@@ -13,14 +13,18 @@ export function calculateTotalLearned(
 export function calculateTodayProgress(
   events: StudyEvent[],
   today: string
-): { learned: number; reviewed: number; accuracy: number } {
+): { learned: number; reviewed: number; relearned: number; accuracy: number } {
   const todayEvents = events.filter((event) => event.date === today);
   const learned = todayEvents.filter((event) => event.type === "learn").length;
   const reviewed = todayEvents.filter((event) => event.type === "review").length;
-  const successCount = todayEvents.filter((event) => event.success).length;
-  const accuracy = todayEvents.length === 0 ? 0 : successCount / todayEvents.length;
+  const relearned = todayEvents.filter((event) => event.type === "relearn").length;
+  const attempts = reviewed + relearned;
+  const successCount = todayEvents.filter(
+    (event) => event.type !== "learn" && event.success
+  ).length;
+  const accuracy = attempts === 0 ? 0 : successCount / attempts;
 
-  return { learned, reviewed, accuracy };
+  return { learned, reviewed, relearned, accuracy };
 }
 
 export function calculateStreakDays(activeDates: string[], today: string): number {

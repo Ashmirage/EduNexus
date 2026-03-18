@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   countCompletedToday,
+  getCompletedCountFromSummary,
   getWordGoalId,
   suggestRelatedWords,
 } from "./integration";
@@ -48,6 +49,12 @@ describe("words integration helpers", () => {
     );
 
     expect(count).toBe(1);
+  });
+
+  it("syncs goal progress from summary totals instead of lastReviewedAt counts", () => {
+    expect(
+      getCompletedCountFromSummary({ learned: 1, reviewed: 2, relearned: 1, accuracy: 0.6 })
+    ).toBe(4);
   });
 
   it("returns related words in same book first", async () => {

@@ -58,25 +58,74 @@ describe("words scheduler", () => {
     expect(schedule.wordIds).toEqual(["w1", "w2"]);
   });
 
-  it("updates word status and computes next review", async () => {
-    const calls: LearningRecord[] = [];
+  it("maps answer grades to distinct next-review intervals", async () => {
+    const saved: LearningRecord[] = [];
+
+    const storage = {
+      getLearningRecords: async () => [],
+      saveLearningRecord: async (record: LearningRecord) => {
+        saved.push(record);
+      },
+    };
+
+    await updateWordStatus(storage, "cet4", "w1", "again" as any, "2026-03-17");
+    await updateWordStatus(storage, "cet4", "w2", "good" as any, "2026-03-17");
+
+    expect(saved[0].nextReviewDate).toBe("2026-03-18");
+    expect(saved[1].nextReviewDate > saved[0].nextReviewDate).toBe(true);
+  });
+
+  it("does not mark a first successful exposure as mastered", async () => {
+    const saved: LearningRecord[] = [];
 
     await updateWordStatus(
       {
         getLearningRecords: async () => [],
-        saveLearningRecord: async (record) => {
-          calls.push(record);
+        saveLearningRecord: async (record: LearningRecord) => {
+          saved.push(record);
         },
       },
       "cet4",
-      "w2",
-      true,
-      "2026-03-15"
+      "w3",
+      "good" as any,
+      "2026-03-17"
     );
 
-    expect(calls).toHaveLength(1);
-    expect(calls[0].status).toBe("mastered");
-    expect(calls[0].nextReviewDate).toBe("2026-03-16");
-    expect(calls[0].retentionScore).toBe(1);
+    expect(saved[0].status).toBe("reviewing");
+  });
+
+  it("persists study type and grade on updateWordStatus", async () => {
+    const saved: LearningRecord[] = [];
+
+    await updateWordStatus(
+      {
+        getLearningRecords: async () => [
+          {
+            wordId: "w1",
+            bookId: "cet4",
+            learnDate: "2026-03-10",
+            status: "reviewing",
+            nextReviewDate: "2026-03-15",
+            interval: 1,
+            easeFactor: 2.5,
+            reviewCount: 2,
+            successCount: 1,
+            failureCount: 1,
+            lastReviewedAt: "2026-03-15",
+            retentionScore: 0,
+          },
+        ],
+        saveLearningRecord: async (record: LearningRecord) => {
+          saved.push(record);
+        },
+      },
+      "cet4",
+      "w1",
+      "again" as any,
+      "2026-03-17"
+    );
+
+    expect((saved[0] as any).lastStudyType).toBe("relearn");
+    expect((saved[0] as any).lastGrade).toBe("again");
   });
 });

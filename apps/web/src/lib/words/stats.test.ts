@@ -19,16 +19,21 @@ describe("words stats", () => {
     expect(total).toBe(2);
   });
 
-  it("calculates today progress with accuracy", () => {
-    const progress = calculateTodayProgress([
-      { date: "2026-03-15", type: "learn", success: true },
-      { date: "2026-03-15", type: "review", success: false },
-      { date: "2026-03-15", type: "review", success: true },
-      { date: "2026-03-14", type: "review", success: true },
-    ], "2026-03-15");
+  it("calculates today progress with relearn counts and accuracy", () => {
+    const progress = calculateTodayProgress(
+      [
+        { date: "2026-03-15", type: "learn", grade: "good", success: true },
+        { date: "2026-03-15", type: "review", grade: "hard", success: false },
+        { date: "2026-03-15", type: "review", grade: "good", success: true },
+        { date: "2026-03-15", type: "relearn", grade: "again", success: true },
+        { date: "2026-03-14", type: "review", grade: "good", success: true },
+      ],
+      "2026-03-15"
+    );
 
     expect(progress.learned).toBe(1);
     expect(progress.reviewed).toBe(2);
+    expect(progress.relearned).toBe(1);
     expect(progress.accuracy).toBeCloseTo(2 / 3, 5);
   });
 

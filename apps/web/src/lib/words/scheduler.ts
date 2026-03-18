@@ -1,5 +1,11 @@
 import { calculateNextReview, getNewWordsForToday } from "./algorithm";
-import type { LearningRecord, ReviewSchedule, Word } from "./types";
+import type {
+  LearningRecord,
+  ReviewSchedule,
+  StudyEventType,
+  Word,
+  WordAnswerGrade,
+} from "./types";
 
 type SchedulerStorage = {
   getAllWords: () => Promise<Word[]>;
@@ -9,6 +15,20 @@ type SchedulerStorage = {
 type StatusStorage = {
   getLearningRecords: (wordId: string) => Promise<LearningRecord[]>;
   saveLearningRecord: (record: LearningRecord) => Promise<void>;
+};
+
+const GRADE_TO_QUALITY: Record<WordAnswerGrade, number> = {
+  again: 1,
+  hard: 3,
+  good: 4,
+  easy: 5,
+};
+
+const INITIAL_INTERVAL_BY_GRADE: Record<WordAnswerGrade, number> = {
+  again: 1,
+  hard: 2,
+  good: 3,
+  easy: 5,
 };
 
 function toIsoDate(value: Date): string {
@@ -52,36 +72,61 @@ export async function generateDailySchedule(
   };
 }
 
+function getStudyType(current: LearningRecord | undefined, grade: WordAnswerGrade): StudyEventType {
+  if (!current) {
+    return "learn";
+  }
+  return grade === "again" ? "relearn" : "review";
+}
+
 export async function updateWordStatus(
   storage: StatusStorage,
   bookId: string,
   wordId: string,
-  known: boolean,
+  grade: boolean | WordAnswerGrade,
   today: string
 ): Promise<void> {
   const existing = await storage.getLearningRecords(wordId);
   const current = existing[0];
 
-  const quality = known ? 4 : 1;
-  const baseInterval = current?.interval ?? 1;
+  const normalizedGrade: WordAnswerGrade =
+    typeof grade === "boolean" ? (grade ? "good" : "again") : grade;
+  const quality = GRADE_TO_QUALITY[normalizedGrade];
+  const startingInterval = INITIAL_INTERVAL_BY_GRADE[normalizedGrade];
+  const baseInterval = current?.interval ?? startingInterval;
   const baseEase = current?.easeFactor ?? 2.5;
   const next = calculateNextReview(baseInterval, baseEase, quality);
+  const nextInterval = current ? next.nextInterval : startingInterval;
+  const nextReviewDate = addDays(today, nextInterval);
 
-  const nextReviewDate = addDays(today, next.nextInterval);
+  const isFirstSeen = !current;
+  const status =
+    normalizedGrade === "again"
+      ? "learning"
+      : isFirstSeen
+        ? "reviewing"
+        : next.nextInterval > 6
+          ? "mastered"
+          : "reviewing";
+
+  const success = normalizedGrade !== "again";
+  const studyType = getStudyType(current, normalizedGrade);
 
   const record: LearningRecord = {
     wordId,
     bookId,
     learnDate: current?.learnDate ?? today,
-    status: known ? "mastered" : "reviewing",
+    status,
     nextReviewDate,
-    interval: next.nextInterval,
+    interval: nextInterval,
     easeFactor: next.newEaseFactor,
     reviewCount: (current?.reviewCount ?? 0) + 1,
-    successCount: (current?.successCount ?? 0) + (known ? 1 : 0),
-    failureCount: (current?.failureCount ?? 0) + (known ? 0 : 1),
+    successCount: (current?.successCount ?? 0) + (success ? 1 : 0),
+    failureCount: (current?.failureCount ?? 0) + (success ? 0 : 1),
     lastReviewedAt: today,
-    retentionScore: known ? 1 : 0,
+    retentionScore: success ? 1 : 0,
+    lastStudyType: studyType,
+    lastGrade: normalizedGrade,
   };
 
   await storage.saveLearningRecord(record);

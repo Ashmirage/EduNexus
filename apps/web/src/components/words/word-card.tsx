@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,11 @@ export function WordCard({
 }: WordCardProps) {
   const [definitionVisible, setDefinitionVisible] = useState(showDefinition);
   const [exampleVisible, setExampleVisible] = useState(showExample);
+
+  useEffect(() => {
+    setDefinitionVisible(showDefinition);
+    setExampleVisible(showExample);
+  }, [word.id, showDefinition, showExample]);
 
   const difficultyLabel = useMemo(() => {
     if (word.difficulty === "easy") return "Easy";

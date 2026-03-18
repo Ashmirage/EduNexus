@@ -26,3 +26,18 @@ export function getWordsToday(): string {
 export function getWordsDebugTodayKey(): string {
   return DEBUG_TODAY_KEY;
 }
+
+export function listenForWordsTodayChange(onChange: () => void): () => void {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  const handler = (event: StorageEvent) => {
+    if (event.key === DEBUG_TODAY_KEY) {
+      onChange();
+    }
+  };
+
+  window.addEventListener("storage", handler);
+  return () => window.removeEventListener("storage", handler);
+}

@@ -10,11 +10,27 @@ import {
   StatsCard,
   StreakCalendar,
 } from "@/components/words";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ensureWordsBootstrap } from "@/lib/words/bootstrap";
-import { getWordsDebugTodayKey, getWordsToday } from "@/lib/words/date";
+import { getWordsToday, listenForWordsTodayChange } from "@/lib/words/date";
 import { wordsStorage } from "@/lib/words/storage";
-import type { LearningRecord, WordBook } from "@/lib/words/types";
-import { countCompletedToday, syncWordsProgressToGoal } from "@/lib/words/integration";
+import type {
+  LearningRecord,
+  LearningStats,
+  WordBook,
+  WordsPlanSettings,
+  WordsTodaySummary,
+} from "@/lib/words/types";
+import { getCompletedCountFromSummary, syncWordsProgressToGoal } from "@/lib/words/integration";
 
 export default function WordsDashboardPage() {
   const router = useRouter();
@@ -24,6 +40,8 @@ export default function WordsDashboardPage() {
   const [dueTodayWordIds, setDueTodayWordIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [today, setToday] = useState(getWordsToday());
+  const [stats, setStats] = useState<LearningStats | null>(null);
+  const [planSettings, setPlanSettings] = useState<WordsPlanSettings | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -31,10 +49,11 @@ export default function WordsDashboardPage() {
     const load = async () => {
       setLoading(true);
       await ensureWordsBootstrap();
-      const [loadedBooks, loadedRecords, dueWords] = await Promise.all([
+      const [loadedBooks, loadedRecords, dueWords, loadedStats] = await Promise.all([
         wordsStorage.getWordBooks(),
         wordsStorage.getAllLearningRecords(),
         wordsStorage.getTodayReviewWords(today),
+        wordsStorage.getLearningStats(today),
       ]);
 
       if (!active) {
@@ -44,11 +63,12 @@ export default function WordsDashboardPage() {
       setBooks(loadedBooks);
       setRecords(loadedRecords);
       setDueTodayWordIds(dueWords.map((word) => word.id));
+      setStats(loadedStats);
 
       const current = loadedBooks[0]?.id ?? "";
       setSelectedBookId((prev) => prev || current);
 
-      const completed = countCompletedToday(loadedRecords, today);
+      const completed = getCompletedCountFromSummary(loadedStats.todaySummary);
       syncWordsProgressToGoal(today, 20, completed);
       setLoading(false);
     };
@@ -60,16 +80,10 @@ export default function WordsDashboardPage() {
   }, [today]);
 
   useEffect(() => {
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === getWordsDebugTodayKey()) {
-        setToday(getWordsToday());
-      }
-    };
-
-    window.addEventListener("storage", onStorage);
-    return () => {
-      window.removeEventListener("storage", onStorage);
-    };
+    const cleanup = listenForWordsTodayChange(() => {
+      setToday(getWordsToday());
+    });
+    return cleanup;
   }, []);
 
   const progressByBook = useMemo(() => {
@@ -90,23 +104,16 @@ export default function WordsDashboardPage() {
     }, {});
   }, [books, records, today]);
 
-  const todayLearned = records.filter((record) => record.learnDate === today).length;
-  const todayReviewed = records.filter((record) => record.lastReviewedAt === today).length;
-  const streakDays = useMemo(() => {
-    const activeDates = Array.from(new Set(records.map((record) => record.lastReviewedAt))).filter(Boolean);
-    const set = new Set(activeDates);
-    const cursor = new Date(`${today}T00:00:00.000Z`);
-    let streak = 0;
-    while (true) {
-      const value = cursor.toISOString().slice(0, 10);
-      if (!set.has(value)) break;
-      streak += 1;
-      cursor.setUTCDate(cursor.getUTCDate() - 1);
-    }
-    return streak;
-  }, [records, today]);
-
-  const totalDueToday = Object.values(dueByBook).reduce((sum, value) => sum + value, 0);
+  const todaySummary: WordsTodaySummary = stats?.todaySummary ?? {
+    learned: 0,
+    reviewed: 0,
+    relearned: 0,
+    accuracy: 0,
+  };
+  const completedToday = getCompletedCountFromSummary(todaySummary);
+  const targetWords = 20;
+  const streakDays = stats?.streakDays ?? 0;
+  const totalDueToday = stats?.dueToday ?? Object.values(dueByBook).reduce((sum, value) => sum + value, 0);
   const activeDates = Array.from(new Set(records.map((record) => record.lastReviewedAt))).filter(Boolean).sort();
 
   return (
@@ -114,21 +121,24 @@ export default function WordsDashboardPage() {
       <div className="mx-auto max-w-6xl space-y-6">
         <section className="rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-sm backdrop-blur-sm sm:p-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-cyan-700">Words Learning Lab</p>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900">单词学习仪表盘</h1>
-              <p className="text-sm text-slate-600">
-                {loading ? "正在同步词库与进度..." : "聚焦今日任务，持续保持学习节奏。"}
-              </p>
-            </div>
-            <ProgressRing value={Math.min(100, (todayLearned + todayReviewed) * 5)} label="Today" />
+             <div className="space-y-2">
+               <p className="text-sm font-medium text-cyan-700">Words Learning Lab</p>
+               <h1 className="text-3xl font-bold tracking-tight text-slate-900">单词学习仪表盘</h1>
+               <p className="text-sm text-slate-600">
+                 {loading ? "正在同步词库与进度..." : "聚焦今日任务，持续保持学习节奏。"}
+               </p>
+              </div>
+            <ProgressRing
+              value={Math.min(100, (completedToday / Math.max(1, targetWords)) * 100)}
+              label="今日完成"
+            />
           </div>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <StatsCard icon={Flame} label="连续学习天数" value={streakDays} trend={8} accentClassName="from-amber-500/15 to-orange-500/10 border-amber-200" />
-            <StatsCard icon={ListTodo} label="今日待复习" value={totalDueToday} trend={-4} accentClassName="from-rose-500/15 to-orange-500/10 border-rose-200" />
-            <StatsCard icon={BookOpen} label="今日学习" value={todayLearned} accentClassName="from-cyan-500/15 to-sky-500/10 border-cyan-200" />
-            <StatsCard icon={PlayCircle} label="今日复习" value={todayReviewed} accentClassName="from-emerald-500/15 to-teal-500/10 border-emerald-200" />
+            <StatsCard icon={Flame} label="连续学习天数" value={streakDays} accentClassName="from-amber-500/15 to-orange-500/10 border-amber-200" />
+            <StatsCard icon={ListTodo} label="今日待复习" value={totalDueToday} accentClassName="from-rose-500/15 to-orange-500/10 border-rose-200" />
+            <StatsCard icon={BookOpen} label="今日学习" value={todaySummary.learned} accentClassName="from-cyan-500/15 to-sky-500/10 border-cyan-200" />
+            <StatsCard icon={PlayCircle} label="今日复习" value={todaySummary.reviewed} accentClassName="from-emerald-500/15 to-teal-500/10 border-emerald-200" />
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
@@ -146,7 +156,7 @@ export default function WordsDashboardPage() {
           </div>
         </section>
 
-        <StreakCalendar activeDates={activeDates} />
+        <StreakCalendar activeDates={activeDates} today={today} />
 
         <section className="space-y-3">
           <div className="flex items-center justify-between">

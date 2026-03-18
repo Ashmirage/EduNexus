@@ -147,14 +147,14 @@ export const mockLearningRecords: LearningRecord[] = [
 ];
 
 export const mockStudyEvents: StudyEvent[] = [
-  { date: "2026-03-10", type: "learn", success: true },
-  { date: "2026-03-11", type: "learn", success: true },
-  { date: "2026-03-12", type: "review", success: true },
-  { date: "2026-03-13", type: "review", success: true },
-  { date: "2026-03-14", type: "review", success: false },
-  { date: "2026-03-15", type: "learn", success: true },
-  { date: "2026-03-15", type: "review", success: true },
-  { date: "2026-03-15", type: "review", success: false },
+  { date: "2026-03-10", type: "learn", grade: "good", success: true },
+  { date: "2026-03-11", type: "learn", grade: "good", success: true },
+  { date: "2026-03-12", type: "review", grade: "good", success: true },
+  { date: "2026-03-13", type: "review", grade: "hard", success: true },
+  { date: "2026-03-14", type: "review", grade: "again", success: false },
+  { date: "2026-03-15", type: "learn", grade: "good", success: true },
+  { date: "2026-03-15", type: "review", grade: "good", success: true },
+  { date: "2026-03-15", type: "relearn", grade: "again", success: false },
 ];
 
 export function getWordsByBookId(bookId: string): Word[] {

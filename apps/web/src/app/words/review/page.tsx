@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Timer } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -8,19 +8,32 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReviewButtons, WordCard } from "@/components/words";
 import { ensureWordsBootstrap } from "@/lib/words/bootstrap";
-import { getWordsToday } from "@/lib/words/date";
-import { syncWordsProgressToGoal } from "@/lib/words/integration";
+import { getWordsToday, listenForWordsTodayChange } from "@/lib/words/date";
+import {
+  getCompletedCountFromSummary,
+  syncWordsProgressToGoal,
+} from "@/lib/words/integration";
 import { wordsStorage } from "@/lib/words/storage";
 import { updateWordStatus } from "@/lib/words/scheduler";
-import type { Word } from "@/lib/words/types";
+import { selectReviewWordIds } from "@/lib/words/session";
+import type { Word, WordAnswerGrade } from "@/lib/words/types";
 
 export default function ReviewWordsPage() {
   const router = useRouter();
-  const today = getWordsToday();
+  const [today, setToday] = useState(getWordsToday());
   const [sessionQueue, setSessionQueue] = useState<Word[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const cleanup = listenForWordsTodayChange(() => {
+      setToday(getWordsToday());
+    });
+    return cleanup;
+  }, []);
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
     const load = async () => {
       await ensureWordsBootstrap();
       const [words, records] = await Promise.all([
@@ -28,17 +41,19 @@ export default function ReviewWordsPage() {
         wordsStorage.getAllLearningRecords(),
       ]);
       if (!active) return;
-      const dueWordIds = records
-        .filter((record) => record.nextReviewDate <= today)
-        .map((record) => record.wordId);
-      const dueWordIdSet = new Set(dueWordIds);
-      setSessionQueue(words.filter((word) => dueWordIdSet.has(word.id)));
+      const dueWordIds = selectReviewWordIds(words, records, today, 50);
+      const byId = new Map(words.map((word) => [word.id, word]));
+      const queue = dueWordIds
+        .map((id) => byId.get(id))
+        .filter((word): word is Word => Boolean(word));
+      setSessionQueue(queue);
+      setLoading(false);
     };
     void load();
     return () => {
       active = false;
     };
-  }, []);
+  }, [today]);
 
   const [quickRecallMode, setQuickRecallMode] = useState(false);
   const [index, setIndex] = useState(0);
@@ -48,23 +63,24 @@ export default function ReviewWordsPage() {
   const current = sessionQueue[index];
   const finished = sessionQueue.length > 0 && index >= sessionQueue.length;
 
-  const onAnswer = async (isCorrect: boolean) => {
+  const onAnswer = async (grade: WordAnswerGrade) => {
     const currentWord = sessionQueue[index];
     if (!currentWord) {
       return;
     }
 
-    await updateWordStatus(wordsStorage, currentWord.bookId, currentWord.id, isCorrect, today);
+    await updateWordStatus(wordsStorage, currentWord.bookId, currentWord.id, grade, today);
 
-    if (isCorrect) {
+    const success = grade !== "again";
+    if (success) {
       setCorrect((count) => count + 1);
     } else {
       setIncorrect((count) => count + 1);
     }
     setIndex((currentIndex) => currentIndex + 1);
 
-    const records = await wordsStorage.getAllLearningRecords();
-    const completed = records.filter((record) => record.lastReviewedAt === today).length;
+    const stats = await wordsStorage.getLearningStats(today);
+    const completed = getCompletedCountFromSummary(stats.todaySummary);
     syncWordsProgressToGoal(today, 20, completed);
   };
 
@@ -73,6 +89,19 @@ export default function ReviewWordsPage() {
     setCorrect(0);
     setIncorrect(0);
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>正在加载复习队列...</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-slate-600">请稍候</CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (sessionQueue.length === 0) {
     return (
@@ -131,7 +160,7 @@ export default function ReviewWordsPage() {
         ) : current ? (
           <>
             <WordCard word={current} showDefinition={!quickRecallMode} showExample={!quickRecallMode} />
-            <ReviewButtons onKnow={() => void onAnswer(true)} onDontKnow={() => void onAnswer(false)} />
+            <ReviewButtons onGrade={(value) => void onAnswer(value)} />
           </>
         ) : null}
       </div>

@@ -13,6 +13,7 @@ import type {
   StudyEvent,
   Word,
   WordBook,
+  WordsPlanSettings,
 } from "./types";
 
 type StorageMode = "idb" | "memory";
@@ -39,6 +40,10 @@ interface WordsDB extends DBSchema {
     key: string;
     value: ReviewSchedule;
   };
+  planSettings: {
+    key: string;
+    value: WordsPlanSettings;
+  };
 }
 
 export type WordsStorage = {
@@ -54,6 +59,14 @@ export type WordsStorage = {
   saveReviewSchedule: (schedule: ReviewSchedule) => Promise<void>;
   getReviewSchedule: (date: string) => Promise<ReviewSchedule | null>;
   getLearningStats: (today?: string) => Promise<LearningStats>;
+  getWordsPlanSettings: () => Promise<WordsPlanSettings>;
+  saveWordsPlanSettings: (settings: WordsPlanSettings) => Promise<void>;
+};
+
+const DEFAULT_PLAN_SETTINGS: WordsPlanSettings = {
+  dailyNewLimit: 20,
+  reviewFirst: true,
+  defaultRevealMode: "hidden",
 };
 
 export function createWordsStorage(options?: { mode?: StorageMode }): WordsStorage {
@@ -72,19 +85,29 @@ function safeDate(today?: string): string {
   return today ?? toIsoDate(new Date());
 }
 
-function createEvents(
-  records: LearningRecord[],
-  today: string
-): Array<{ date: string; type: "learn" | "review"; success: boolean }> {
+function createEvents(records: LearningRecord[], today: string): StudyEvent[] {
   return records.flatMap((record) => {
-    const events: StudyEvent[] = [];
-    if (record.learnDate === today) {
-      events.push({ date: today, type: "learn", success: true });
-    }
     if (record.lastReviewedAt === today) {
-      events.push({ date: today, type: "review", success: record.retentionScore === 1 });
+      return [
+        {
+          date: today,
+          type: record.lastStudyType ?? (record.learnDate === today ? "learn" : "review"),
+          grade: record.lastGrade ?? (record.retentionScore === 1 ? "good" : "again"),
+          success: record.retentionScore === 1,
+        },
+      ];
     }
-    return events;
+    if (record.learnDate === today) {
+      return [
+        {
+          date: today,
+          type: "learn",
+          grade: "good",
+          success: true,
+        },
+      ];
+    }
+    return [];
   });
 }
 
@@ -99,6 +122,8 @@ function createCore(storage: {
   allRecords: () => Promise<LearningRecord[]>;
   putSchedule: (schedule: ReviewSchedule) => Promise<void>;
   getSchedule: (date: string) => Promise<ReviewSchedule | null>;
+  getPlanSettings: () => Promise<WordsPlanSettings | null>;
+  savePlanSettings: (settings: WordsPlanSettings) => Promise<void>;
 }): WordsStorage {
   return {
     saveWordBook: async (book) => {
@@ -152,7 +177,15 @@ function createCore(storage: {
         dueToday,
         accuracy: todayProgress.accuracy || retention,
         streakDays: calculateStreakDays(activeDates, date),
+        todaySummary: todayProgress,
       };
+    },
+    getWordsPlanSettings: async () => {
+      const stored = await storage.getPlanSettings();
+      return stored ? { ...DEFAULT_PLAN_SETTINGS, ...stored } : DEFAULT_PLAN_SETTINGS;
+    },
+    saveWordsPlanSettings: async (settings) => {
+      await storage.savePlanSettings(settings);
     },
   };
 }
@@ -162,6 +195,7 @@ function createMemoryStorage(): WordsStorage {
   const words = new Map<string, Word>();
   const records = new Map<string, LearningRecord>();
   const schedules = new Map<string, ReviewSchedule>();
+  let planSettings: WordsPlanSettings | null = null;
 
   return createCore({
     putBook: async (book) => {
@@ -188,6 +222,10 @@ function createMemoryStorage(): WordsStorage {
       schedules.set(schedule.date, schedule);
     },
     getSchedule: async (date) => schedules.get(date) ?? null,
+    getPlanSettings: async () => planSettings,
+    savePlanSettings: async (settings) => {
+      planSettings = settings;
+    },
   });
 }
 
@@ -215,6 +253,9 @@ function createIndexedDbStorage(): WordsStorage {
         }
         if (!db.objectStoreNames.contains("schedules")) {
           db.createObjectStore("schedules", { keyPath: "date" });
+        }
+        if (!db.objectStoreNames.contains("planSettings")) {
+          db.createObjectStore("planSettings");
         }
       },
     });
@@ -263,6 +304,14 @@ function createIndexedDbStorage(): WordsStorage {
     getSchedule: async (date) => {
       const db = await getDb();
       return (await db.get("schedules", date)) ?? null;
+    },
+    getPlanSettings: async () => {
+      const db = await getDb();
+      return (await db.get("planSettings", "default")) ?? null;
+    },
+    savePlanSettings: async (settings) => {
+      const db = await getDb();
+      await db.put("planSettings", settings, "default");
     },
   });
 }
