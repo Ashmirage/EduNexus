@@ -5,6 +5,7 @@ import {
   calculateTotalLearned,
   calculateTodayProgress,
 } from "./stats";
+import { requestJson } from "@/lib/client/api";
 import type {
   LearningRecord,
   LearningStats,
@@ -243,87 +244,79 @@ function createMemoryStorage(): WordsStorage {
   });
 }
 
-async function parseApiResponse<T>(response: Response): Promise<T> {
-  const payload = await response.json();
-  if (!response.ok || !payload?.success) {
-    const message = payload?.error?.message ?? "Words API request failed";
-    throw new Error(message);
-  }
-  return payload.data as T;
-}
-
 function createApiStorage(): WordsStorage {
   return createCore({
     putBook: async () => {
       // static books are served by /api/words/books
     },
     allBooks: async () => {
-      const response = await fetch("/api/words/books", { cache: "no-store" });
-      const data = await parseApiResponse<{ books: WordBook[] }>(response);
+      const data = await requestJson<{ books: WordBook[] }>("/api/words/books", {
+        cache: "no-store",
+      });
       return data.books;
     },
     putWords: async () => {
       // static words are served by /api/words/words
     },
     wordsByBook: async (bookId) => {
-      const response = await fetch(`/api/words/words?bookId=${encodeURIComponent(bookId)}`, {
-        cache: "no-store",
-      });
-      const data = await parseApiResponse<{ words: Word[] }>(response);
+      const data = await requestJson<{ words: Word[] }>(
+        `/api/words/words?bookId=${encodeURIComponent(bookId)}`,
+        { cache: "no-store" }
+      );
       return data.words;
     },
     allWords: async () => {
-      const response = await fetch("/api/words/words", { cache: "no-store" });
-      const data = await parseApiResponse<{ words: Word[] }>(response);
+      const data = await requestJson<{ words: Word[] }>("/api/words/words", {
+        cache: "no-store",
+      });
       return data.words;
     },
     putRecord: async (record) => {
-      const response = await fetch("/api/words/records", {
+      await requestJson<{ saved: boolean }>("/api/words/records", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(record),
       });
-      await parseApiResponse<{ saved: boolean }>(response);
     },
     recordsByWord: async (wordId) => {
-      const response = await fetch(`/api/words/records?wordId=${encodeURIComponent(wordId)}`, {
-        cache: "no-store",
-      });
-      const data = await parseApiResponse<{ records: LearningRecord[] }>(response);
+      const data = await requestJson<{ records: LearningRecord[] }>(
+        `/api/words/records?wordId=${encodeURIComponent(wordId)}`,
+        { cache: "no-store" }
+      );
       return data.records;
     },
     allRecords: async () => {
-      const response = await fetch("/api/words/records", { cache: "no-store" });
-      const data = await parseApiResponse<{ records: LearningRecord[] }>(response);
+      const data = await requestJson<{ records: LearningRecord[] }>("/api/words/records", {
+        cache: "no-store",
+      });
       return data.records;
     },
     putSchedule: async (schedule) => {
-      const response = await fetch("/api/words/schedules", {
+      await requestJson<{ saved: boolean }>("/api/words/schedules", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(schedule),
       });
-      await parseApiResponse<{ saved: boolean }>(response);
     },
     getSchedule: async (date) => {
-      const response = await fetch(`/api/words/schedules?date=${encodeURIComponent(date)}`, {
-        cache: "no-store",
-      });
-      const data = await parseApiResponse<{ schedule: ReviewSchedule | null }>(response);
+      const data = await requestJson<{ schedule: ReviewSchedule | null }>(
+        `/api/words/schedules?date=${encodeURIComponent(date)}`,
+        { cache: "no-store" }
+      );
       return data.schedule;
     },
     getPlanSettings: async () => {
-      const response = await fetch("/api/words/settings", { cache: "no-store" });
-      const data = await parseApiResponse<{ settings: WordsPlanSettings }>(response);
+      const data = await requestJson<{ settings: WordsPlanSettings }>("/api/words/settings", {
+        cache: "no-store",
+      });
       return data.settings;
     },
     savePlanSettings: async (settings) => {
-      const response = await fetch("/api/words/settings", {
+      await requestJson<{ saved: boolean }>("/api/words/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings),
       });
-      await parseApiResponse<{ saved: boolean }>(response);
     },
   });
 }

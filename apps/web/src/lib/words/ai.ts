@@ -1,4 +1,5 @@
 import { getModelConfig } from "@/lib/client/model-config";
+import { requestJson } from "@/lib/client/api";
 
 export async function generateWordMnemonic(input: {
   word: string;
@@ -12,7 +13,7 @@ export async function generateWordMnemonic(input: {
   }
 
   try {
-    const response = await fetch("/api/kb/ai/chat", {
+    const init: RequestInit = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -29,10 +30,10 @@ export async function generateWordMnemonic(input: {
           temperature: 0.6,
         },
       }),
-    });
+    };
 
-    const payload = await response.json();
-    return payload.response || payload.error || "暂时无法生成记忆技巧，请稍后再试。";
+    const result = await requestJson<{ response: string; timestamp: string }>("/api/kb/ai/chat", init);
+    return result.response;
   } catch {
     return `记忆法：把 ${input.word} 放进你自己的学习场景里，今天复习 2 次，明天再复习 1 次。`;
   }

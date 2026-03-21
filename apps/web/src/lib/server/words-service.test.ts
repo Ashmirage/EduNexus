@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const findMany = vi.fn();
+import { BUILTIN_BOOK_ID_PREFIX } from "./builtin-wordbook-service";
+
+const { findMany, mockCustomFindMany, mockBuiltinFindMany } = vi.hoisted(() => {
+  const findMany = vi.fn();
+  const mockCustomFindMany = vi.fn().mockResolvedValue([]);
+  const mockBuiltinFindMany = vi.fn().mockResolvedValue([]);
+  return { findMany, mockCustomFindMany, mockBuiltinFindMany };
+});
 
 vi.mock("./prisma", () => ({
   prisma: {
@@ -14,6 +21,18 @@ vi.mock("./prisma", () => ({
     wordsReviewSchedule: {
       findUnique: vi.fn(),
       upsert: vi.fn(),
+    },
+    customWordBook: {
+      findMany: mockCustomFindMany,
+    },
+    customWordEntry: {
+      findMany: mockCustomFindMany,
+    },
+    builtinWordBook: {
+      findMany: mockBuiltinFindMany,
+    },
+    builtinWordEntry: {
+      findMany: mockBuiltinFindMany,
     },
   },
 }));
@@ -189,5 +208,62 @@ describe("words service progress summary", () => {
       where: { userId: "user-b" },
       orderBy: { updatedAt: "desc" },
     });
+  });
+});
+
+describe("listWords builtin routing", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("routes builtin_book_medical to builtin words path", async () => {
+    const bookId = `${BUILTIN_BOOK_ID_PREFIX}medical`;
+
+    vi.mocked(mockBuiltinFindMany).mockResolvedValueOnce([
+      {
+        id: "medical_abc123",
+        bookId: "medical",
+        word: "artery",
+        phonetic: "/ɑːrtəri/",
+        definition: "动脉",
+        example: null,
+        exampleZh: null,
+        difficulty: "medium",
+        sortOrder: 0,
+      },
+    ]);
+
+    const { listWords } = await import("./words-service");
+    const words = await listWords("user1", bookId);
+
+    expect(words).toHaveLength(1);
+    expect(words[0].bookId).toBe(bookId);
+    expect(words[0].id).toBe("builtin_word_medical_abc123");
+  });
+
+  it("includes builtin words in unfiltered listWords", async () => {
+    const bookId = `${BUILTIN_BOOK_ID_PREFIX}medical`;
+
+    vi.mocked(mockCustomFindMany).mockResolvedValueOnce([]);
+    vi.mocked(mockBuiltinFindMany).mockResolvedValueOnce([
+      {
+        id: "medical_abc123",
+        bookId: "medical",
+        word: "artery",
+        phonetic: "/ɑːrtəri/",
+        definition: "动脉",
+        example: null,
+        exampleZh: null,
+        difficulty: "medium",
+        sortOrder: 0,
+      },
+    ]);
+
+    const { listWords } = await import("./words-service");
+    const words = await listWords("user1");
+
+    expect(words.length).toBeGreaterThanOrEqual(1);
+    const builtinWord = words.find((w) => w.bookId === bookId);
+    expect(builtinWord).toBeDefined();
   });
 });

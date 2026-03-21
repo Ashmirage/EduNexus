@@ -6,6 +6,11 @@ import {
   listCustomWordBooks,
   listCustomWords,
 } from "@/lib/server/custom-wordbook-service";
+import {
+  BUILTIN_BOOK_ID_PREFIX,
+  listBuiltinWordBooks,
+  listBuiltinWords,
+} from "@/lib/server/builtin-wordbook-service";
 
 import type {
   LearningRecord,
@@ -206,8 +211,8 @@ export async function getWordsProgressSummary(
 ): Promise<WordsProgressSummary> {
   const [rawRecords, books, words] = await Promise.all([
     listWordsLearningRecords(userId),
-    Promise.resolve(listLocalWordBooks()),
-    Promise.resolve(listAllLocalWords()),
+    listWordBooks(userId),
+    listWords(userId),
   ]);
 
   const records = normalizeRecords(rawRecords);
@@ -465,23 +470,28 @@ export async function saveWordsReviewSchedule(userId: string, schedule: ReviewSc
 }
 
 export async function listWordBooks(userId: string) {
-  const [local, custom] = await Promise.all([
+  const [local, builtin, custom] = await Promise.all([
     Promise.resolve(listLocalWordBooks()),
+    listBuiltinWordBooks(),
     listCustomWordBooks(userId),
   ]);
-  return [...local, ...custom];
+  return [...local, ...builtin, ...custom];
 }
 
 export async function listWords(userId: string, bookId?: string) {
   if (bookId && bookId.startsWith(CUSTOM_BOOK_ID_PREFIX)) {
     return listCustomWords(userId, { bookId });
   }
+  if (bookId && bookId.startsWith(BUILTIN_BOOK_ID_PREFIX)) {
+    return listBuiltinWords({ bookId });
+  }
   if (bookId) {
     return listLocalWordsByBook(bookId);
   }
-  const [local, custom] = await Promise.all([
+  const [local, builtin, custom] = await Promise.all([
     Promise.resolve(listAllLocalWords()),
+    listBuiltinWords(),
     listCustomWords(userId),
   ]);
-  return [...local, ...custom];
+  return [...local, ...builtin, ...custom];
 }

@@ -125,3 +125,36 @@ model CustomWordEntry {
 
   @@index([bookId, sortOrder])
 }
+
+model BuiltinWordBook {
+  id          String   @id // raw book id: medical, computer, economics, electrical
+  name        String
+  description String?
+  category    String   @default("general")
+  sourceType  String   @default("builtin")
+  wordCount   Int      @default(0)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  entries     BuiltinWordEntry[]
+
+  @@index([category])
+}
+
+model BuiltinWordEntry {
+  id         String          @id // format: ${bookId}_${sha1_12chars}
+  bookId     String
+  book       BuiltinWordBook @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  word       String
+  phonetic   String?
+  definition String
+  example    String?
+  exampleZh  String?
+  difficulty String?
+  sortOrder  Int
+  metadata   Json?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([bookId, sortOrder])
+}

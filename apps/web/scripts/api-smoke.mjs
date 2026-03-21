@@ -348,6 +348,79 @@ async function main() {
     assert.ok([200, 400].includes(pathGenerateRes.status), "路径生成接口失败");
     evidenceLines.push(`[PATH] 路径生成接口状态: ${pathGenerateRes.status}`);
 
+    // ===== BUILTIN-WORDBOOK SMOKE =====
+    console.log("\n[smoke] 开始内置专业词书测试...");
+
+    // Seed builtin medical book before testing
+    const seedBuiltinRes = await new Promise((resolve) => {
+      const seed = spawn("node", ["./scripts/seed-builtin-wordbooks.mjs", "--book", "medical"], {
+        cwd: process.cwd(),
+        env: { ...process.env },
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      let stdout = "";
+      let stderr = "";
+      seed.stdout?.on("data", (c) => (stdout += c));
+      seed.stderr?.on("data", (c) => (stderr += c));
+      seed.on("close", (code) => resolve({ code, stdout, stderr }));
+    });
+    evidenceLines.push(`[BUILTIN_SEED] medical seed exit=${seedBuiltinRes.code}, out=${seedBuiltinRes.stdout?.trim()}`);
+    if (seedBuiltinRes.code !== 0) {
+      evidenceLines.push(`[BUILTIN_SEED] stderr=${seedBuiltinRes.stderr}`);
+      evidenceLines.push(`[BUILTIN_SEED] skipping builtin checks — seed failed (may need DATABASE_URL)`);
+    } else {
+      // Check builtin book appears in /api/words/books
+      const booksRes = await authRequest("/api/words/books");
+      if (booksRes.ok) {
+        const booksJson = await booksRes.json();
+        const builtinBooks = booksJson.data?.books?.filter?.((b) => b.id?.startsWith("builtin_book_")) ?? [];
+        const hasMedical = builtinBooks.some((b) => b.id === "builtin_book_medical");
+        evidenceLines.push(`[BUILTIN_BOOKS] count=${builtinBooks.length}, has_medical=${hasMedical}`);
+        assert.ok(hasMedical, "builtin_book_medical not found in /api/words/books");
+      }
+
+      // Get builtin medical words
+      const wordsRes = await authRequest("/api/words/words?bookId=builtin_book_medical");
+      assert.equal(wordsRes.status, 200, `/api/words/words builtin failed: ${wordsRes.status}`);
+      const wordsJson = await wordsRes.json();
+      const builtinWords = wordsJson.data?.words ?? [];
+      evidenceLines.push(`[BUILTIN_WORDS] count=${builtinWords.length}`);
+      assert.ok(builtinWords.length > 0, "builtin_book_medical returned no words");
+
+      // Write a learning record for the first builtin word
+      const firstWord = builtinWords[0];
+      const recordPayload = {
+        wordId: firstWord.id,
+        bookId: "builtin_book_medical",
+        learnDate: new Date().toISOString().slice(0, 10),
+        status: "new",
+        nextReviewDate: new Date().toISOString().slice(0, 10),
+        interval: 1,
+        easeFactor: 2.5,
+        reviewCount: 0,
+        successCount: 0,
+        failureCount: 0,
+        lastReviewedAt: new Date().toISOString().slice(0, 10),
+        retentionScore: 0,
+        lastStudyType: "learn",
+        lastGrade: "good",
+      };
+      const putRecordRes = await authRequest("/api/words/records", {
+        method: "PUT",
+        body: JSON.stringify(recordPayload),
+      });
+      assert.equal(putRecordRes.status, 200, `/api/words/records PUT failed: ${putRecordRes.status}`);
+      evidenceLines.push(`[BUILTIN_RECORD] saved record for wordId=${firstWord.id}`);
+
+      // Read back the record
+      const getRecordRes = await authRequest(`/api/words/records?wordId=${encodeURIComponent(firstWord.id)}`);
+      assert.equal(getRecordRes.status, 200, `/api/words/records GET failed: ${getRecordRes.status}`);
+      const getRecordJson = await getRecordRes.json();
+      const foundRecord = getRecordJson.data?.records?.find?.((r) => r.wordId === firstWord.id);
+      assert.ok(foundRecord, `record for ${firstWord.id} not found`);
+      evidenceLines.push(`[BUILTIN_RECORD_VERIFY] retrieved record wordId=${foundRecord.wordId}, status=${foundRecord.status}`);
+    }
+
     // ===== CUSTOM-WORDBOOK LIFECYCLE =====
     console.log("\n[smoke] 开始自定义词书生命周期测试...");
 
