@@ -3,11 +3,13 @@ import type { NextRequest } from "next/server";
 import { handlers } from "@/auth";
 
 type NextAuthHandler = (request: NextRequest, ctx: { params: { nextauth: string[] } }) => Promise<Response> | Response;
+type NextJS16Handler = (request: NextRequest, ctx: { params: Promise<{ nextauth: string[] }> }) => Promise<Response> | Response;
 
-function withJsonErrorHandling(handler: NextAuthHandler): NextAuthHandler {
+function withJsonErrorHandling(handler: NextAuthHandler): NextJS16Handler {
   return async (request, ctx) => {
     try {
-      return await handler(request, ctx);
+      const resolvedParams = await ctx.params;
+      return await handler(request, { params: resolvedParams });
     } catch (error) {
       if (error instanceof Response) {
         return error;

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { BookOpen, CheckCircle2 } from "lucide-react";
+import { BookOpen, CheckCircle2, Edit, Trash2, UploadCloud, MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,9 @@ type BookSelectorProps = {
   progressByBook: Record<string, number>;
   dueByBook: Record<string, number>;
   onSelect: (bookId: string) => void;
+  onManage?: (bookId: string) => void;
+  onReplace?: (bookId: string) => void;
+  onDelete?: (bookId: string) => void;
 };
 
 export function BookSelector({
@@ -19,6 +22,9 @@ export function BookSelector({
   progressByBook,
   dueByBook,
   onSelect,
+  onManage,
+  onReplace,
+  onDelete,
 }: BookSelectorProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -30,6 +36,7 @@ export function BookSelector({
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.04 }}
+            data-testid={`words-book-card-${book.id}`}
           >
             <Card
               className={
@@ -61,6 +68,40 @@ export function BookSelector({
                 >
                   {isSelected ? "当前词库" : "选择词库"}
                 </Button>
+                {book.category === "custom" && (
+                  <div className="flex justify-end gap-1 pt-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => onManage?.(book.id)}
+                      data-testid={`words-book-manage-${book.id}`}
+                      title="编辑信息"
+                    >
+                      <Edit className="h-4 w-4 text-slate-500" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => onReplace?.(book.id)}
+                      data-testid={`words-book-replace-${book.id}`}
+                      title="替换词库"
+                    >
+                      <UploadCloud className="h-4 w-4 text-slate-500" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 hover:bg-red-50 hover:text-red-600"
+                      onClick={() => onDelete?.(book.id)}
+                      data-testid={`words-book-delete-${book.id}`}
+                      title="删除词库"
+                    >
+                      <Trash2 className="h-4 w-4 text-slate-500" />
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>

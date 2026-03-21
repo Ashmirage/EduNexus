@@ -1,6 +1,11 @@
 import { prisma } from "./prisma";
 import { listAllLocalWords, listLocalWordBooks, listLocalWordsByBook } from "@/lib/words/catalog";
 import { calculateStreakDays } from "@/lib/words/stats";
+import {
+  CUSTOM_BOOK_ID_PREFIX,
+  listCustomWordBooks,
+  listCustomWords,
+} from "@/lib/server/custom-wordbook-service";
 
 import type {
   LearningRecord,
@@ -459,13 +464,24 @@ export async function saveWordsReviewSchedule(userId: string, schedule: ReviewSc
   });
 }
 
-export function listWordBooks() {
-  return listLocalWordBooks();
+export async function listWordBooks(userId: string) {
+  const [local, custom] = await Promise.all([
+    Promise.resolve(listLocalWordBooks()),
+    listCustomWordBooks(userId),
+  ]);
+  return [...local, ...custom];
 }
 
-export function listWords(bookId?: string) {
+export async function listWords(userId: string, bookId?: string) {
+  if (bookId && bookId.startsWith(CUSTOM_BOOK_ID_PREFIX)) {
+    return listCustomWords(userId, { bookId });
+  }
   if (bookId) {
     return listLocalWordsByBook(bookId);
   }
-  return listAllLocalWords();
+  const [local, custom] = await Promise.all([
+    Promise.resolve(listAllLocalWords()),
+    listCustomWords(userId),
+  ]);
+  return [...local, ...custom];
 }

@@ -11,5 +11,6 @@ export async function GET() {
     return fail({ code: "UNAUTHORIZED", message: "用户未登录。" }, 401);
   }
 
-  return ok({ books: listWordBooks() });
+  const books = await listWordBooks(userId);
+  return ok({ books });
 }

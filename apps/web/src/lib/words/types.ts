@@ -6,7 +6,7 @@ export type WordAnswerGrade = "again" | "hard" | "good" | "easy";
 
 export type StudyEventType = "learn" | "review" | "relearn";
 
-export type WordBookCategory = "cet" | "exam" | "general";
+export type WordBookCategory = "cet" | "exam" | "general" | "custom";
 
 export type Word = {
   id: string;

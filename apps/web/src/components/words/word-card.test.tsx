@@ -17,12 +17,12 @@ describe("WordCard", () => {
     const wordA = { ...baseWord, id: "a", word: "alpha", definition: "definition-a" };
     const wordB = { ...baseWord, id: "b", word: "beta", definition: "definition-b" };
 
-    const { rerender } = render(<WordCard word={wordA} showDefinition={false} />);
+    const { rerender } = render(React.createElement(WordCard, { word: wordA, showDefinition: false }));
 
     fireEvent.click(screen.getByRole("button", { name: /释义/i }));
     expect(screen.getByText("definition-a")).toBeDefined();
 
-    rerender(<WordCard word={wordB} showDefinition={false} />);
+    rerender(React.createElement(WordCard, { word: wordB, showDefinition: false }));
     expect(screen.queryByText("definition-b")).toBeNull();
   });
 });

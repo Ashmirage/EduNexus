@@ -22,6 +22,7 @@ model User {
   wordsLearningRecords WordsLearningRecord[]
   wordsPlanSetting     WordsPlanSetting?
   wordsReviewSchedules WordsReviewSchedule[]
+  customWordBooks      CustomWordBook[]
 }
 
 model Document {
@@ -86,4 +87,41 @@ model WordsReviewSchedule {
 
   @@unique([userId, date])
   @@index([userId])
+}
+
+model CustomWordBook {
+  id               String            @id @default(cuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  description      String?           @db.Text
+  category         String            @default("custom")
+  sourceType       String            @default("upload")
+  originalFilename String?
+  format           String
+  wordCount        Int               @default(0)
+  metadata         Json?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  entries          CustomWordEntry[]
+
+  @@index([userId, createdAt])
+}
+
+model CustomWordEntry {
+  id         String         @id @default(cuid())
+  bookId     String
+  book       CustomWordBook @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  sortOrder  Int            @default(0)
+  word       String
+  phonetic   String?
+  definition String         @db.Text
+  example    String?
+  exampleZh  String?
+  difficulty String?
+  metadata   Json?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([bookId, sortOrder])
 }

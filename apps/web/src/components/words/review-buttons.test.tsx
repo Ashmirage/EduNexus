@@ -9,7 +9,7 @@ describe("ReviewButtons", () => {
   it("emits each answer grade", () => {
     const onGrade = vi.fn();
 
-    render(<ReviewButtons {...({ onGrade } as any)} />);
+    render(React.createElement(ReviewButtons, { onGrade } as any));
 
     fireEvent.click(screen.getByRole("button", { name: /再想想/i }));
     fireEvent.click(screen.getByRole("button", { name: /较难/i }));
@@ -28,10 +28,12 @@ describe("ReviewButtons", () => {
     const onGrade = vi.fn();
 
     render(
-      <>
-        <input aria-label="draft" />
-        <ReviewButtons {...({ onGrade } as any)} />
-      </>
+      React.createElement(
+        React.Fragment,
+        null,
+        React.createElement("input", { "aria-label": "draft" }),
+        React.createElement(ReviewButtons, { onGrade } as any)
+      )
     );
 
     const input = screen.getByLabelText("draft");
@@ -44,7 +46,7 @@ describe("ReviewButtons", () => {
   it("ignores composing and repeated key events", () => {
     const onGrade = vi.fn();
 
-    render(<ReviewButtons {...({ onGrade } as any)} />);
+    render(React.createElement(ReviewButtons, { onGrade } as any));
 
     fireEvent.keyDown(window, { key: "ArrowRight", isComposing: true });
     fireEvent.keyDown(window, { key: "ArrowRight", repeat: true });
