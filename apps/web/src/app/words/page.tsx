@@ -5,6 +5,7 @@ import { BookOpen, Flame, ListTodo, PlayCircle, UploadCloud } from "lucide-react
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { LoginPrompt } from "@/components/ui/login-prompt";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -353,6 +354,29 @@ export default function WordsDashboardPage() {
               <p className="text-sm text-slate-500">上传您自己的词库文件（支持 .csv, .json），成功上传后会立即出现在下方列表。所有自定义词库仅自己可见。</p>
             </div>
           </div>
+
+          <Alert className="bg-muted/50 border-none">
+            <AlertTitle>支持的上传格式说明</AlertTitle>
+            <AlertDescription className="space-y-2 mt-2">
+              <p>我们支持 <strong>CSV</strong> 和 <strong>JSON</strong> 格式导入词库。</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li><strong>必填字段：</strong> <code>word</code> (单词), <code>definition</code> (释义)</li>
+                <li><strong>可选字段：</strong> <code>phonetic</code> (音标), <code>example</code> (例句), <code>exampleZh</code> (例句中文), <code>difficulty</code> (难度)</li>
+              </ul>
+              <p className="text-xs text-muted-foreground">提示：表头或键名也支持中文，如“单词”、“释义”、“音标”等。</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 text-xs font-mono bg-background p-2 rounded border">
+                <div>
+                  <div className="font-semibold text-muted-foreground mb-1">CSV 示例:</div>
+                  <pre className="whitespace-pre-wrap text-[10px]">word,definition,phonetic{"\n"}abandon,放弃,/əˈbændən/{"\n"}accurate,准确的,/ˈækjərət/</pre>
+                </div>
+                <div>
+                  <div className="font-semibold text-muted-foreground mb-1">JSON 示例:</div>
+                  <pre className="whitespace-pre-wrap text-[10px]">{`{\n  "words": [\n    {"word": "abandon", "definition": "放弃", "phonetic": "/əˈbændən/"},\n    {"word": "accurate", "definition": "准确的", "phonetic": "/ˈækjərət/"}\n  ]\n}`}</pre>
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
             <div className="flex-1 space-y-2">
               <Input
