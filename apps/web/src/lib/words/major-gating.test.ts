@@ -227,9 +227,9 @@ describe("normalizePersistedSelection", () => {
     expect(result.selectedBookId).toBe("cet4");
   });
 
-  it("non-professional stored book with existing major promotes to that major's professional book", () => {
+  it("non-professional stored book with existing major preserves both major and non-pro book", () => {
     const result = normalizePersistedSelection("medical", "cet4", books);
     expect(result.selectedMajor).toBe("medical");
-    expect(result.selectedBookId).toBe("builtin_book_medical");
+    expect(result.selectedBookId).toBe("cet4");
   });
 });

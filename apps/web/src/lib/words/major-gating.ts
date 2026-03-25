@@ -113,10 +113,10 @@ export function normalizePersistedSelection(
         selectedBookId: lastSelectedBookId,
       };
     }
-    // Rule 3: existing non-professional book + active major → promote to professional book for that major
+    // Rule 3: existing non-professional book + active major → keep as-is (major and book unchanged)
     return {
       selectedMajor,
-      selectedBookId: MAJOR_TO_PRO_BOOK_ID[selectedMajor],
+      selectedBookId: lastSelectedBookId,
     };
   }
 

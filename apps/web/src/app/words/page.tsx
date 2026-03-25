@@ -258,14 +258,8 @@ export default function WordsDashboardPage() {
   }, [books, persistSelection, selectedMajor, selectedBookId, selectionHydrated, visibleBooks]);
 
   const handleSelectBook = (bookId: string) => {
-    // Major-sticky rule: if a major is active, clicking a non-professional book
-    // redirects to that major's professional book instead
-    const effectiveBookId =
-      selectedMajor !== "" && !PROFESSIONAL_BOOK_IDS.has(bookId)
-        ? MAJOR_TO_PRO_BOOK_ID[selectedMajor]
-        : bookId;
-    setSelectedBookId(effectiveBookId);
-    void persistSelection(selectedMajor, effectiveBookId);
+    setSelectedBookId(bookId);
+    void persistSelection(selectedMajor, bookId);
   };
 
   const handleMajorChange = (major: WordsMajor) => {
