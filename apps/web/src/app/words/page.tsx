@@ -425,7 +425,7 @@ export default function WordsDashboardPage() {
             >
               学习新词
             </Button>
-            <Button variant="outline" onClick={() => router.push("/words/review")}>
+            <Button variant="outline" onClick={() => router.push(`/words/review?bookId=${selectedBookId || visibleBooks[0]?.id || "cet4"}`)}>
               复习旧词
             </Button>
           </div>
