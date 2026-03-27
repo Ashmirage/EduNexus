@@ -118,7 +118,7 @@ describe("WordsDashboardPage todaySummary regressions", () => {
 
     await waitFor(() => {
       const learnedCard = screen.getByText("今日学习").parentElement;
-      expect(learnedCard?.textContent).toMatch(/20/);
+      expect(learnedCard?.textContent).toBe("今日学习20");
     });
   });
 
@@ -141,7 +141,7 @@ describe("WordsDashboardPage todaySummary regressions", () => {
 
     await waitFor(() => {
       const reviewedCard = screen.getByText("今日复习").parentElement;
-      expect(reviewedCard?.textContent).toMatch(/0/);
+      expect(reviewedCard?.textContent).toBe("今日复习0");
     });
   });
 });
