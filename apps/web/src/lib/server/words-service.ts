@@ -177,7 +177,7 @@ function toStudyEvent(record: LearningRecord, today: string): StudyEvent | null 
     return null;
   }
 
-  const type = record.lastStudyType ?? (record.learnDate === today ? "learn" : "review");
+  const type = record.learnDate === today ? "learn" : (record.lastStudyType ?? "review");
   const grade = record.lastGrade ?? (record.retentionScore === 1 ? "good" : "again");
   return {
     date: today,
