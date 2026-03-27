@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -62,7 +62,7 @@ export default function LearnWordsPage({ params }: LearnPageProps) {
   const [mnemonicLoading, setMnemonicLoading] = useState(false);
   const [relatedWords, setRelatedWords] = useState<Word[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAnswering, setIsAnswering] = useState(false);
+  const isAnsweringRef = useRef(false);
 
   const bookId = resolvedParams?.bookId ?? "cet4";
   const queue = useMemo(() => buildLearningQueue(bookWords, 20), [bookWords]);
@@ -136,7 +136,7 @@ export default function LearnWordsPage({ params }: LearnPageProps) {
   };
 
   const moveNext = async (grade: WordAnswerGrade) => {
-    if (isAnswering) {
+    if (isAnsweringRef.current) {
       return;
     }
     if (status !== "authenticated") {
@@ -147,7 +147,7 @@ export default function LearnWordsPage({ params }: LearnPageProps) {
       return;
     }
 
-    setIsAnswering(true);
+    isAnsweringRef.current = true;
     try {
       await updateWordStatus(wordsStorage, bookId, currentWord.id, grade, today);
 
@@ -170,7 +170,7 @@ export default function LearnWordsPage({ params }: LearnPageProps) {
       }
       setCurrentIndex((index) => index + 1);
     } finally {
-      setIsAnswering(false);
+      isAnsweringRef.current = false;
     }
   };
 
@@ -188,7 +188,7 @@ export default function LearnWordsPage({ params }: LearnPageProps) {
       setUnknownCount(0);
       setFinished(false);
       setMnemonic("");
-      setIsAnswering(false);
+      isAnsweringRef.current = false;
       setLoading(false);
     })();
   };
@@ -266,7 +266,7 @@ export default function LearnWordsPage({ params }: LearnPageProps) {
           </div>
         ) : null}
 
-        <ReviewButtons onGrade={(value) => void moveNext(value)} disabled={isAnswering} />
+        <ReviewButtons onGrade={(value) => void moveNext(value)} disabled={isAnsweringRef.current} />
       </div>
 
       <Dialog open={finished} onOpenChange={setFinished}>
