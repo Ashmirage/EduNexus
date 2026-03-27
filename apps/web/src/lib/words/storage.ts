@@ -91,10 +91,16 @@ function normalizeRecords(records: LearningRecord[]): LearningRecord[] {
 function createEvents(records: LearningRecord[], today: string): StudyEvent[] {
   return records.flatMap((record) => {
     if (record.lastReviewedAt === today) {
+      // If lastStudyType is undefined but learnDate is not today,
+      // this is likely a first learn that lost its context (same-day repeat save).
+      // Treat it as "learn" to avoid miscounting.
+      const type =
+        record.lastStudyType ??
+        (record.learnDate === today ? "learn" : record.lastStudyType === undefined ? "learn" : "review");
       return [
         {
           date: today,
-          type: record.lastStudyType ?? (record.learnDate === today ? "learn" : "review"),
+          type,
           grade: record.lastGrade ?? (record.retentionScore === 1 ? "good" : "again"),
           success: record.retentionScore === 1,
         },
