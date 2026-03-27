@@ -23,6 +23,8 @@ import {
   History,
   Trash2,
   Plus,
+  Check,
+  BookmarkPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoginPrompt } from "@/components/ui/login-prompt";
@@ -47,6 +49,7 @@ import { KBQAAssistant } from "@/components/kb/kb-qa-assistant";
 import { TeacherManager } from "@/components/workspace/teacher-manager";
 import { getKBStorage, type KBDocument } from "@/lib/client/kb-storage";
 import { getModelConfig } from "@/lib/client/model-config";
+import { saveReplyAsKBDocument } from "@/lib/client/workspace-kb-adapter";
 import { exportChatSessionAsMarkdown, type ChatSession } from "@/lib/workspace/chat-history-storage";
 import {
   getAllTeachers,
@@ -89,6 +92,7 @@ function WorkspacePageContent() {
   const [kbQAMode, setKbQAMode] = useState(false); // 知识库问答模式开关
   const [inputValue, setInputValue] = useState("");
   const [showThinking, setShowThinking] = useState(true);
+  const [saveToKB, setSaveToKB] = useState(false); // 知识宝库保存开关
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [taskContext, setTaskContext] = useState<WorkspaceTaskContext | null>(null);
   const [activeTab, setActiveTab] = useState<"status" | "teachers" | "notes" | "plan" | "kb-qa" | "history">("status");
@@ -98,6 +102,10 @@ function WorkspacePageContent() {
     title: string;
   } | null>(null);
   const [isSessionActionPending, setIsSessionActionPending] = useState(false);
+  const savingIdsRef = useRef<Set<string>>(new Set());
+  const saveTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -288,6 +296,55 @@ function WorkspacePageContent() {
     }
   };
 
+  const handleSaveMessageToKB = async (messageId: string, content: string) => {
+    if (savingIdsRef.current.has(messageId)) return;
+    
+    savingIdsRef.current.add(messageId);
+    setSavingIds(new Set(savingIdsRef.current));
+    
+    try {
+      const msgIndex = messages.findIndex((m) => m.id === messageId);
+      const userMessage = msgIndex > 0 ? messages[msgIndex - 1] : null;
+      const userQuestion = userMessage?.role === "user" 
+        ? (userMessage.content.split('\n')[0] || "无标题").slice(0, 200)
+        : "无标题";
+      
+      const result = await saveReplyAsKBDocument({
+        userQuestion,
+        assistantAnswer: content,
+        sessionId: currentSession?.id || "unknown",
+        timestamp: new Date().toISOString(),
+        teacherName: currentTeacher?.name,
+      });
+      
+      if (result.ok) {
+        setSavedIds((prev) => {
+          const next = new Set(prev);
+          next.add(messageId);
+          return next;
+        });
+        toast.success("已保存到知识宝库");
+        
+        const timeoutId = setTimeout(() => {
+          saveTimeoutsRef.current.delete(messageId);
+          setSavedIds((prev) => {
+            const next = new Set(prev);
+            next.delete(messageId);
+            return next;
+          });
+        }, 2000);
+        saveTimeoutsRef.current.set(messageId, timeoutId);
+      } else {
+        toast.error(result.error || "保存失败");
+      }
+    } catch (e) {
+      toast.error(`保存失败: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      savingIdsRef.current.delete(messageId);
+      setSavingIds(new Set(savingIdsRef.current));
+    }
+  };
+
   const modelConfig = getModelConfig();
 
   const syncTaskFocusFeedback = useCallback(async (assistantContent: string) => {
@@ -346,9 +403,19 @@ function WorkspacePageContent() {
     await queued;
   }, []);
 
+  const resetSaveMessageState = useCallback(() => {
+    // Clear any pending save timeout callbacks
+    saveTimeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
+    saveTimeoutsRef.current.clear();
+    savingIdsRef.current = new Set();
+    setSavingIds(new Set());
+    setSavedIds(new Set());
+  }, []);
+
   const handleSelectSession = useCallback(async (sessionId: string) => {
     try {
       await runSessionAction(async () => {
+        resetSaveMessageState();
         await selectSession(sessionId);
       });
       toast.success("已加载对话");
@@ -356,11 +423,12 @@ function WorkspacePageContent() {
       console.error("加载对话失败:", error);
       toast.error("加载对话失败");
     }
-  }, [runSessionAction, selectSession]);
+  }, [resetSaveMessageState, runSessionAction, selectSession]);
 
   const handleStartNewConversation = useCallback(async () => {
     try {
       await runSessionAction(async () => {
+        resetSaveMessageState();
         await startNewConversation();
       });
       toast.success("已开始新对话");
@@ -368,7 +436,7 @@ function WorkspacePageContent() {
       console.error("创建新对话失败:", error);
       toast.error("创建新对话失败");
     }
-  }, [runSessionAction, startNewConversation]);
+  }, [resetSaveMessageState, runSessionAction, startNewConversation]);
 
   const requestDeleteSession = useCallback((sessionId: string, title: string) => {
     setPendingDeleteSession({ id: sessionId, title });
@@ -617,6 +685,29 @@ function WorkspacePageContent() {
                   显示思考
                 </Label>
               </motion.div>
+              <motion.div
+                className="flex items-center gap-2"
+                whileHover={{ scale: 1.02 }}
+              >
+                <Switch
+                  id="save-to-kb"
+                  checked={saveToKB}
+                  onCheckedChange={setSaveToKB}
+                />
+                <Label htmlFor="save-to-kb" className="text-sm cursor-pointer flex items-center gap-1">
+                  {saveToKB ? (
+                    <>
+                      <BookOpen className="h-3 w-3" />
+                      保存到知识宝库
+                    </>
+                  ) : (
+                    <>
+                      <BookOpen className="h-3 w-3" />
+                      不保存
+                    </>
+                  )}
+                </Label>
+              </motion.div>
             </div>
           </div>
         </motion.div>
@@ -665,7 +756,7 @@ function WorkspacePageContent() {
                     whileHover={{ scale: 1.01 }}
                     transition={{ type: "spring", stiffness: 300 }}
                     className={cn(
-                      "rounded-2xl p-4 max-w-[80%] shadow-sm transition-all hover:shadow-md",
+                      "rounded-2xl p-4 max-w-[80%] shadow-sm transition-all hover:shadow-md group",
                       message.role === "user"
                         ? message.mode === "kb-qa"
                           ? "bg-gradient-to-br from-purple-500 to-pink-500 text-white"
@@ -736,7 +827,36 @@ function WorkspacePageContent() {
                       <MarkdownRenderer content={message.content} />
                     </div>
                     <div className="text-xs opacity-70 mt-2 flex items-center justify-between">
-                      <span suppressHydrationWarning>{isMounted ? message.timestamp.toLocaleTimeString() : ""}</span>
+                      <div className="flex items-center gap-2">
+                        <span suppressHydrationWarning>{isMounted ? message.timestamp.toLocaleTimeString() : ""}</span>
+                        {message.role === "assistant" && saveToKB && !kbQAMode && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={cn(
+                              "h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1",
+                              savedIds.has(message.id) ? "text-green-600 opacity-100" : "text-muted-foreground hover:text-foreground"
+                            )}
+                            onClick={() => { void handleSaveMessageToKB(message.id, message.content); }}
+                            disabled={savingIds.has(message.id) || savedIds.has(message.id)}
+                          >
+                            {savingIds.has(message.id) ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : savedIds.has(message.id) ? (
+                              <Check className="h-3 w-3" />
+                            ) : (
+                              <BookmarkPlus className="h-3 w-3" />
+                            )}
+                            <span>
+                              {savingIds.has(message.id)
+                                ? "保存中..."
+                                : savedIds.has(message.id)
+                                ? "已保存"
+                                : "保存到知识库"}
+                            </span>
+                          </Button>
+                        )}
+                      </div>
                       {message.mode && (
                         <Badge
                           variant="outline"
