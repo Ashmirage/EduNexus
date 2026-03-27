@@ -35,4 +35,41 @@ describe("graph view state", () => {
       description: "先在知识库中创建或导入文档，系统才会为你生成图谱关系。",
     });
   });
+
+  it("returns empty graph for 401 unauthorized response", async () => {
+    const fetcher = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+    });
+
+    await expect(loadPrivateGraphView(fetcher)).resolves.toEqual({
+      nodes: [],
+      edges: [],
+    });
+    expect(fetcher).toHaveBeenCalledWith("/api/graph/view", {
+      credentials: "include",
+    });
+  });
+
+  it("throws with status message on non-OK non-401 responses", async () => {
+    const fetcher = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+    });
+
+    await expect(loadPrivateGraphView(fetcher)).rejects.toThrow(
+      "Failed to fetch graph view: 500"
+    );
+  });
+
+  it("throws with status message on 503 service unavailable", async () => {
+    const fetcher = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+    });
+
+    await expect(loadPrivateGraphView(fetcher)).rejects.toThrow(
+      "Failed to fetch graph view: 503"
+    );
+  });
 });

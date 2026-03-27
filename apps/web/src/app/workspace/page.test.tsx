@@ -284,4 +284,44 @@ describe("WorkspacePage KB save button behavior", () => {
     expect(saveReplyAsKBDocument).toHaveBeenCalledTimes(1);
     expect(screen.getByText("已保存")).toBeDefined();
   });
+
+  it("shows error toast when saveReplyAsKBDocument returns ok=false and does not show 已保存", async () => {
+    (saveReplyAsKBDocument as any).mockResolvedValue({ ok: false, error: "请先登录后再保存到知识宝库" });
+
+    render(<WorkspacePage />);
+
+    fireEvent.click(screen.getByLabelText("save-to-kb"));
+
+    await waitFor(() => {
+      expect(screen.getByText("保存到知识库")).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByText("保存到知识库"));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("请先登录后再保存到知识宝库");
+    });
+
+    expect(screen.queryByText("已保存")).toBeNull();
+  });
+
+  it("shows error toast when saveReplyAsKBDocument throws and does not show 已保存", async () => {
+    (saveReplyAsKBDocument as any).mockRejectedValue(new Error("网络错误"));
+
+    render(<WorkspacePage />);
+
+    fireEvent.click(screen.getByLabelText("save-to-kb"));
+
+    await waitFor(() => {
+      expect(screen.getByText("保存到知识库")).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByText("保存到知识库"));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("保存失败: 网络错误");
+    });
+
+    expect(screen.queryByText("已保存")).toBeNull();
+  });
 });

@@ -33,6 +33,7 @@ model Document {
   updatedAt DateTime @updatedAt
   author    User     @relation(fields: [authorId], references: [id])
   authorId  String
+  tags      String[] @default([])
 
   @@index([authorId])
 }
